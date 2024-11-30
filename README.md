@@ -1,3 +1,14 @@
 # MacAnalog-Symbolix
-The development note book is the SymPy_Analog.ipynb:
-====== https://github.com/NooriDan/MacAnalog-Symbolix/blob/main/Notebooks/SymPy_Analog.ipynb ======
+
+Welcome to the **MacAnalog-Symbolix** project! Below you'll find information and links to the key notebooks.
+The primary development notebookx are located at:
+
+- [Notebooks](Notebooks) - Development notebook for symbolic analog circuit analysis.
+
+## CS Notebook
+
+- [CS Notebook](Notebooks/SymPy_Analog-CS.ipynb).
+
+## CG Notebook
+
+- [CG Notebook](Notebooks/SymPy_Analog-CG.ipynb)
