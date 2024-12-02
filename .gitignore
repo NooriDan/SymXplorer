@@ -1,1 +1,3 @@
 Notebooks/Outputs/
+*.aux
+*.log
