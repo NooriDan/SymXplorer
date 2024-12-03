@@ -1,0 +1,22 @@
+
+        \documentclass{article}
+        \usepackage{amsmath}
+        \usepackage{geometry}
+        \geometry{landscape, a1paper, margin=1in}  % Adjust paper size and margins
+        \begin{document}
+        \section*{Experiment: TIA simple Z2 Z5 ZL}
+\subsection*{Filter 1}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  R_{2}, \  \infty, \  R_{4}, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} s \left(R_{2} R_{4} g_{m} - R_{2} + R_{4}\right)}{C_{L} L_{L} R_{2} R_{4} g_{m} s^{2} + C_{L} L_{L} R_{2} s^{2} + C_{L} L_{L} R_{4} s^{2} + 2 L_{L} R_{2} g_{m} s + 4 L_{L} s + R_{2} R_{4} g_{m} + R_{2} + R_{4}}$ \\ 
+\textbf{Q:} $\frac{C_{L} \sqrt{\frac{1}{C_{L} L_{L}}} \left(R_{2} R_{4} g_{m} + R_{2} + R_{4}\right)}{2 \left(R_{2} g_{m} + 2\right)}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 \left(R_{2} g_{m} + 2\right)}{C_{L} \left(R_{2} R_{4} g_{m} + R_{2} + R_{4}\right)}$ \\ 
+\subsection*{Filter 2}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  R_{2}, \  \infty, \  R_{4}, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{L} s \left(R_{2} R_{4} g_{m} - R_{2} + R_{4}\right)}{C_{L} L_{L} R_{2} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{L} R_{2} R_{L} s^{2} + C_{L} L_{L} R_{4} R_{L} s^{2} + L_{L} R_{2} R_{4} g_{m} s + 2 L_{L} R_{2} R_{L} g_{m} s + L_{L} R_{2} s + L_{L} R_{4} s + 4 L_{L} R_{L} s + R_{2} R_{4} R_{L} g_{m} + R_{2} R_{L} + R_{4} R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}} \left(R_{2} R_{4} g_{m} + R_{2} + R_{4}\right)}{R_{2} R_{4} g_{m} + 2 R_{2} R_{L} g_{m} + R_{2} + R_{4} + 4 R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{2} R_{4} g_{m} + 2 R_{2} R_{L} g_{m} + R_{2} + R_{4} + 4 R_{L}}{C_{L} R_{L} \left(R_{2} R_{4} g_{m} + R_{2} + R_{4}\right)}$ \\ 
+\end{document}

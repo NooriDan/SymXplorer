@@ -1,0 +1,120 @@
+
+        \documentclass{article}
+        \usepackage{amsmath}
+        \usepackage{geometry}
+        \geometry{landscape, a1paper, margin=1in}  % Adjust paper size and margins
+        \begin{document}
+        \section*{Experiment: TIA simple Z3 Z5 ZL}
+\subsection*{Filter 1}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  R_{4}, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} s \left(R_{4} g_{m} - 1\right)}{C_{L} L_{L} R_{3} R_{4} g_{m} s^{2} + C_{L} L_{L} R_{3} s^{2} + 2 L_{L} R_{3} g_{m} s + L_{L} R_{4} g_{m} s + L_{L} s + R_{3} R_{4} g_{m} + R_{3}}$ \\ 
+\textbf{Q:} $\frac{C_{L} R_{3} \sqrt{\frac{1}{C_{L} L_{L}}} \left(R_{4} g_{m} + 1\right)}{2 R_{3} g_{m} + R_{4} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 R_{3} g_{m} + R_{4} g_{m} + 1}{C_{L} R_{3} \left(R_{4} g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 2}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{L} L_{L} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{L} R_{3} R_{L} s^{2} + L_{L} R_{3} R_{4} g_{m} s + 2 L_{L} R_{3} R_{L} g_{m} s + L_{L} R_{3} s + L_{L} R_{4} R_{L} g_{m} s + L_{L} R_{L} s + R_{3} R_{4} R_{L} g_{m} + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{L} R_{3} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}} \left(R_{4} g_{m} + 1\right)}{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}{C_{L} R_{3} R_{L} \left(R_{4} g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 3}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  R_{4}, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{L} R_{4} g_{m} s^{2} + C_{3} L_{L} s^{2} + C_{L} L_{L} R_{4} g_{m} s^{2} + C_{L} L_{L} s^{2} + 2 L_{L} g_{m} s + R_{4} g_{m} + 1}$ \\ 
+\textbf{Q:} $\frac{\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 g_{m}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 g_{m}}{C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}}$ \\ 
+\subsection*{Filter 4}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{L} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{L} R_{L} s^{2} + C_{L} L_{L} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{L} R_{L} s^{2} + L_{L} R_{4} g_{m} s + 2 L_{L} R_{L} g_{m} s + L_{L} s + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{L} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{4} g_{m} + 2 R_{L} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{4} g_{m} + 2 R_{L} g_{m} + 1}{R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 5}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  R_{4}, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{L} R_{3} R_{4} g_{m} s^{2} + C_{3} L_{L} R_{3} s^{2} + C_{L} L_{L} R_{3} R_{4} g_{m} s^{2} + C_{L} L_{L} R_{3} s^{2} + 2 L_{L} R_{3} g_{m} s + L_{L} R_{4} g_{m} s + L_{L} s + R_{3} R_{4} g_{m} + R_{3}}$ \\ 
+\textbf{Q:} $\frac{R_{3} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 R_{3} g_{m} + R_{4} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 R_{3} g_{m} + R_{4} g_{m} + 1}{R_{3} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 6}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{L} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{L} R_{3} R_{L} s^{2} + C_{L} L_{L} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{L} R_{3} R_{L} s^{2} + L_{L} R_{3} R_{4} g_{m} s + 2 L_{L} R_{3} R_{L} g_{m} s + L_{L} R_{3} s + L_{L} R_{4} R_{L} g_{m} s + L_{L} R_{L} s + R_{3} R_{4} R_{L} g_{m} + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}{R_{3} R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 7}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  R_{4}, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} R_{L} s^{2} + L_{3} R_{4} g_{m} s + 2 L_{3} R_{L} g_{m} s + L_{3} s + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{3} R_{L} \sqrt{\frac{1}{C_{3} L_{3}}} \left(R_{4} g_{m} + 1\right)}{R_{4} g_{m} + 2 R_{L} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{3} L_{3}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{4} g_{m} + 2 R_{L} g_{m} + 1}{C_{3} R_{L} \left(R_{4} g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 8}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{4} g_{m} s^{2} + C_{3} L_{3} s^{2} + C_{L} L_{3} R_{4} g_{m} s^{2} + C_{L} L_{3} s^{2} + 2 L_{3} g_{m} s + R_{4} g_{m} + 1}$ \\ 
+\textbf{Q:} $\frac{\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 g_{m}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 g_{m}}{C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}}$ \\ 
+\subsection*{Filter 9}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  R_{4}, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} R_{L} s^{2} + C_{L} L_{3} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{3} R_{L} s^{2} + L_{3} R_{4} g_{m} s + 2 L_{3} R_{L} g_{m} s + L_{3} s + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{L} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{4} g_{m} + 2 R_{L} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{4} g_{m} + 2 R_{L} g_{m} + 1}{R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 10}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  R_{4}, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} L_{L} R_{4} g_{m} s^{2} + C_{3} L_{3} L_{L} s^{2} + C_{L} L_{3} L_{L} R_{4} g_{m} s^{2} + C_{L} L_{3} L_{L} s^{2} + 2 L_{3} L_{L} g_{m} s + L_{3} R_{4} g_{m} + L_{3} + L_{L} R_{4} g_{m} + L_{L}}$ \\ 
+\textbf{Q:} $\frac{\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 g_{m}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 g_{m}}{C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}}$ \\ 
+\subsection*{Filter 11}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} L_{L} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} L_{L} R_{L} s^{2} + C_{L} L_{3} L_{L} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{3} L_{L} R_{L} s^{2} + L_{3} L_{L} R_{4} g_{m} s + 2 L_{3} L_{L} R_{L} g_{m} s + L_{3} L_{L} s + L_{3} R_{4} R_{L} g_{m} + L_{3} R_{L} + L_{L} R_{4} R_{L} g_{m} + L_{L} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{L} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{4} g_{m} + 2 R_{L} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{4} g_{m} + 2 R_{L} g_{m} + 1}{R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 12}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  R_{4}, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} R_{3} R_{L} s^{2} + L_{3} R_{3} R_{4} g_{m} s + 2 L_{3} R_{3} R_{L} g_{m} s + L_{3} R_{3} s + L_{3} R_{4} R_{L} g_{m} s + L_{3} R_{L} s + R_{3} R_{4} R_{L} g_{m} + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{3} R_{3} R_{L} \sqrt{\frac{1}{C_{3} L_{3}}} \left(R_{4} g_{m} + 1\right)}{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{3} L_{3}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}{C_{3} R_{3} R_{L} \left(R_{4} g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 13}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{3} R_{4} g_{m} s^{2} + C_{3} L_{3} R_{3} s^{2} + C_{L} L_{3} R_{3} R_{4} g_{m} s^{2} + C_{L} L_{3} R_{3} s^{2} + 2 L_{3} R_{3} g_{m} s + L_{3} R_{4} g_{m} s + L_{3} s + R_{3} R_{4} g_{m} + R_{3}}$ \\ 
+\textbf{Q:} $\frac{R_{3} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 R_{3} g_{m} + R_{4} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 R_{3} g_{m} + R_{4} g_{m} + 1}{R_{3} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 14}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  R_{4}, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} R_{3} R_{L} s^{2} + C_{L} L_{3} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{3} R_{3} R_{L} s^{2} + L_{3} R_{3} R_{4} g_{m} s + 2 L_{3} R_{3} R_{L} g_{m} s + L_{3} R_{3} s + L_{3} R_{4} R_{L} g_{m} s + L_{3} R_{L} s + R_{3} R_{4} R_{L} g_{m} + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}{R_{3} R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 15}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  R_{4}, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{3} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} L_{L} R_{3} R_{4} g_{m} s^{2} + C_{3} L_{3} L_{L} R_{3} s^{2} + C_{L} L_{3} L_{L} R_{3} R_{4} g_{m} s^{2} + C_{L} L_{3} L_{L} R_{3} s^{2} + 2 L_{3} L_{L} R_{3} g_{m} s + L_{3} L_{L} R_{4} g_{m} s + L_{3} L_{L} s + L_{3} R_{3} R_{4} g_{m} + L_{3} R_{3} + L_{L} R_{3} R_{4} g_{m} + L_{L} R_{3}}$ \\ 
+\textbf{Q:} $\frac{R_{3} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{2 R_{3} g_{m} + R_{4} g_{m} + 1}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{2 R_{3} g_{m} + R_{4} g_{m} + 1}{R_{3} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\subsection*{Filter 16}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  R_{4}, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{3} R_{L} s \left(R_{4} g_{m} - 1\right)}{C_{3} L_{3} L_{L} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{3} L_{3} L_{L} R_{3} R_{L} s^{2} + C_{L} L_{3} L_{L} R_{3} R_{4} R_{L} g_{m} s^{2} + C_{L} L_{3} L_{L} R_{3} R_{L} s^{2} + L_{3} L_{L} R_{3} R_{4} g_{m} s + 2 L_{3} L_{L} R_{3} R_{L} g_{m} s + L_{3} L_{L} R_{3} s + L_{3} L_{L} R_{4} R_{L} g_{m} s + L_{3} L_{L} R_{L} s + L_{3} R_{3} R_{4} R_{L} g_{m} + L_{3} R_{3} R_{L} + L_{L} R_{3} R_{4} R_{L} g_{m} + L_{L} R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} R_{4} g_{m} + 2 R_{3} R_{L} g_{m} + R_{3} + R_{4} R_{L} g_{m} + R_{L}}{R_{3} R_{L} \left(C_{3} R_{4} g_{m} + C_{3} + C_{L} R_{4} g_{m} + C_{L}\right)}$ \\ 
+\end{document}

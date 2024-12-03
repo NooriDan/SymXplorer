@@ -1,0 +1,99 @@
+
+        \documentclass{article}
+        \usepackage{amsmath}
+        \usepackage{geometry}
+        \geometry{landscape, a1paper, margin=1in}  % Adjust paper size and margins
+        \begin{document}
+        \section*{Experiment: TIA simple Z3 ZL}
+\subsection*{Filter 1}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} s}{C_{L} L_{L} R_{3} s^{2} + L_{L} s + R_{3}}$ \\ 
+\textbf{Q:} $C_{L} R_{3} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{3}}$ \\ 
+\subsection*{Filter 2}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} R_{L} s}{C_{L} L_{L} R_{3} R_{L} s^{2} + L_{L} R_{3} s + L_{L} R_{L} s + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{L} R_{3} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}}{R_{3} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} + R_{L}}{C_{L} R_{3} R_{L}}$ \\ 
+\subsection*{Filter 3}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{L} s}{C_{3} L_{L} R_{L} s^{2} + C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}}$ \\ 
+\textbf{Q:} $R_{L} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 4}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} s}{C_{3} L_{L} R_{3} s^{2} + C_{L} L_{L} R_{3} s^{2} + L_{L} s + R_{3}}$ \\ 
+\textbf{Q:} $R_{3} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{3} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 5}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{L} R_{3} R_{L} s}{C_{3} L_{L} R_{3} R_{L} s^{2} + C_{L} L_{L} R_{3} R_{L} s^{2} + L_{L} R_{3} s + L_{L} R_{L} s + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)}{R_{3} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} + R_{L}}{R_{3} R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 6}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{L} s}{C_{3} L_{3} R_{L} s^{2} + L_{3} s + R_{L}}$ \\ 
+\textbf{Q:} $C_{3} R_{L} \sqrt{\frac{1}{C_{3} L_{3}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{3} L_{3}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{3} R_{L}}$ \\ 
+\subsection*{Filter 7}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{L} s}{C_{3} L_{3} R_{L} s^{2} + C_{L} L_{3} R_{L} s^{2} + L_{3} s + R_{L}}$ \\ 
+\textbf{Q:} $R_{L} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 8}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{L} s}{C_{3} L_{3} L_{L} R_{L} s^{2} + C_{L} L_{3} L_{L} R_{L} s^{2} + L_{3} L_{L} s + L_{3} R_{L} + L_{L} R_{L}}$ \\ 
+\textbf{Q:} $R_{L} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 9}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} R_{L} s}{C_{3} L_{3} R_{3} R_{L} s^{2} + L_{3} R_{3} s + L_{3} R_{L} s + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{C_{3} R_{3} R_{L} \sqrt{\frac{1}{C_{3} L_{3}}}}{R_{3} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{3} L_{3}}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} + R_{L}}{C_{3} R_{3} R_{L}}$ \\ 
+\subsection*{Filter 10}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} s}{C_{3} L_{3} R_{3} s^{2} + C_{L} L_{3} R_{3} s^{2} + L_{3} s + R_{3}}$ \\ 
+\textbf{Q:} $R_{3} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{3} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 11}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} R_{3} R_{L} s}{C_{3} L_{3} R_{3} R_{L} s^{2} + C_{L} L_{3} R_{3} R_{L} s^{2} + L_{3} R_{3} s + L_{3} R_{L} s + R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)}{R_{3} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{L_{3} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} + R_{L}}{R_{3} R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 12}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{3} s}{C_{3} L_{3} L_{L} R_{3} s^{2} + C_{L} L_{3} L_{L} R_{3} s^{2} + L_{3} L_{L} s + L_{3} R_{3} + L_{L} R_{3}}$ \\ 
+\textbf{Q:} $R_{3} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{R_{3} \left(C_{3} + C_{L}\right)}$ \\ 
+\subsection*{Filter 13}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{L_{3} L_{L} R_{3} R_{L} s}{C_{3} L_{3} L_{L} R_{3} R_{L} s^{2} + C_{L} L_{3} L_{L} R_{3} R_{L} s^{2} + L_{3} L_{L} R_{3} s + L_{3} L_{L} R_{L} s + L_{3} R_{3} R_{L} + L_{L} R_{3} R_{L}}$ \\ 
+\textbf{Q:} $\frac{R_{3} R_{L} \sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}} \left(C_{3} + C_{L}\right)}{R_{3} + R_{L}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{L_{3} + L_{L}}{L_{3} L_{L} \left(C_{3} + C_{L}\right)}}$ \\ 
+\textbf{Bandwidth:} $\frac{R_{3} + R_{L}}{R_{3} R_{L} \left(C_{3} + C_{L}\right)}$ \\ 
+\end{document}

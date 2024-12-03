@@ -2,6 +2,7 @@ from Global import *
 from BaseTF import BaseTransferFunction
 from Filter import FilterClassification, FilterClassifier
 from Utils  import FileSave
+import pickle
 
 class SymbolixExperimentCG:
     """Main class putting everything together"""
@@ -14,6 +15,18 @@ class SymbolixExperimentCG:
          self.transferFunctions = []
          self.solvedCombos      = []
          self.numOfComputes     = 0
+
+    def export(self, file):
+        with open(file, 'wb') as f:
+            pickle.dump(self, f)
+        print(f"Object exported to {file}")
+
+    @staticmethod
+    def import_from(file):
+        with open(file, 'rb') as f:
+            obj = pickle.load(f)
+        print(f"Object imported from {file}")
+        return obj
 
     def isBaseSolved(self):
         return self.baseTF.isSolved
@@ -65,8 +78,8 @@ class SymbolixExperimentCG:
 
         # Output summary of results
         print("Number of transfer functions found: {}".format(len(solvedTFs)))
-        for i, tf in enumerate(solvedTFs, 1):
-            print("H(s) {}: {}".format(i, tf))
+        # for i, tf in enumerate(solvedTFs, 1):
+        #     print("H(s) {}: {}".format(i, tf))
 
         return solvedTFs, impedanceBatch
     

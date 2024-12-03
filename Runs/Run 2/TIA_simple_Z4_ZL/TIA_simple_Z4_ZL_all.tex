@@ -1,0 +1,438 @@
+
+        \documentclass{article}
+        \usepackage{amsmath}
+        \usepackage{geometry}
+        \geometry{landscape, a1paper, margin=1in}  % Adjust paper size and margins
+        \begin{document}
+        \section*{Experiment: TIA simple Z4 ZL}
+\subsection*{Filter 1}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 2}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 3}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 4}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 5}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 6}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 7}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 8}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 9}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 10}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 11}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 12}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 13}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 14}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 15}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 16}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 17}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 18}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 19}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 20}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 21}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 22}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 23}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 24}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 25}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 26}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 27}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 28}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 29}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 30}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3}}{C_{3} R_{3} s + 1}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 31}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 32}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 33}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 34}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 35}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 36}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 37}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 38}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 39}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 40}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 41}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 42}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 43}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 44}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 45}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 46}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 47}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 48}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 49}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 50}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 51}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 52}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 53}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 54}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 55}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 56}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 57}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 58}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 59}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 60}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 61}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 62}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 63}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 64}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 65}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 66}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 67}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 68}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 69}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 70}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  L_{3} s + R_{3} + \frac{1}{C_{3} s}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 71}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 72}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 73}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 74}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 75}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 76}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 77}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 78}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 79}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 80}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{1}{C_{3} s + \frac{1}{R_{3}} + \frac{1}{L_{3} s}}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 81}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 82}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 83}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 84}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 85}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 86}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 87}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 88}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 89}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 90}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{L_{3} s}{C_{3} L_{3} s^{2} + 1} + R_{3}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 91}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\infty g_{m} + 1}$ \\ 
+\subsection*{Filter 92}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m}}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 93}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{R_{L}}{C_{L} R_{L} s + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m}}{\left(\infty g_{m} + 1\right) \left(C_{L} R_{L} s + 1\right)}$ \\ 
+\subsection*{Filter 94}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 95}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  L_{L} s + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 96}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 97}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  L_{L} s + R_{L} + \frac{1}{C_{L} s}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}{C_{L} s \left(\infty g_{m} + 1\right)}$ \\ 
+\subsection*{Filter 98}
+\textbf{Filter Type:} BP \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{1}{C_{L} s + \frac{1}{R_{L}} + \frac{1}{L_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty L_{L} R_{L} g_{m} s}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}$ \\ 
+\textbf{Q:} $C_{L} R_{L} \sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{$\omega_0$:} $\sqrt{\frac{1}{C_{L} L_{L}}}$ \\ 
+\textbf{Bandwidth:} $\frac{1}{C_{L} R_{L}}$ \\ 
+\subsection*{Filter 99}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{L_{L} s}{C_{L} L_{L} s^{2} + 1} + R_{L}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty g_{m} \left(C_{L} L_{L} R_{L} s^{2} + L_{L} s + R_{L}\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + 1\right)}$ \\ 
+\subsection*{Filter 100}
+Invalid filter \\ 
+\textbf{$Z(s)$:} $\left( \infty, \  \infty, \  \frac{R_{3} \left(L_{3} s + \frac{1}{C_{3} s}\right)}{L_{3} s + R_{3} + \frac{1}{C_{3} s}}, \  \infty, \  \infty, \  \frac{R_{L} \left(L_{L} s + \frac{1}{C_{L} s}\right)}{L_{L} s + R_{L} + \frac{1}{C_{L} s}}\right)$ \\ 
+\textbf{$H(s)$:} $\frac{\infty R_{L} g_{m} \left(C_{L} L_{L} s^{2} + 1\right)}{\left(\infty g_{m} + 1\right) \left(C_{L} L_{L} s^{2} + C_{L} R_{L} s + 1\right)}$ \\ 
+\end{document}
