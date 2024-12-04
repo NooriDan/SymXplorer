@@ -1,9 +1,10 @@
 from Global import *
+from typing import Dict, List
 
 class FilterClassification:
     def __init__(
         self,
-        zCombo: List,
+        zCombo: List[sympy.Basic],
         transferFunc: sympy.Basic,  # SymPy expression
         valid: bool = False,
         fType: Optional[str] = None,
@@ -37,9 +38,8 @@ class FilterClassifier():
         self._fTypes = fTypes
         # To be computed
         self.classifications: List[FilterClassification] = []
-        self.clusteredByType  = {}
-        self.countByType      = {}
-        
+        self.clusteredByType:  Dict[str, List[FilterClassification]]= {}
+        self.countByType:      Dict[str, int] = {}
         
     def hasTFs(self):
         return len(self.transferFunctionsList) > 0
@@ -97,11 +97,11 @@ class FilterClassifier():
                     zCombo= impedanceCombo,
                     transferFunc= tf,
                     valid= False,
-                    fType= None,
+                    fType= results["fType"],
                     parameters= results["parameters"]
                 ))
 
-    def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP"]):
+    def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER"]):
         if not self.isClassified():
             print("===============")
             print("Classify the TFs first")
@@ -117,8 +117,7 @@ class FilterClassifier():
         output = []
         count = 0
         for entity in self.classifications:
-            # print(f"entity : {entity}")
-            if (entity.valid) and (entity.fType == filterType):
+            if (entity.fType == filterType):
                 output.append(entity)
                 count += 1
         if printMessage:
@@ -155,8 +154,9 @@ class FilterClassifier():
         a0 = denominator.coeff(s, 0)
 
         # Validate filter form and coefficients
-        if not all([a2, a1, a0]) or num_order > 2:
+        if not all([a2, a1, a0]) or num_order > 2 or den_order > 2:
             return {'valid': False,
+                    'fType': "INVALID-ORDER",
                     'parameters': None}
 
         # Compute natural frequency (wo), quality factor (Q), and bandwidth
@@ -192,13 +192,13 @@ class FilterClassifier():
             case 0b101: # b2 * s^2 + b0
                 fType = "BS"
             case 0b111:
-                fType = "GE"
+                fType = "GE"    # GE or AP
             case 0b011:     # This situation is not accounted for in N_XY(s) scenarios
-                fType = "Invalid011"
+                fType = "INVALID-NUMER"
             case 0b110:     # This situation is not accounted for in N_XY(s) scenarios
-                fType = "Invalid110"
+                fType = "INVALID-NUMER"
             case _:         # catches other combos (i.e., 110, 011)
-                fType = None
+                fType = "INVALID-NUMER"
 
 
         # Compute zero's natural frequency (wz) if applicable
@@ -217,10 +217,13 @@ class FilterClassifier():
         # # compare wz to wo
         if (fType in ["BS", "GE"]) and (wz != wo):
             valid = False
-            fType = fType + "_invalid"
+            fType = "INVALID-WZ"
 
         # Additional parameter (Qz) for Generalized Equalizer (GE) filters
         Qz = simplify((b2 / b1) * wo) if b1 != 0 else None
+
+        if (Qz) and (Qz == -Q):
+            fType = "AP"
 
         # Return computed parameters
         return {
@@ -233,6 +236,7 @@ class FilterClassifier():
                 "K_LP": K_LP,
                 "K_HP": K_HP,
                 "K_BP": K_BP,
-                "Qz": Qz
+                "Qz": Qz,
+                "Wz": wz
             }
         }
