@@ -1,7 +1,9 @@
-# Notebooks/Outputs/
+Notebooks/Outputs/
 *.aux
 *.log
 *.fls
 *.gz
 *.fdb_latexmk
 *.toc
+.vscode
+*/__pycache__

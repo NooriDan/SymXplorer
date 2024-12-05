@@ -7,9 +7,11 @@ class FilterClassification:
         zCombo: List[sympy.Basic],
         transferFunc: sympy.Basic,  # SymPy expression
         valid: bool = False,
-        fType: Optional[str] = None,
-        parameters: Optional[dict] = None
+        fType: Optional[str] = "None",
+        parameters: Optional[dict] = None,
+        filterOrder: Optional[str] = "None"
     ):
+        self.filterOrder = filterOrder
         self.zCombo = zCombo
         self.transferFunc = transferFunc
         self.valid = valid
@@ -19,7 +21,7 @@ class FilterClassification:
     def __eq__(self, other) -> bool:
         if not isinstance(other, FilterClassification):
             return NotImplemented
-        return self.fType == other.fType
+        return (self.fType == other.fType) and (self.filterOrder == other.filterOrder)
 
     def __repr__(self) -> str:
         return (
@@ -28,7 +30,7 @@ class FilterClassification:
             f"valid={self.valid}, fType={self.fType}, parameters={self.parameters})"
         )
 
-    
+
 class FilterClassifier():
     """Implementation of algorithm 2"""
     def __init__(self, transferFunctionList: List = [], impedanceBatch: List = [], fTypes: List[str] = ["HP", "BP", "LP", "BS", "GE", "AP"]):
@@ -40,6 +42,13 @@ class FilterClassifier():
         self.classifications: List[FilterClassification] = []
         self.clusteredByType:  Dict[str, List[FilterClassification]]= {}
         self.countByType:      Dict[str, int] = {}
+
+        # Constants
+        self.possibleFilterOrders ={
+            "BiQuad"        : self._getBiQuadParameters,
+            "FirstOrder"    : self._getFirstOrderParameters,
+            "ThirdOrder"    : self._getThirdOrderParameters
+        }
         
     def hasTFs(self):
         return len(self.transferFunctionsList) > 0
@@ -76,31 +85,6 @@ class FilterClassifier():
         for _type in types:
             self._fTypes.append(_type)
 
-    def classifyBiQuadFilters(self):
-        self.classifications = []
-        # Wrap the zip iterator with tqdm for progress tracking
-        for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
-                                        total=self.countTF(),
-                                        desc="Computing filter parameters",
-                                        unit="filter"):
-            results = self._getBiQuadParameters(tf)
-            if results['valid']:
-                self.classifications.append(FilterClassification(
-                    zCombo       = impedanceCombo,
-                    transferFunc = tf,
-                    valid= True,
-                    fType        = results["fType"],
-                    parameters   = results["parameters"]
-                ))
-            else:
-                self.classifications.append(FilterClassification(
-                    zCombo= impedanceCombo,
-                    transferFunc= tf,
-                    valid= False,
-                    fType= results["fType"],
-                    parameters= results["parameters"]
-                ))
-
     def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER"]):
         if not self.isClassified():
             print("===============")
@@ -124,6 +108,32 @@ class FilterClassifier():
             print(f"{filterType} : {len(output)}")
 
         return output, count
+
+    def classifyBiQuadFilters(self):
+        self.classifications = []
+        # Wrap the zip iterator with tqdm for progress tracking
+        for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
+                                        total=self.countTF(),
+                                        desc="Computing filter parameters",
+                                        unit="filter"):
+
+            results = self._getBiQuadParameters(tf)
+            if results['valid']:
+                self.classifications.append(FilterClassification(
+                    zCombo       = impedanceCombo,
+                    transferFunc = tf,
+                    valid= True,
+                    fType        = results["fType"],
+                    parameters   = results["parameters"]
+                ))
+            else:
+                self.classifications.append(FilterClassification(
+                    zCombo= impedanceCombo,
+                    transferFunc= tf,
+                    valid= False,
+                    fType= results["fType"],
+                    parameters= results["parameters"]
+                ))
     
 
     def _getBiQuadParameters(self, tf):
@@ -139,7 +149,7 @@ class FilterClassifier():
         """
         # Define symbolic variable
         s = symbols('s')
-
+        
         # Extract numerator and denominator
         denominator = denom(tf).expand()  # Denominator of tf
         numerator = numer(tf).expand()    # Numerator of tf
@@ -240,3 +250,54 @@ class FilterClassifier():
                 "Wz": wz
             }
         }
+
+    def _getFirstOrderParameters(self, tf):
+        print(" === inside FIRST ORDER Parameter Computation === ")
+        pass
+
+    def _getThirdOrderParameters(self, tf):
+        print(" === inside THIRD ORDER Parameter Computation === ")
+
+        pass
+
+    def classifyFilter(self, filterOrder):
+        self.classifications = []
+        # Wrap the zip iterator with tqdm for progress tracking
+        for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
+                                        total=self.countTF(),
+                                        desc="Computing filter parameters",
+                                        unit="filter"):
+
+            results = self.possibleFilterOrders[filterOrder](tf)
+
+            if results['valid']:
+                self.classifications.append(FilterClassification(
+                    zCombo       = impedanceCombo,
+                    transferFunc = tf,
+                    valid= True,
+                    fType        = results["fType"],
+                    parameters   = results["parameters"]
+                ))
+            
+            else:
+                self.classifications.append(FilterClassification(
+                    zCombo= impedanceCombo,
+                    transferFunc= tf,
+                    valid= False,
+                    fType= results["fType"],
+                    parameters= results["parameters"]
+                ))
+
+
+
+class FirstOrderParameters():
+    def __init__(self, filterOrder):
+        pass
+
+class BiQuadParameters():
+    def __init__(self, filterOrder):
+        pass
+
+class ThirdOrderParameters():
+    def __init__(self, filterOrder):
+        pass

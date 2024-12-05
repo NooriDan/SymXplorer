@@ -25,11 +25,13 @@ class ExperimentResult:
 
 class SymbolixExperimentCG:
     """Main class putting everything together"""
-    def __init__(self, baseHs: BaseTransferFunction):
+    def __init__(self, _experimentName: str, baseHs: BaseTransferFunction):
          
+         self.experimentName = _experimentName
          self.baseHsObject: BaseTransferFunction = baseHs
+
          self.classifier: FilterClassifier = FilterClassifier()
-         self.fileSave: FileSave = FileSave()
+         self.fileSave: FileSave = FileSave(outputDirectory=f"Runs/{self.experimentName}")
          
          # to be computed
          self.baseHsDict: Dict[str, sympy.Basic]= {}
@@ -97,7 +99,6 @@ class SymbolixExperimentCG:
             "Z4_Z5_ZL"    : product([inf], [inf], [inf], Zz4, Zz5, ZzL),
         }
     
-    
     def computeTransferFunction(self, baseHs, zCombo):
         Z1, Z2, Z3, Z4, Z5, ZL = zCombo
         sub_dict = {
@@ -111,11 +112,13 @@ class SymbolixExperimentCG:
 
         Hs = baseHs.subs(sub_dict)  # Substitute the impedance values into the base function
         Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression
+        Hs = sympy.together(Hs)
         return Hs
-    
     
     def computeTFs(self, comboKey="all", clearRecord=True):
         # Clear previous records if necessary
+
+        print(f"combo key = {comboKey}")
         if clearRecord:
             self.classifier.clearFilter()
             self.numOfComputes = 0
@@ -171,27 +174,8 @@ class SymbolixExperimentCG:
     def compilePDF(self):
         self.fileSave.compile()
 
-    # Saving the object
-    def export(self, file: str) -> None:
-        """Exports the current object to a file using pickle."""
-        try:
-            with open(file, 'wb') as f:
-                pickle.dump(self, f)
-            print(f"Object exported to {file}")
-        except (IOError, pickle.PickleError) as e:
-            print(f"Failed to export object to {file}: {e}")
-
-    @staticmethod
-    def import_from(file: str) -> 'SymbolixExperimentCG':
-        """Imports an object from a file."""
-        try:
-            with open(file, 'rb') as f:
-                obj = pickle.load(f)
-            print(f"Object imported from {file}")
-            return obj
-        except (IOError, pickle.PickleError) as e:
-            print(f"Failed to import object from {file}: {e}")
-            return None
+    def export(self, filename):
+        self.fileSave.export(self, filename)
         
 
     # ---------- OLD CODE ----------

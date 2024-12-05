@@ -18,7 +18,7 @@ L1, L2, L3, L4, L5, LL          = symbols('L1 L2 L3 L4 L5 L_L')
 Z1 , Z2 , Z3 , Z4 , Z5 , ZL, Zs = symbols('Z1 Z2 Z3 Z4 Z5 Z_L Z_s')
 
 # Get symbolic variables (CG)
-Iip, Iin, I1a, I1b, I2a, I2b = symbols('Iip Iin I1a I1b I2a I2b')
+Iip, Iin, I1a, I1b, I2a, I2b                       = symbols('Iip Iin I1a I1b I2a I2b')
 Vin, V2a, V2b, V1a, V1b, Va, Vb, Von, Vop, Vip, Vx = symbols('Vin V2a V2b V1a V1b Va Vb Von Vop Vip Vx')
 
 inf = sympy.oo # infinity symbol in SymPy
@@ -107,4 +107,10 @@ transmissionMatrix ={
     "full_parasitic"  : Matrix([[(1/ro + s*Cgd)/(s*Cgd - gm), 1/(s*Cgd - gm)],[(Cgd*Cgs*ro*s + Cgd*gm*ro + Cgs + Cgd)*s/(s*Cgd - gm), (Cgs+Cgd)*s/(s*Cgd - gm)]])
 }
 
+# class TransmissionMatrix:
+#     def __init__(self):
+#         self.a11
+#         self.a12 
+#         self.a21 
+#         self.a22
 

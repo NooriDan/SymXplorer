@@ -1,24 +1,29 @@
 from Global import *
+import Global as GlobalVariables
+from sympy import Matrix
+from typing import Dict
 
 class BaseTransferFunction:
     """Implementation of algorithm 1 -> finds the base transfer function"""
-    def __init__(self, _output = [Vop, Von], _input= [Vip, Vin],
-                  transmissionMatrixType="symbolic", T_analysis=transmissionMatrix):
+    def __init__(self, _output: List[sympy.Basic] = [Vop, Von], _input: List[sympy.Basic] = [Vip, Vin],
+                  transmissionMatrixType="symbolic", T_analysis=GlobalVariables.transmissionMatrix):
         
-        self.T_type = transmissionMatrixType
-        self.T_analysis = T_analysis
+        self.T_type: str                    = transmissionMatrixType
+        self.T_analysis: Dict[str, Matrix]  = T_analysis
 
         self.solveFor = [
                   Vin, V2a, V2b, V1a, V1b, Va, Vb, Von, Vop, Vip, Vx,
                   Iip, Iin, I1a, I1b, I2a, I2b
             ]
-        self.output = _output
-        self.input  = _input
+        self.output: List[sympy.Basic] = _output
+        self.input:  List[sympy.Basic] = _input
 
         # variables to be computed for
-        self.baseHs = None
-        self.T_a    = None
-        self.T_b    = None
+        self.baseHs:         sympy.Basic = None
+        self.baseSymbolicHs: sympy.Basic = self.solveSymbolic()
+
+        self.T_a: Matrix = None
+        self.T_b: Matrix = None
 
     # Custom string representation for BaseTransferFunction
     def __repr__(self):
@@ -27,6 +32,7 @@ class BaseTransferFunction:
     def isSolved(self):
         return self.baseHs is not None
     
+
     def setT_type(self, transmissionMatrixType):
         self.T_type = transmissionMatrixType
     
@@ -36,10 +42,8 @@ class BaseTransferFunction:
 
         return self.T_a, self.T_b
     
-    def _setEquations(self):
-      # Get symbolic variables (CG)
-      T_a, T_b = self._getTransmissionMatrix()
-
+    def _setEquations(self, T_a, T_b):
+      """Assumes the variabels in the equation are defined in Global.py"""
       # Define nodal equations (Eq. 4a-4h) -> list[ Eq(left-hand-side, right-hand-side), ... ]
       equations = [
             # 4a
@@ -69,25 +73,41 @@ class BaseTransferFunction:
       return equations
     
     # Get transfer function (TF)
-    def solve(self):
+    def solveSymbolic(self):
         print(f"====CommonGate====")
         oPos, oNeg = self.output
         iPos, iNeg = self.input
         # Define nodal equations
-        equations = self._setEquations()
+        equations = self._setEquations(GlobalVariables.transmissionMatrix["symbolic"], GlobalVariables.transmissionMatrix["symbolic"])
         print("(1) set up the nodal equation")
 
         # Solve for generic transfer function
         solution = solve(equations, self.solveFor)
-        print("(2) solved the base transfer function")
+        print("(2) solved the base transfer function (symbolic [T])")
 
         if solution:
             print("FOUND THE BASE TF")
-            baseHs = (solution[oPos] - solution[oNeg]) / (solution[iPos] - solution[iNeg])
+            baseHs: sympy.Basic = (solution[oPos] - solution[oNeg]) / (solution[iPos] - solution[iNeg])
             baseHs = simplify((baseHs.factor()))
             self.baseHs = baseHs
             self.isSolved = True
             return baseHs
 
         return None
+    
+    def solve(self):
+        print(f"*** --- Solving for T type: {self.T_type} --- ***")
+
+        sub_dict = {
+            symbols("a11"): self.T_analysis[self.T_type][0, 0],
+            symbols("a12"): self.T_analysis[self.T_type][0, 1],
+            symbols("a21"): self.T_analysis[self.T_type][1, 0],
+            symbols("a22"): self.T_analysis[self.T_type][1, 1],
+        }
+
+        Hs = self.baseSymbolicHs.subs(sub_dict)  # Substitute the impedance values into the base function
+        Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression
+        self.baseHs = Hs
+        return Hs
+
     
