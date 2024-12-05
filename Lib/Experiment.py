@@ -39,7 +39,7 @@ class SymbolixExperimentCG:
 
          self.transferFunctions: List[sympy.Basic] = []
          self.solvedCombos: List[int]= []
-         self.numOfComputes: int   = 0
+         self.numOfComputes: int = 0
 
     def isBaseSolved(self):
         return self.baseTF.isSolved
@@ -100,14 +100,14 @@ class SymbolixExperimentCG:
         }
     
     def computeTransferFunction(self, baseHs, zCombo):
-        Z1, Z2, Z3, Z4, Z5, ZL = zCombo
+        _Z1, _Z2, _Z3, _Z4, _Z5, _ZL = zCombo
         sub_dict = {
-            symbols("Z1"): Z1,
-            symbols("Z2"): Z2,
-            symbols("Z3"): Z3,
-            symbols("Z4"): Z4,
-            symbols("Z5"): Z5,
-            symbols("Z_L"): ZL
+            symbols("Z1"): _Z1,
+            symbols("Z2"): _Z2,
+            symbols("Z3"): _Z3,
+            symbols("Z4"): _Z4,
+            symbols("Z5"): _Z5,
+            symbols("Z_L"): _ZL
         }
 
         Hs = baseHs.subs(sub_dict)  # Substitute the impedance values into the base function
@@ -119,9 +119,9 @@ class SymbolixExperimentCG:
         # Clear previous records if necessary
 
         print(f"combo key = {comboKey}")
-        if clearRecord:
-            self.classifier.clearFilter()
-            self.numOfComputes = 0
+        self.classifier.transferFunctionsList = []
+        self.classifier.impedanceList = []
+        # self.classifier.clearFilter()
 
         # Ensure the comboKey is valid
         try:
@@ -178,7 +178,7 @@ class SymbolixExperimentCG:
         self.fileSave.export(self, filename)
         
 
-    # ---------- OLD CODE ----------
+    # # ---------- OLD CODE ----------
     # def computeTFs(self, comboKey = "all", clearRecord = True):
     #     solvedTFs = []
 

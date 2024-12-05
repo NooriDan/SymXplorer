@@ -77,6 +77,7 @@ class FilterClassifier():
         return True
 
     def clearFilter(self):
+        print("!!!! Clearning the filter !!!!")
         self.transferFunctionsList = []
         self.filterParameters = []
         self.classifications = []
@@ -111,6 +112,7 @@ class FilterClassifier():
 
     def classifyBiQuadFilters(self):
         self.classifications = []
+        
         # Wrap the zip iterator with tqdm for progress tracking
         for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
                                         total=self.countTF(),
