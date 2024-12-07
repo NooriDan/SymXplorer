@@ -1,0 +1,16 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{amsmath}  % For mathematical symbols
+\usepackage{amssymb}  % For additional math symbols
+\usepackage{array}    % For table formatting\begin{table}[h!]
+\centering
+\begin{document}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+Filter Order & Z Combo & Transfer Function & Valid & Filter Type & Parameters \\ \hline
+1st & s, s + 1 & $\frac{s}{s + 1}$ & Yes & Low-pass & {'cutoff': '1kHz'} \\ \hline
+2nd & s - 1, s + 2 & $\frac{s - 1}{s^{2} + 3 s + 2}$ & No & High-pass & None \\ \hline
+\end{tabular}
+\caption{Summary of Filter Classification}
+\label{tab:filter_classification}
+\end{table}
+\end{document}
