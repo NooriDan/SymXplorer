@@ -1,9 +1,36 @@
-from Global import *
+# from Global import *
+import sympy
+from sympy import latex
 from Filter import FilterClassification
-from typing import Dict
+from typing import Dict, List, Optional
 import subprocess
 import os
 import pickle
+
+# UTIL FUNCTIONS
+def simplify_array(array_of_impedances: List[sympy.Mul]) -> List[sympy.Mul]:
+    array =[]
+    for _impedance in array_of_impedances:
+        array.append(sympy.simplify(_impedance))
+    return array
+
+def seriesZ(list_of_impedances: List[sympy.Basic]) -> sympy.Mul:
+    
+    equivalentZ = list_of_impedances[0]
+    for impedance in list_of_impedances[1:]:
+        equivalentZ += impedance
+    
+    return sympy.simplify(equivalentZ)
+
+def parallelZ(list_of_impedances: List[sympy.Basic]) -> sympy.Mul:
+    
+    equivalentG = 1/list_of_impedances[0]
+    for impedance in list_of_impedances[1:]:
+        equivalentG += 1/impedance
+    
+    return sympy.simplify(1/equivalentG)
+
+# UTIL CLASSES
 
 class FileSave:
     """
@@ -254,3 +281,119 @@ class FileSave:
             latex_file.write(self.footer)
         print(f"LaTeX report saved to: {output_filename}")
         self.texFiles.append(output_filename)
+
+
+class Impedance:
+    def __init__(self, name: str):
+        self.name = str(name)
+        self.Z: sympy.Basic = sympy.Symbol(f"Z_{name}")
+
+        s = sympy.symbols("s")
+        self.Z_R: sympy.Basic = sympy.symbols(f"R_{name}")
+        self.Z_L: sympy.Basic = s * sympy.symbols(f"L_{name}")
+        self.Z_C: sympy.Basic = 1 / (s * sympy.symbols(f"C_{name}"))
+
+        self.zDictionary: Dict[str, sympy.Basic] = {
+            "R" : self.Z_R,
+            "L" : self.Z_L,
+            "C" : self.Z_C
+        }
+
+        self.conectionSymbols: Dict[str, function] = {
+            "|" : self.parallel,
+            "+" : self.series
+        }
+
+        self.allowedConnections: List[sympy.Basic] = []
+
+    def simplify(self):
+        for i, _impedance in enumerate(self.allowedConnections):
+            self.allowedConnections[i] = sympy.simplify(_impedance)
+    
+    def series(self, list_of_impedances: List[sympy.Basic]):
+        
+        equivalentZ = list_of_impedances[0]
+        for impedance in list_of_impedances[1:]:
+            equivalentZ += impedance
+        
+        return sympy.simplify(equivalentZ)
+    
+    def parallel(self,list_of_impedances: List[sympy.Basic]):
+        
+        equivalentG = 1/list_of_impedances[0]
+        for impedance in list_of_impedances[1:]:
+            equivalentG += 1/impedance
+        
+        return sympy.simplify(1/equivalentG)
+    
+    # def setAllowedImpedanceConnections(self, allowedConneections_texts: List[str]):
+
+    #     # TODO: reads from allowedConneections_texts and converts every string representation of the impedance connections to its symbolic expression
+    #     # Example: R + (L + C) -> self.series(self.Z_R, self.parallel([self.Z_L, self.Z_C]))
+    #     pass 
+
+    def setAllowedImpedanceConnections(self, allowedConnections_texts: List[str]):
+        """
+        Reads from allowedConnections_texts and converts each string representation
+        of the impedance connections to its symbolic expression.
+        """
+        for conn_text in allowedConnections_texts:
+            parsed = self.parse_expression(conn_text)
+            self.allowedConnections.append(parsed)
+
+    def parse_expression(self, expression: str):
+        """
+        Parse a string expression to build the symbolic impedance representation.
+        """
+        print(f"Original Expression: {expression}")
+
+        # Replace component symbols with their symbolic equivalents
+        for key, value in self.zDictionary.items():
+            expression = expression.replace(key, f"self.zDictionary['{key}']")
+        print(f"After Replacing Symbols: {expression}")
+
+        # Handle nested parentheses
+        while "(" in expression:
+            start = expression.rfind("(")
+            end = expression.find(")", start)
+            if end == -1:
+                raise ValueError("Unmatched parentheses in expression.")
+            inner = expression[start + 1:end]
+            inner_parsed = self._replace_operators(inner)
+            expression = expression[:start] + inner_parsed + expression[end + 1:]
+            print(f"After Parsing Parentheses: {expression}")
+
+        # Final replacement for top-level operators
+        expression = self._replace_operators(expression)
+        print(f"Final Parsed Expression: {expression}")
+
+        # Safely evaluate the expression
+        try:
+            result = eval(expression)
+        except Exception as e:
+            raise ValueError(f"Failed to parse expression: {expression}. Error: {e}")
+
+        return result
+
+    def _replace_operators(self, expression: str):
+        """
+        Replace connection operators in the expression:
+        - "|" -> "self.parallel([...])"
+        - "+" -> "self.series([...])"
+        """
+        if "+" in expression:
+            terms = expression.split("+")
+            replaced = ", ".join(terms)
+            return f"self.series([{replaced}])"  # Corrected with parentheses
+
+        if "|" in expression:
+            terms = expression.split("|")
+            replaced = ", ".join(terms)
+            return f"self.parallel([{replaced}])"  # Corrected with parentheses
+
+        # If no operators are found, return the expression as is
+        return expression
+
+
+
+
