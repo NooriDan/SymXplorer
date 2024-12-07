@@ -304,6 +304,8 @@ class Impedance:
             "+" : self.series
         }
 
+        self.startOfFunctionToken: str  = "*START*"
+        self.endOfFunctionToken:   str  = "*END*"
         self.allowedConnections: List[sympy.Basic] = []
 
     def simplify(self):
@@ -326,12 +328,6 @@ class Impedance:
         
         return sympy.simplify(1/equivalentG)
     
-    # def setAllowedImpedanceConnections(self, allowedConneections_texts: List[str]):
-
-    #     # TODO: reads from allowedConneections_texts and converts every string representation of the impedance connections to its symbolic expression
-    #     # Example: R + (L + C) -> self.series(self.Z_R, self.parallel([self.Z_L, self.Z_C]))
-    #     pass 
-
     def setAllowedImpedanceConnections(self, allowedConnections_texts: List[str]):
         """
         Reads from allowedConnections_texts and converts each string representation
@@ -350,7 +346,7 @@ class Impedance:
         # Replace component symbols with their symbolic equivalents
         for key, value in self.zDictionary.items():
             expression = expression.replace(key, f"self.zDictionary['{key}']")
-        print(f"After Replacing Symbols: {expression}")
+        print(f"1 - After Replacing Symbols: {expression}")
 
         # Handle nested parentheses
         while "(" in expression:
@@ -361,7 +357,7 @@ class Impedance:
             inner = expression[start + 1:end]
             inner_parsed = self._replace_operators(inner)
             expression = expression[:start] + inner_parsed + expression[end + 1:]
-            print(f"After Parsing Parentheses: {expression}")
+            print(f" 2 - After Parsing Parentheses: {expression}")
 
         # Final replacement for top-level operators
         expression = self._replace_operators(expression)
@@ -369,7 +365,9 @@ class Impedance:
 
         # Safely evaluate the expression
         try:
-            result = eval(expression)
+            expression = expression.replace(self.startOfFunctionToken, "(")
+            expression = expression.replace(self.endOfFunctionToken, ")")
+            result = sympy.simplify(eval(expression))
         except Exception as e:
             raise ValueError(f"Failed to parse expression: {expression}. Error: {e}")
 
@@ -380,16 +378,17 @@ class Impedance:
         Replace connection operators in the expression:
         - "|" -> "self.parallel([...])"
         - "+" -> "self.series([...])"
+        & -> '('
         """
         if "+" in expression:
             terms = expression.split("+")
             replaced = ", ".join(terms)
-            return f"self.series([{replaced}])"  # Corrected with parentheses
+            return f"self.series{self.startOfFunctionToken} [{replaced}] {self.endOfFunctionToken}"  # Corrected with parentheses
 
         if "|" in expression:
             terms = expression.split("|")
             replaced = ", ".join(terms)
-            return f"self.parallel([{replaced}])"  # Corrected with parentheses
+            return f"self.parallel {self.startOfFunctionToken} [{replaced}] {self.endOfFunctionToken}"  # Corrected with parentheses
 
         # If no operators are found, return the expression as is
         return expression
