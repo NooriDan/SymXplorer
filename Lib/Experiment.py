@@ -6,16 +6,18 @@ from typing import Dict
 import sympy
 import pickle
 
-class ExperimentResult:
+class ExperimentResult():
     def __init__(self, baseHs: sympy.Basic, classifications: List[FilterClassification]):
         self.baseHs = baseHs
         self.classifications = classifications 
-
+        self.fileSave = FileSave()
+        
     def at(self, idx):
         if idx < len(self.classifications) and idx > -1:
             return self.classifications[idx]
         else:
             raise IndexError
+        
     def getType(self, fType):
         output = []
         for classification in self.classifications:
@@ -23,6 +25,11 @@ class ExperimentResult:
                 output.append(classification)
         return output
 
+    def compilePDF(self):
+        self.fileSave.compile()
+
+    def export(self, filename):
+        self.fileSave.export(self, filename)
 
 class SymbolixExperimentCG:
     """Main class putting everything together"""
