@@ -1,5 +1,5 @@
 from Global import *            # Global vairables (symbolic)
-from BaseTF import BaseTransferFunction
+from CircuitSetUp import CircuitSetUp
 from Experiment import SymbolixExperimentCG
 
 _output = [Vop, Von]
@@ -10,7 +10,7 @@ for T_type in T_types:
     experimentName = "TIA"
     experimentName += "_" + T_type
 
-    baseTF = BaseTransferFunction(_output, _input,
+    baseTF = CircuitSetUp(_output, _input,
                                 transmissionMatrixType=T_type)
     baseTF.solve()
 

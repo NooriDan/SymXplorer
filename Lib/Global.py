@@ -3,12 +3,18 @@ import sympy                        # for symbolic modelling
 from sympy import symbols, Matrix, Eq, simplify, solve, latex, denom, numer, sqrt, degree, init_printing, pprint, Poly
 from tqdm import tqdm               # to create progress bars
 from itertools import product       # for cartesian product
+from itertools import combinations
 from typing import List, Optional   # for type checking
+
 
 # Create the directory if it doesn't exist
 print(f"# of cores: {os.cpu_count()}\nOS Name: {sys.platform}\nWorking Directory: {os.getcwd()}") # is 96 for TPU v2-8
 init_printing()
 
+
+class ExperimentSetUP():
+    def __init__():
+        pass
 
 # Define symbolic variables
 s = symbols('s')
@@ -16,6 +22,8 @@ R1, R2, R3, R4, R5, RL, Rs      = symbols('R1 R2 R3 R4 R5 R_L R_s')
 C1, C2, C3, C4, C5, CL          = symbols('C1 C2 C3 C4 C5 C_L')
 L1, L2, L3, L4, L5, LL          = symbols('L1 L2 L3 L4 L5 L_L')
 Z1 , Z2 , Z3 , Z4 , Z5 , ZL, Zs = symbols('Z1 Z2 Z3 Z4 Z5 Z_L Z_s')
+
+impedancesToDisconnect = [Z1 , Z2 , Z3 , Z4 , Z5, ZL] # for the CG case
 
 # Get symbolic variables (CG)
 Iip, Iin, I1a, I1b, I2a, I2b                       = symbols('Iip Iin I1a I1b I2a I2b')
@@ -95,6 +103,8 @@ ZzL = [ RL,                                            # R
         RL*(s*LL + 1/(s*CL))/(RL + (s*LL + 1/(s*CL)))  # R || (L + C)
     ]
 
+Z_array = [Zz1, Zz2, Zz3, Zz4, Zz5, ZzL]
+
 
 # Transmission matrix coefficients
 gm, ro, Cgd, Cgs    = symbols('g_m r_o C_gd C_gs')
@@ -107,10 +117,31 @@ transmissionMatrix ={
     "full_parasitic"  : Matrix([[(1/ro + s*Cgd)/(s*Cgd - gm), 1/(s*Cgd - gm)],[(Cgd*Cgs*ro*s + Cgd*gm*ro + Cgs + Cgd)*s/(s*Cgd - gm), (Cgs+Cgd)*s/(s*Cgd - gm)]])
 }
 
-# class TransmissionMatrix:
-#     def __init__(self):
-#         self.a11
-#         self.a12 
-#         self.a21 
-#         self.a22
+T_a = transmissionMatrix['symbolic']
+T_b = transmissionMatrix['symbolic']
+
+nodalEquations = [
+            # 4a
+            Eq(0, (Iip + I1a + I2a + (0 - Vip)/Z1 + (Vop - Vip)/Z2 + (Von - Vip)/Z5)),
+            # 4b
+            Eq(0, (Iin + I1b + I2b + (0 - Vin)/Z1 + (Von - Vin)/Z2 + (Vop - Vin)/Z5)),
+            # 4c
+            Eq(I2a, ((Vip - Vop)/Z2 + (Vx - Vop)/Z3 + (Von - Vop)/Z4 + (Vin - Vop)/Z5 + (0 - Vop)/ZL)),
+            # 4d
+            Eq(I2b, ((Vin - Von)/Z2 + (Vx - Von)/Z3 + (Vop - Von)/Z4 + (Vip - Von)/Z5 + (0 - Von)/ZL )),
+            # unranked equation in the paper (between 4d and 4e)
+            Eq(I1a, ((Vop - Vx)/Z3 + (Von - Vx)/Z3 - I1b)),
+            # 4e
+            Eq(Vop, Vip + V2a),
+            Eq(Von, Vin + V2b),
+            # 4f
+            Eq(Vip, Vx - V1a),
+            Eq(Vin, Vx - V1b),
+            # 3g
+            Eq(V1a, T_a[0,0]*V2a - T_a[0,1]*I2a),
+            Eq(V1b, T_b[0,0]*V2b - T_b[0,1]*I2b),
+            # 3h
+            Eq(I1a, T_a[1,0]*V2a + T_a[1,1]*I2a),
+            Eq(I1b, T_b[1,0]*V2b + T_b[1,1]*I2b)
+      ]
 

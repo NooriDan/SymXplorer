@@ -1,10 +1,11 @@
 from Global import *
-from BaseTF import BaseTransferFunction
+from CircuitSetUp import CircuitSetUp
 from Filter import FilterClassification, FilterClassifier
 from Utils  import FileSave
 from typing import Dict
 import sympy
 import pickle
+from itertools import product, combinations
 
 class ExperimentResult():
     def __init__(self, baseHs: sympy.Basic, classifications: List[FilterClassification]):
@@ -33,79 +34,43 @@ class ExperimentResult():
 
 class SymbolixExperimentCG:
     """Main class putting everything together"""
-    def __init__(self, _experimentName: str, baseHs: BaseTransferFunction):
+    def __init__(self, _experimentName: str, circuit: CircuitSetUp, zz=[Zz1, Zz2, Zz3, Zz4, Zz5, ZzL]):
          
          self.experimentName = _experimentName
-         self.baseHsObject: BaseTransferFunction = baseHs
+         self.circuit: CircuitSetUp = circuit
+         self.ZZ: List[List[sympy.Basic]] = zz
 
          self.classifier: FilterClassifier = FilterClassifier()
          self.fileSave: FileSave = FileSave(outputDirectory=f"Runs/{self.experimentName}")
          
          # to be computed
-         self.baseHsDict: Dict[str, sympy.Basic]= {}
-         self.setPossibleBase()
+        #  self.baseHsDict: Dict[str, sympy.Basic]= {}
+        #  self.setPossibleBase()
 
          self.transferFunctions: List[sympy.Basic] = []
          self.solvedCombos: List[int]= []
          self.numOfComputes: int = 0
 
-    def isBaseSolved(self):
-        return self.baseTF.isSolved
+    def isCircuitSolved(self):
+        return self.circuit.isSolved()
     
     def getComboKeys(self):
-        return self.getPossibleBase().keys()
-    
-    def getPossibleBase(self):
-        return self.baseHsDict
-        
-    def applyLimitsToBase(self, variables_to_limit: List[sympy.Symbol], limitingValue: sympy.Basic = sympy.oo):
-        """Applies sympy.limit to a set of variables."""
-        baseHs = self.baseHsObject.baseHs  # Local variable, doesn't modify self.baseHs
-        for var in variables_to_limit:
-            baseHs = sympy.limit(baseHs, var, limitingValue)
-        return baseHs
-
-    def setPossibleBase(self):
-        baseHs = self.baseHsObject.baseHs
-        self.baseHsDict =  {
-            "all"       : baseHs,
-            "Z1_ZL"     : self.applyLimitsToBase([Z2, Z3, Z4, Z5]),
-            "Z2_ZL"     : self.applyLimitsToBase([Z1, Z3, Z4, Z5]),
-            "Z3_ZL"     : self.applyLimitsToBase([Z1, Z2, Z4, Z5]),
-            "Z4_ZL"     : self.applyLimitsToBase([Z1, Z2, Z3, Z5]),
-            "Z5_ZL"     : self.applyLimitsToBase([Z1, Z2, Z3, Z4]),
-            "Z1_Z2_ZL"  : self.applyLimitsToBase([Z3, Z4, Z5]),
-            "Z1_Z3_ZL"  : self.applyLimitsToBase([Z2, Z4, Z5]),
-            "Z1_Z4_ZL"  : self.applyLimitsToBase([Z2, Z3, Z5]),
-            "Z1_Z5_ZL"  : self.applyLimitsToBase([Z2, Z3, Z4]),
-            "Z2_Z3_ZL"  : self.applyLimitsToBase([Z1, Z4, Z5]),
-            "Z2_Z4_ZL"  : self.applyLimitsToBase([Z1, Z3, Z5]),
-            "Z2_Z5_ZL"  : self.applyLimitsToBase([Z1, Z3, Z4]),
-            "Z3_Z4_ZL"  : self.applyLimitsToBase([Z1, Z2, Z5]),
-            "Z3_Z5_ZL"  : self.applyLimitsToBase([Z1, Z2, Z4]),
-            "Z4_Z5_ZL"  : self.applyLimitsToBase([Z1, Z2, Z3]),
-        }
+        return self.circuit.baseHsDict.keys()
     
     def getZcombos(self):
-        """Assumes Zzi and inf are defined in Global.py"""
-        return {
-            "all"         : product(Zz1, Zz2, Zz3, Zz4, Zz5, ZzL),          # all (Zi, ZL) combo
-            "Z1_ZL"       : product(Zz1, [inf], [inf], [inf], [inf], ZzL),
-            "Z2_ZL"       : product([inf], Zz2, [inf], [inf], [inf], ZzL),
-            "Z3_ZL"       : product([inf], [inf], Zz3, [inf], [inf], ZzL),
-            "Z4_ZL"       : product([inf], [inf], [inf], Zz4, [inf], ZzL),
-            "Z5_ZL"       : product([inf], [inf], [inf], [inf], Zz5, ZzL),
-            "Z1_Z2_ZL"    : product(Zz1, Zz2, [inf], [inf], [inf], ZzL),
-            "Z1_Z3_ZL"    : product(Zz1, [inf], Zz3, [inf], [inf], ZzL),
-            "Z1_Z4_ZL"    : product(Zz1, [inf], [inf], Zz4, [inf], ZzL),
-            "Z1_Z5_ZL"    : product(Zz1, [inf], [inf], [inf], Zz5, ZzL),
-            "Z2_Z3_ZL"    : product([inf], Zz2, Zz3, [inf], [inf], ZzL),
-            "Z2_Z4_ZL"    : product([inf], Zz2, [inf], Zz4, [inf], ZzL),
-            "Z2_Z5_ZL"    : product([inf], Zz2, [inf], [inf], Zz5, ZzL),
-            "Z3_Z4_ZL"    : product([inf], [inf], Zz3, Zz4, [inf], ZzL),
-            "Z3_Z5_ZL"    : product([inf], [inf], Zz3, [inf], Zz5, ZzL),
-            "Z4_Z5_ZL"    : product([inf], [inf], [inf], Zz4, Zz5, ZzL),
-        }
+        results = {}
+        for combos in self.circuit.impedanceConnections:
+            for key, array in combos.items():
+                myList = []
+                for i, zi in enumerate(self.circuit.impedancesToDisconnect + self.circuit.alwaysConnectedImpedances):
+                    if zi in array:
+                        myList.append(self.ZZ[i])
+                    else:
+                        myList.append([inf])
+
+                results[key] = (product(*myList))
+        
+        return results
     
     def computeTransferFunction(self, baseHs, zCombo):
         _Z1, _Z2, _Z3, _Z4, _Z5, _ZL = zCombo
@@ -138,7 +103,7 @@ class SymbolixExperimentCG:
             raise ValueError(f"Invalid comboKey '{comboKey}' provided.")
 
         # Prepare the base transfer function
-        baseHs = self.baseHsDict.get(comboKey)
+        baseHs = self.circuit.baseHsDict.get(comboKey)
         if baseHs is None:
             raise ValueError(f"BaseHs for the comboKey '{comboKey}' is not found.")
 
@@ -169,8 +134,8 @@ class SymbolixExperimentCG:
     
     def reportSummary(self, experimentName, Z_arr):
         if(self.classifier.clusteredByType):
-            if(self.baseHsDict.get(Z_arr)):
-                self.fileSave.generateLaTeXSummary(self.baseHsDict[Z_arr], 
+            if(self.circuit.baseHsDict.get(Z_arr)):
+                self.fileSave.generateLaTeXSummary(self.circuit.baseHsDict[Z_arr], 
                                                     self.classifier.clusteredByType,
                                                     output_filename= f"{experimentName}_{Z_arr}_summary",
                                                     subFolder=f"{experimentName}_{Z_arr}")
@@ -223,3 +188,54 @@ class SymbolixExperimentCG:
     #     print("Number of transfer functions found: {}".format(len(solvedTFs)))
 
     #     return solvedTFs, impedanceBatch
+
+
+    # def applyLimitsToBase(self, variables_to_limit: List[sympy.Symbol], limitingValue: sympy.Basic = sympy.oo):
+    # """Applies sympy.limit to a set of variables."""
+    # baseHs = self.circuit.baseHs  # Local variable, doesn't modify self.baseHs
+    # for var in variables_to_limit:
+    #     baseHs = sympy.limit(baseHs, var, limitingValue)
+    # return baseHs
+
+    # def setPossibleBase(self):
+    #     baseHs = self.circuit.baseHs
+    #     self.baseHsDict =  {
+    #         "all"       : baseHs,
+    #         "Z1_ZL"     : self.applyLimitsToBase([Z2, Z3, Z4, Z5]),
+    #         "Z2_ZL"     : self.applyLimitsToBase([Z1, Z3, Z4, Z5]),
+    #         "Z3_ZL"     : self.applyLimitsToBase([Z1, Z2, Z4, Z5]),
+    #         "Z4_ZL"     : self.applyLimitsToBase([Z1, Z2, Z3, Z5]),
+    #         "Z5_ZL"     : self.applyLimitsToBase([Z1, Z2, Z3, Z4]),
+    #         "Z1_Z2_ZL"  : self.applyLimitsToBase([Z3, Z4, Z5]),
+    #         "Z1_Z3_ZL"  : self.applyLimitsToBase([Z2, Z4, Z5]),
+    #         "Z1_Z4_ZL"  : self.applyLimitsToBase([Z2, Z3, Z5]),
+    #         "Z1_Z5_ZL"  : self.applyLimitsToBase([Z2, Z3, Z4]),
+    #         "Z2_Z3_ZL"  : self.applyLimitsToBase([Z1, Z4, Z5]),
+    #         "Z2_Z4_ZL"  : self.applyLimitsToBase([Z1, Z3, Z5]),
+    #         "Z2_Z5_ZL"  : self.applyLimitsToBase([Z1, Z3, Z4]),
+    #         "Z3_Z4_ZL"  : self.applyLimitsToBase([Z1, Z2, Z5]),
+    #         "Z3_Z5_ZL"  : self.applyLimitsToBase([Z1, Z2, Z4]),
+    #         "Z4_Z5_ZL"  : self.applyLimitsToBase([Z1, Z2, Z3]),
+    #     }
+
+    # def getZcombos(self):
+    #     """Assumes Zzi and inf are defined in Global.py"""
+    #     return {
+    #         "all"         : product(Zz1, Zz2, Zz3, Zz4, Zz5, ZzL),          # all (Zi, ZL) combo
+    #         "Z1_ZL"       : product(Zz1, [inf], [inf], [inf], [inf], ZzL),
+    #         "Z2_ZL"       : product([inf], Zz2, [inf], [inf], [inf], ZzL),
+    #         "Z3_ZL"       : product([inf], [inf], Zz3, [inf], [inf], ZzL),
+    #         "Z4_ZL"       : product([inf], [inf], [inf], Zz4, [inf], ZzL),
+    #         "Z5_ZL"       : product([inf], [inf], [inf], [inf], Zz5, ZzL),
+    #         "Z1_Z2_ZL"    : product(Zz1, Zz2, [inf], [inf], [inf], ZzL),
+    #         "Z1_Z3_ZL"    : product(Zz1, [inf], Zz3, [inf], [inf], ZzL),
+    #         "Z1_Z4_ZL"    : product(Zz1, [inf], [inf], Zz4, [inf], ZzL),
+    #         "Z1_Z5_ZL"    : product(Zz1, [inf], [inf], [inf], Zz5, ZzL),
+    #         "Z2_Z3_ZL"    : product([inf], Zz2, Zz3, [inf], [inf], ZzL),
+    #         "Z2_Z4_ZL"    : product([inf], Zz2, [inf], Zz4, [inf], ZzL),
+    #         "Z2_Z5_ZL"    : product([inf], Zz2, [inf], [inf], Zz5, ZzL),
+    #         "Z3_Z4_ZL"    : product([inf], [inf], Zz3, Zz4, [inf], ZzL),
+    #         "Z3_Z5_ZL"    : product([inf], [inf], Zz3, [inf], Zz5, ZzL),
+    #         "Z4_Z5_ZL"    : product([inf], [inf], [inf], Zz4, Zz5, ZzL),
+    #     }
+    

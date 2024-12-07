@@ -1,6 +1,6 @@
 # Dummy __init__.py to create a python package
 from Experiment import SymbolixExperimentCG
-from BaseTF import BaseTransferFunction
+from Lib.CircuitSetUp import BaseTransferFunction
 from Global import *
 import Filter as Filter
 import Utils as Utils
