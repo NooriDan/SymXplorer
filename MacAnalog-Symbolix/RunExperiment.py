@@ -1,14 +1,15 @@
-from Global         import *                    # Global vairables
-from CircuitSolver  import CircuitSolver
+import Global       as GlobalVariables              # Global vairables
+from CircuitSolver  import CircuitSolver, Circuit
 from Experiment     import SymbolixExperimentCG
-import sympy
-from Utils import clear_terminal, print_specs
+from sympy          import symbols
+from Utils          import clear_terminal, print_specs
 
 clear_terminal()
 print_specs()
+
 # -------- Experiment hyper-parameters --------
-_output = [Vop, Von]
-_input  = [Iip, Iin]
+_output = [symbols("Vop"), symbols("Von")]
+_input  = [symbols("Iip"), symbols("Iin")]
 T_type  = "simple"              # options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
 experimentName = "TIA"          # Arbitrary name (affectes where the report is saved)
 experimentName += "_" + T_type  
@@ -16,17 +17,28 @@ experimentName += "_" + T_type
 minNumOfActiveImpedances = 1    
 maxNumOfActiveImpedances = 3
 
+# -------- Create a Circuit Object --------------
 
-# -------- Create a circuit Object --------------
+circuit = Circuit(nodalEquations  = GlobalVariables.nodalEquations,
+                  solveFor        = GlobalVariables.solveFor,
+                  impedanceBlocks = GlobalVariables.zz)
 
-circuit = CircuitSolver(_output, 
+print(f"=> Circuit can be solved?: {circuit.hasSolution()}")     
+
+
+# -------- Create a Solver Object --------------
+
+solver = CircuitSolver( circuit,
+                       _output, 
                        _input,
-                       transmissionMatrixType=T_type)
-circuit.solve()
+                       transmissionMatrixType=T_type,
+                       impedancesToDisconnect=GlobalVariables.impedancesToDisconnect)
+solver.solve()
+
 
 # -------- get the impedance combinations --------
 # circuit.impedanceConnections (List[Dict[str, List[sympy.Basic]]])
-impedanceKeys = circuit.impedanceConnections
+impedanceKeys = solver.impedanceConnections
 impedanceKeys = impedanceKeys[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances]
 
 
@@ -59,7 +71,7 @@ if (not overwrite):
         dictionarySize  = len(dictionary.keys())
         for j, key in enumerate(dictionary.keys(), 1):
             print(f"==> Running the {experimentName} Experiment for {key} (progress: {j}/{dictionarySize} combo size: {i}/{comboSize})\n")
-            experiment = SymbolixExperimentCG(experimentName, circuit)
+            experiment = SymbolixExperimentCG(experimentName, solver)
             experiment.computeTFs(comboKey=key)
             
             experiment.classifier.classifyBiQuadFilters()
@@ -70,7 +82,7 @@ if (not overwrite):
 else: 
     for i, key in enumerate(impedanceKeys, 1):
         print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
-        experiment = SymbolixExperimentCG(experimentName, circuit)
+        experiment = SymbolixExperimentCG(experimentName, solver)
         experiment.computeTFs(comboKey=key)
         
         experiment.classifier.classifyBiQuadFilters()

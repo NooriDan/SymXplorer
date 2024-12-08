@@ -11,11 +11,11 @@ import sympy
 
 class Circuit:
     def __init__(self, 
-                 nodalEquations: List[sympy.Equality],
-                 impedanceBlocks: List[sympy.Basic],
-                 solveFor: List[sympy.Basic]):
+                solveFor:   List[sympy.Basic],
+                nodalEquations:  List[sympy.Equality],
+                impedanceBlocks: List[Impedance]):
         self.nodalEquations = nodalEquations
-        self.impedanceBlocks = impedanceBlocks
+        self.impedances = impedanceBlocks
         self.solveFor = solveFor
 
     def hasSolution(self) -> bool:
@@ -28,7 +28,7 @@ class Circuit:
         for eq in self.nodalEquations:
             nonImpedanceSymbols.update(eq.free_symbols)
 
-        for _z in self.impedanceBlocks:
+        for _z in self.impedances:
             nonImpedanceSymbols.discard(_z)
 
         return len(self.solveFor) <= len(nonImpedanceSymbols)
@@ -37,22 +37,24 @@ class Circuit:
 class CircuitSolver:
     """Implementation of algorithm 1 -> finds the base transfer function"""
     def __init__(self, 
+                circuit:    Circuit,
                 _output:    List[sympy.Basic], 
                 _input:     List[sympy.Basic],
                 transmissionMatrixType: str,
-                solveFor:   List[sympy.Basic]    = GlobalVariables.solveFor,
-                equations:  List[sympy.Equality] = GlobalVariables.nodalEquations,
-                impedances: List[Impedance]      = GlobalVariables.zz,
                 impedancesToDisconnect:    List[Impedance] = GlobalVariables.impedancesToDisconnect,
-                alwaysConnectedImpedances: List[Impedance] = []
-):
+                alwaysConnectedImpedances: List[Impedance] = [],
+                transmissionMatrix: TransmissionMatrix = TransmissionMatrix() # Default T matrix (all symbolic)
+                ):
+        # Extract information from the Circuit object
+        self.equations:  List[sympy.Basic]  = circuit.nodalEquations
+        self.solveFor:   List[sympy.Basic]  = circuit.solveFor
+        self.impedances: List[Impedance]    = circuit.impedances
+        
+        # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
         self.input:      List[sympy.Basic]  = _input
         self.T_type:     str                = transmissionMatrixType
-        self.T_analysis: TransmissionMatrix = TransmissionMatrix()  # Default T matrix (all symbolic)
-        self.equations:  List[sympy.Basic]  = equations
-        self.solveFor:   List[sympy.Basic]  = solveFor
-        self.impedances: List[Impedance]    = impedances
+        self.T_analysis: TransmissionMatrix = transmissionMatrix  
         self.impedancesToDisconnect:    List[sympy.Basic] = impedancesToDisconnect
         self.alwaysConnectedImpedances: List[sympy.Basic] = alwaysConnectedImpedances
 
