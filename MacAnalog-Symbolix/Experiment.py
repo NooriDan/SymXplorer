@@ -1,14 +1,15 @@
-from tqdm import tqdm
 import sympy
-from sympy import symbols, simplify
-from sympy import oo as inf
-from itertools import product
-from typing import Dict, List
+from   tqdm      import tqdm
+from   sympy     import symbols, simplify
+from   sympy     import oo as inf
+from   itertools import product
+from   typing    import Dict, List
 
+# Custom imports
 import Global as GlobalVariables
-from CircuitSolver import CircuitSolver
-from Filter import FilterClassification, FilterClassifier
-from Utils  import FileSave, Impedance
+from   Circuit import CircuitSolver
+from   Filter  import FilterClassification, FilterClassifier
+from   Utils   import FileSave, Impedance
 
 class ExperimentResult():
     def __init__(self, baseHs: sympy.Basic, classifications: List[FilterClassification]):

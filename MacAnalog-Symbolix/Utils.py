@@ -1,13 +1,15 @@
-# from Global import *
 import sympy
-from sympy import latex, symbols, Matrix
-from Filter import FilterClassification
-from typing import Dict, List
+from   sympy import latex, symbols, Matrix
+from   typing import Dict, List
 import subprocess
 import os, sys
 import platform
 import psutil
 import pickle
+# Custom Imports
+from Filter import FilterClassification
+# from Global import *
+
 
 
 # UTIL CLASSES

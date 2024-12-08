@@ -1,8 +1,9 @@
+from   sympy          import symbols
+# Custom Imports
+from   Utils          import clear_terminal, print_specs
 import Global       as GlobalVariables              # Global vairables
-from CircuitSolver  import CircuitSolver, Circuit
-from Experiment     import SymbolixExperimentCG
-from sympy          import symbols
-from Utils          import clear_terminal, print_specs
+from   Circuit  import CircuitSolver, Circuit
+from   Experiment     import SymbolixExperimentCG
 
 clear_terminal()
 print_specs()

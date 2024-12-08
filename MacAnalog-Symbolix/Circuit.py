@@ -1,13 +1,11 @@
-import Global as GlobalVariables
-from Utils import Impedance, TransmissionMatrix
-from sympy import solve, simplify, symbols
 import sympy
-from sympy import oo as inf
-from typing import Dict, List
 import itertools
-import PySpice
-from typing import List
-import sympy
+from   sympy  import solve, simplify, symbols
+from   sympy  import oo as inf
+from   typing import Dict, List
+# Custom Imports
+import Global as GlobalVariables
+from   Utils  import Impedance, TransmissionMatrix
 
 class Circuit:
     def __init__(self, 

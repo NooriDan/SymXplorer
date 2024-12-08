@@ -1,8 +1,9 @@
-# from Global import *
 import sympy
-from tqdm import tqdm
-from sympy import denom, numer, degree, symbols, simplify, sqrt
-from typing import Dict, List, Optional
+from   tqdm import tqdm
+from   sympy import denom, numer, degree, symbols, simplify, sqrt
+from   typing import Dict, List, Optional
+# Custom Imports
+# from Global import *
 
 class FilterClassification:
     def __init__(
