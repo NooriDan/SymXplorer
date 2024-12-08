@@ -5,8 +5,36 @@ import sympy
 from sympy import oo as inf
 from typing import Dict, List
 import itertools
+import PySpice
+from typing import List
+import sympy
 
-class CircuitSetUp:
+class Circuit:
+    def __init__(self, 
+                 nodalEquations: List[sympy.Equality],
+                 impedanceBlocks: List[sympy.Basic],
+                 solveFor: List[sympy.Basic]):
+        self.nodalEquations = nodalEquations
+        self.impedanceBlocks = impedanceBlocks
+        self.solveFor = solveFor
+
+    def hasSolution(self) -> bool:
+        """
+        Checks if the system of nodal equations can be solved using the 
+        provided solveFor array and accounts for the free symbols from 
+        both the solveFor variables and the impedanceBlocks.
+        """
+        nonImpedanceSymbols = set()
+        for eq in self.nodalEquations:
+            nonImpedanceSymbols.update(eq.free_symbols)
+
+        for _z in self.impedanceBlocks:
+            nonImpedanceSymbols.discard(_z)
+
+        return len(self.solveFor) <= len(nonImpedanceSymbols)
+
+
+class CircuitSolver:
     """Implementation of algorithm 1 -> finds the base transfer function"""
     def __init__(self, 
                 _output:    List[sympy.Basic], 

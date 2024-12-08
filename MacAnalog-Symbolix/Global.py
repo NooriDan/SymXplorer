@@ -3,9 +3,6 @@ from sympy import symbols, Eq, init_printing
 from typing import List, Dict, Optional   # for type checking
 from Utils import Impedance, TransmissionMatrix
 
-# Create the directory if it doesn't exist
-print(f"# of cores: {os.cpu_count()}\nOS Name: {sys.platform}\nWorking Directory: {os.getcwd()}") # is 96 for TPU v2-8
-init_printing()
 
 class ExperimentSetUP():
     def __init__():

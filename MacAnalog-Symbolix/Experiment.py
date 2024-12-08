@@ -6,7 +6,7 @@ from itertools import product
 from typing import Dict, List
 
 import Global as GlobalVariables
-from CircuitSetUp import CircuitSetUp
+from CircuitSolver import CircuitSolver
 from Filter import FilterClassification, FilterClassifier
 from Utils  import FileSave, Impedance
 
@@ -37,10 +37,10 @@ class ExperimentResult():
 
 class SymbolixExperimentCG:
     """Main class putting everything together"""
-    def __init__(self, _experimentName: str, circuit: CircuitSetUp, zz = GlobalVariables.zz):
+    def __init__(self, _experimentName: str, circuit: CircuitSolver, zz = GlobalVariables.zz):
          
          self.experimentName = _experimentName
-         self.circuit: CircuitSetUp = circuit
+         self.circuit: CircuitSolver = circuit
          self.ZZ: List[Impedance] = zz
 
          self.classifier: FilterClassifier = FilterClassifier()
@@ -74,11 +74,11 @@ class SymbolixExperimentCG:
     def computeTransferFunction(self, baseHs, zCombo):
         _Z1, _Z2, _Z3, _Z4, _Z5, _ZL = zCombo
         sub_dict = {
-            symbols("Z1"): _Z1,
-            symbols("Z2"): _Z2,
-            symbols("Z3"): _Z3,
-            symbols("Z4"): _Z4,
-            symbols("Z5"): _Z5,
+            symbols("Z_1"): _Z1,
+            symbols("Z_2"): _Z2,
+            symbols("Z_3"): _Z3,
+            symbols("Z_4"): _Z4,
+            symbols("Z_5"): _Z5,
             symbols("Z_L"): _ZL
         }
 

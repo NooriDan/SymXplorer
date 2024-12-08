@@ -1,8 +1,11 @@
 from Global         import *                    # Global vairables
-from CircuitSetUp   import CircuitSetUp
+from CircuitSolver  import CircuitSolver
 from Experiment     import SymbolixExperimentCG
 import sympy
+from Utils import clear_terminal, print_specs
 
+clear_terminal()
+print_specs()
 # -------- Experiment hyper-parameters --------
 _output = [Vop, Von]
 _input  = [Iip, Iin]
@@ -16,7 +19,7 @@ maxNumOfActiveImpedances = 3
 
 # -------- Create a circuit Object --------------
 
-circuit = CircuitSetUp(_output, 
+circuit = CircuitSolver(_output, 
                        _input,
                        transmissionMatrixType=T_type)
 circuit.solve()
@@ -29,24 +32,23 @@ impedanceKeys = impedanceKeys[(minNumOfActiveImpedances-1):maxNumOfActiveImpedan
 
 overwrite = True
 # Uncomment to enforce manual keys by adding to the list (set overwrite = True)
-impedanceKeys = ["Z1"] 
-impedanceKeys = [
-            "Z1_ZL",
-            "Z2_ZL",
-            "Z3_ZL",
-            "Z4_ZL",
-            "Z5_ZL",
-            "Z1_Z2_ZL",
-            "Z1_Z3_ZL",
-            "Z1_Z4_ZL",
-            "Z1_Z5_ZL",
-            "Z2_Z3_ZL",
-            "Z2_Z4_ZL",
-            "Z2_Z5_ZL",
-            "Z3_Z4_ZL",
-            "Z3_Z5_ZL",
-            "Z4_Z5_ZL"
-            ]
+impedanceKeys = ["Z1_ZL"] 
+# impedanceKeys = [
+#             "Z1_ZL",
+#             "Z2_ZL",
+#             "Z3_ZL",
+#             "Z4_ZL",
+#             "Z5_ZL",
+#             "Z1_Z2_ZL",
+#             "Z1_Z3_ZL",
+#             "Z1_Z4_ZL",
+#             "Z1_Z5_ZL",
+#             "Z2_Z3_ZL",
+#             "Z2_Z4_ZL",
+#             "Z2_Z5_ZL",
+#             "Z3_Z4_ZL",
+#             "Z3_Z5_ZL",
+#             "Z4_Z5_ZL"]
 
 # -------- Experiment Loop -----------------------
 

@@ -4,9 +4,11 @@ from sympy import latex, symbols, Matrix
 from Filter import FilterClassification
 from typing import Dict, List
 import subprocess
-import os
+import os, sys
 import platform
+import psutil
 import pickle
+
 
 # UTIL CLASSES
 class TransmissionMatrix:
@@ -406,6 +408,81 @@ def clear_terminal():
         os.system("cls")
     else:
         os.system("clear")
+import platform
+import psutil
+import os
+import subprocess
+
+def get_system_specs():
+    # Basic system details
+    specs = {
+        "OS": platform.system(),
+        "Node Name": platform.node(),
+        "Release": platform.release(),
+        "Version": platform.version(),
+        "Machine": platform.machine(),
+        "Processor": platform.processor(),
+        "CPU Cores (Physical)": psutil.cpu_count(logical=False),
+        "Logical CPUs": psutil.cpu_count(logical=True),
+        "Total RAM (GB)": round(psutil.virtual_memory().total / (1024 ** 3), 2),
+        "Python Version": platform.python_version()
+    }
+    
+    # Extended details based on OS
+    if specs["OS"] == "Darwin":  # macOS
+        specs.update(get_macos_specs())
+    elif specs["OS"] == "Linux":  # Linux
+        specs.update(get_linux_specs())
+    elif specs["OS"] == "Windows":  # Windows
+        specs.update(get_windows_specs())
+
+    return specs
+
+def get_macos_specs():
+    try:
+        system_profiler = subprocess.check_output(["system_profiler", "SPHardwareDataType"], text=True)
+        details = {}
+        for line in system_profiler.splitlines():
+            if "Chip:" in line or "Memory:" in line or "Model Name:" in line:
+                key, value = line.split(":", 1)
+                details[key.strip()] = value.strip()
+        return details
+    except Exception as e:
+        return {"Mac Specific Info": f"Error: {e}"}
+
+def get_linux_specs():
+    try:
+        cpu_info = subprocess.check_output("lscpu", shell=True, text=True)
+        memory_info = subprocess.check_output("free -h", shell=True, text=True)
+        return {
+            "CPU Info": cpu_info,
+            "Memory Info": memory_info
+        }
+    except Exception as e:
+        return {"Linux Specific Info": f"Error: {e}"}
+
+def get_windows_specs():
+    try:
+        cpu_info = subprocess.check_output("wmic cpu get caption,deviceid,maxclockspeed,numberofcores", shell=True, text=True)
+        memory_info = subprocess.check_output("wmic memorychip get capacity", shell=True, text=True)
+        return {
+            "CPU Info": cpu_info,
+            "Memory Info": memory_info
+        }
+    except Exception as e:
+        return {"Windows Specific Info": f"Error: {e}"}
+
+def print_specs():
+    specs = get_system_specs()
+    print("\n====> Computer Specifications: <====")
+    for key, value in specs.items():
+        print(f"{key}: {value}")
+    print("-------------------------------------\n\n")    
+
+
+if __name__ == "__main__":
+    print("You are running the Utils.py file!")
+    print_specs()
 
 
 # def simplify_array(array_of_impedances: List[sympy.Mul]) -> List[sympy.Mul]:
