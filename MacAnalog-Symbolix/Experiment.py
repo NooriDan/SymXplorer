@@ -1,7 +1,8 @@
 import sympy
 from   tqdm      import tqdm
-from   sympy     import symbols, simplify
+from   sympy     import symbols, Poly, numer, denom
 from   sympy     import oo as inf
+from   symengine import expand as SE_expand, sympify as SE_sympify
 from   itertools import product
 from   typing    import Dict, List
 
@@ -74,6 +75,7 @@ class SymbolixExperimentCG:
     
     def computeTransferFunction(self, baseHs, zCombo):
         _Z1, _Z2, _Z3, _Z4, _Z5, _ZL = zCombo
+        s = symbols("s")
         sub_dict = {
             symbols("Z_1"): _Z1,
             symbols("Z_2"): _Z2,
@@ -82,10 +84,20 @@ class SymbolixExperimentCG:
             symbols("Z_5"): _Z5,
             symbols("Z_L"): _ZL
         }
+        Hs = baseHs 
+        # if sub_dict[key] != inf:
+        Hs = Hs.subs(sub_dict)  # Substitute the impedance values into the base function
+        
+        # Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression (experimenting showed its not needed and we can achieved higher speed)
+        # Hs = SE_sympify(SE_expand(Hs))
 
-        Hs = baseHs.subs(sub_dict)  # Substitute the impedance values into the base function
-        Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression
         Hs = sympy.together(Hs)
+        # Extract the numerator and denominator as polynomials
+        Hs_num = Poly(numer(Hs), s)
+        Hs_den = Poly(denom(Hs), s)
+        
+        Hs = Hs_num / Hs_den
+
         return Hs
     
     def computeTFs(self, comboKey="all", clearRecord=True):

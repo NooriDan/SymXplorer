@@ -45,7 +45,7 @@ impedanceKeys = impedanceKeys[(minNumOfActiveImpedances-1):maxNumOfActiveImpedan
 
 overwrite = False
 # Uncomment to enforce manual keys by adding to the list (set overwrite = True)
-# impedanceKeys = ["Z1_ZL"] 
+# impedanceKeys = ["Z1_Z2_ZL"] 
 # impedanceKeys = [
 #             "Z1_ZL",
 #             "Z2_ZL",
