@@ -15,8 +15,8 @@ T_type  = "simple"              # options are "symbolic", "simple", "some-parasi
 experimentName = "TIA"          # Arbitrary name (affectes where the report is saved)
 experimentName += "_" + T_type  
 # define the boundries for search (NumOfActiveImpedance = 2 means all Zi_Zj combinations (i≠j))
-minNumOfActiveImpedances = 1    
-maxNumOfActiveImpedances = 3
+minNumOfActiveImpedances = 4    
+maxNumOfActiveImpedances = 5
 
 # -------- Create a Circuit Object --------------
 
@@ -43,9 +43,9 @@ impedanceKeys = solver.impedanceConnections
 impedanceKeys = impedanceKeys[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances]
 
 
-overwrite = True
+overwrite = False
 # Uncomment to enforce manual keys by adding to the list (set overwrite = True)
-impedanceKeys = ["Z1_ZL"] 
+# impedanceKeys = ["Z1_ZL"] 
 # impedanceKeys = [
 #             "Z1_ZL",
 #             "Z2_ZL",

@@ -90,7 +90,7 @@ class FilterClassifier():
         for _type in types:
             self._fTypes.append(_type)
 
-    def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER"]):
+    def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER", "PolynomialError"]):
         if not self.isClassified():
             print("===============")
             print("Classify the TFs first")
@@ -160,8 +160,14 @@ class FilterClassifier():
         numerator = numer(tf).expand()    # Numerator of tf
 
         # Determine orders
-        den_order = degree(denominator, s)
-        num_order = degree(numerator, s)
+        try:
+            den_order = degree(denominator, s)
+            num_order = degree(numerator, s)
+        except sympy.PolynomialError:
+
+            return {'valid' : False,
+                    'fType' : "PolynomialError",
+                    'parameters' : None}
 
         # Extract denominator coefficients
         a2 = denominator.coeff(s, 2)

@@ -483,6 +483,7 @@ def print_specs():
 
 
 if __name__ == "__main__":
+    clear_terminal()
     print("You are running the Utils.py file!")
     print_specs()
 
