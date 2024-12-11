@@ -9,3 +9,4 @@ Notebooks/Outputs/
 .vscode
 */__pycache__
 .*
+venv/
