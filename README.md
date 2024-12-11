@@ -15,3 +15,6 @@ First Git clone the repo, and follow the instructions below you'll find informat
 - Check out summary report of previous the latest runs in [Runs](Runs) or in [Lib/Outputs](Lib/Outputs/)
 - Find Previous papers under [Papers](Papers)
 - A demonstration video will be available soon
+
+## License
+This project is licensed under the GNU General Public License v3 (GPLv3) - see the [LICENSE](LICENSE) file for details.
