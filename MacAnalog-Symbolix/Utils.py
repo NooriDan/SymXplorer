@@ -8,6 +8,7 @@ import psutil
 import pickle
 # Custom Imports
 from Filter import FilterClassification
+from Circuit import CircuitSolver
 # from Global import *
 
 
@@ -145,6 +146,76 @@ class Impedance:
 
         # If no operators are found, return the expression as is
         return expression
+
+class FilterDatabase:
+    def __init__(self, name: str, filterOrder: int, z_arr_size: int = 6):
+        self.name: str   = name
+        self.filterOrder = filterOrder
+        self.z_arr_size  = z_arr_size
+        self.circuitSolver: CircuitSolver
+        self.results: Dict[str, List[FilterClassification]]
+        # Filter types
+        self.bandpass: List[FilterClassification] = [] 
+        self.lowpass:  List[FilterClassification] = []
+        self.highpass: List[FilterClassification] = []
+        self.bandstop: List[FilterClassification] = []
+        self.ge_ae:    List[FilterClassification] = [] 
+
+        self.invalid_numer: List[FilterClassification] = [] 
+        self.invalid_wz:   List[FilterClassification] = []
+        self.invalid_order: List[FilterClassification] = []
+        self.error:       List[FilterClassification] = []
+
+        self.mapList: Dict[str, List[FilterClassification]] = {
+                "BP" : self.bandpass,
+                "HP" : self.highpass,
+                "LP" : self.lowpass,
+                "BS" : self.bandstop,
+                "GE" : self.ge_ae,
+                "INVALID-NUMER" : self.invalid_numer,
+                "INVALID-WZ"    : self.invalid_wz,
+                "INVALID-ORDER" : self.invalid_order,
+                "PolynomialError" : self.error
+        }
+
+        self.unrecognized: List[FilterClassification] = []
+
+        self.fileSave = FileSave()
+
+    def add(self, classifications: List[FilterClassification]):
+        for classification in classifications:
+            if (classification.fType in self.mapList.keys()) and (len(classification.zCombo) == self.z_arr_size):
+                self.mapList[classification.fType].append(classification)
+            else:
+                self.unrecognized.append(classification)
+
+    def filterByZ(self, fType, z_arr: List[sympy.Symbol]):
+        if (len(z_arr != self.z_arr_size)):
+            print("FilterDatabase: INVALID Z SIZE")
+            raise ValueError
+        
+        # for i, z in enumerate(z_arr, 0):  
+        #     z_arr[i] = (z == sympy.oo)
+
+        if self.mapList.get(fType) == None:
+            print("FilterDatabase: filter type not valid")
+            raise KeyError
+
+        # _z1, _z2, _z3, _z4, _z5, _zL = z_arr
+
+        results: List[FilterClassification] = []
+        for classification in self.mapList[fType]:
+            for z in z_arr: 
+                if z == sympy.oo:
+                    results.append(classification)
+
+        return results
+
+    def printFilter(self, fType):
+        if fType in self.mapList.keys():
+
+            self.fileSave.generateLaTeXReport(self.mapList[fType], f"{self.name}_{fType}", subFolder="Database")
+    
 
 class FileSave:
     """
