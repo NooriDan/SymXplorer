@@ -1,0 +1,38 @@
+
+----------------------------------------------------------------------------
+The recommended structure of a Python project:
+project_name/
+│
+├── project_name/           # Main package directory
+│   ├── __init__.py         # Makes this a package
+│   ├── module1.py          # Your main modules
+│   ├── module2.py
+│   ├── utils/              # Utility functions (optional)
+│   │   ├── __init__.py
+│   │   ├── helper1.py
+│   │   └── helper2.py
+│   └── config.py           # Configuration variables (optional)
+│
+├── tests/                  # Testing directory
+│   ├── __init__.py
+│   ├── test_module1.py
+│   └── test_module2.py
+│
+├── docs/                   # Documentation (optional)
+│   ├── index.md            # Main documentation file
+│   └── ...
+│
+├── examples/               # Example scripts for using your project (optional)
+│   └── example_script.py
+│
+├── scripts/                # Standalone scripts (optional)
+│   └── data_processing.py
+│
+├── .gitignore              # Git ignore file
+├── README.md               # Project overview and instructions
+├── LICENSE                 # Licensing information
+├── requirements.txt        # Python dependencies
+├── setup.py                # For packaging and installation (if needed)
+├── pyproject.toml          # Alternative to setup.py (modern packaging)
+└── tox.ini                 # Configuration for tox testing (optional)
+----------------------------------------------------------------------------
