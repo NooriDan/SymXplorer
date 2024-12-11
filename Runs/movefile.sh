@@ -60,12 +60,22 @@ select_directory() {
 # Step 1: Select the source directory
 echo "Step 1: Select the source directory to search for .$FILE_EXT files."
 select_directory "./"
-SOURCE_DIR="$current_dir"
+SOURCE_DIR="$current_dir"  # Save the selected source directory
+echo "Selected source directory: $SOURCE_DIR"  # Debug print
+
+# Convert to absolute path if it's a relative path
+SOURCE_DIR=$(realpath "$SOURCE_DIR")
+echo "Absolute source directory: $SOURCE_DIR"  # Debug print
 
 # Step 2: Select the destination directory
 echo "Step 2: Select the destination directory to move .$FILE_EXT files into."
 select_directory "./"
-DEST_DIR="$current_dir"
+DEST_DIR="$current_dir"  # Save the selected destination directory
+echo "Selected destination directory: $DEST_DIR"  # Debug print
+
+# Convert to absolute path if it's a relative path
+DEST_DIR=$(realpath "$DEST_DIR")
+echo "Absolute destination directory: $DEST_DIR"  # Debug print
 
 # Step 3: Confirm operation
 echo
@@ -81,13 +91,18 @@ if [[ $confirm != "y" ]]; then
     exit 0
 fi
 
-# Step 4: Move files
+# Step 4: Move files and count them
 echo "Moving .$FILE_EXT files from $SOURCE_DIR to $DEST_DIR..."
-find "$SOURCE_DIR" -type f -name "*.$FILE_EXT" -exec mv {} "$DEST_DIR" \;
+
+file_count=0  # Initialize counter for moved files
+# Use find to recursively search for files and move them
+find "$SOURCE_DIR" -type f -iname "*.$FILE_EXT" | while read -r file; do
+    mv "$file" "$DEST_DIR"
+    ((file_count++))
+done
 
 echo
 echo "========================================="
 echo "         File Move Completed             "
 echo "========================================="
-echo "All .$FILE_EXT files from $SOURCE_DIR have been moved to $DEST_DIR."
-echo
+echo "$file_count .$FILE_EXT files from $SOURCE_DIR have been moved to $DEST_DIR."

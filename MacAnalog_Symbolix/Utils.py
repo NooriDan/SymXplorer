@@ -1,15 +1,16 @@
 import sympy
 from   sympy import latex, symbols, Matrix
-from   typing import Dict, List
+from   typing import Dict, List, TYPE_CHECKING
 import subprocess
 import os, sys
 import platform
 import psutil
 import pickle
 # Custom Imports
-from Filter import FilterClassification
-from Circuit import CircuitSolver
-# from Global import *
+if TYPE_CHECKING:
+    # Imports for type checking only
+    from Filter import FilterClassification
+    from Circuit import CircuitSolver
 
 
 
@@ -153,20 +154,20 @@ class FilterDatabase:
         self.filterOrder = filterOrder
         self.z_arr_size  = z_arr_size
         self.circuitSolver: CircuitSolver
-        self.results: Dict[str, List[FilterClassification]]
+        self.results: Dict[str, List['FilterClassification']]
         # Filter types
-        self.bandpass: List[FilterClassification] = [] 
-        self.lowpass:  List[FilterClassification] = []
-        self.highpass: List[FilterClassification] = []
-        self.bandstop: List[FilterClassification] = []
-        self.ge_ae:    List[FilterClassification] = [] 
+        self.bandpass: List['FilterClassification'] = [] 
+        self.lowpass:  List['FilterClassification'] = []
+        self.highpass: List['FilterClassification'] = []
+        self.bandstop: List['FilterClassification'] = []
+        self.ge_ae:    List['FilterClassification'] = [] 
 
-        self.invalid_numer: List[FilterClassification] = [] 
-        self.invalid_wz:   List[FilterClassification] = []
-        self.invalid_order: List[FilterClassification] = []
-        self.error:       List[FilterClassification] = []
+        self.invalid_numer: List['FilterClassification'] = [] 
+        self.invalid_wz:   List['FilterClassification'] = []
+        self.invalid_order: List['FilterClassification'] = []
+        self.error:       List['FilterClassification'] = []
 
-        self.mapList: Dict[str, List[FilterClassification]] = {
+        self.mapList: Dict[str, List['FilterClassification']] = {
                 "BP" : self.bandpass,
                 "HP" : self.highpass,
                 "LP" : self.lowpass,
@@ -178,11 +179,11 @@ class FilterDatabase:
                 "PolynomialError" : self.error
         }
 
-        self.unrecognized: List[FilterClassification] = []
+        self.unrecognized: List['FilterClassification'] = []
 
         self.fileSave = FileSave()
 
-    def add(self, classifications: List[FilterClassification]):
+    def add(self, classifications: List['FilterClassification']):
         for classification in classifications:
             if (classification.fType in self.mapList.keys()) and (len(classification.zCombo) == self.z_arr_size):
                 self.mapList[classification.fType].append(classification)
@@ -203,7 +204,7 @@ class FilterDatabase:
 
         # _z1, _z2, _z3, _z4, _z5, _zL = z_arr
 
-        results: List[FilterClassification] = []
+        results: List['FilterClassification'] = []
         for classification in self.mapList[fType]:
             for z in z_arr: 
                 if z == sympy.oo:
@@ -330,7 +331,7 @@ class FileSave:
     def generateLaTeXSummary(
         self,
         baseHs: sympy.Basic,
-        filterClusters: Dict[str, List[FilterClassification]],
+        filterClusters: Dict[str, List['FilterClassification']],
         output_filename="Report",
         newpage=False,
         subFolder="NONE"
@@ -375,7 +376,7 @@ class FileSave:
 
         self.saveLatexFile(latex_content, output_filename)
 
-    def generateSummaryTable(self, clusterByType: Dict[str, List[FilterClassification]], output_filename, subFolder = "None"):
+    def generateSummaryTable(self, clusterByType: Dict[str, List['FilterClassification']], output_filename, subFolder = "None"):
 
         output_filename = self.createSubFolder(output_filename, subFolder)
 
@@ -395,7 +396,7 @@ class FileSave:
 
         self.saveLatexFile(latex_content, output_filename)
 
-    def _generate_latex_table(self, filter_list: List[FilterClassification], caption):
+    def _generate_latex_table(self, filter_list: List['FilterClassification'], caption):
         # Table header
         latex_table = r"""\centering
         \begin{longtable}{|c|c|c|c|c|c|}
@@ -436,7 +437,7 @@ class FileSave:
         latex_content = f"\\section{{{sectionName}}}\\ \n"  # Use fType as the section name
         return latex_content
 
-    def generateLaTeXReport(self, filter_classifications: List[FilterClassification], output_filename="Report", newpage=False, subFolder="NONE"):
+    def generateLaTeXReport(self, filter_classifications: List['FilterClassification'], output_filename="Report", newpage=False, subFolder="NONE"):
 
         output_filename = self.createSubFolder(output_filename, subFolder)
 
@@ -481,10 +482,6 @@ def clear_terminal():
         os.system("cls")
     else:
         os.system("clear")
-import platform
-import psutil
-import os
-import subprocess
 
 def get_system_specs():
     # Basic system details

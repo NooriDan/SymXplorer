@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name           = "MacAnalog-Symbolix",
+setup(name           = "MacAnalog_Symbolix",
     description      = "A python app to perform symbolic analysis on analog circuits", 
     version          = "0.1",
     author           = "Danial Noori Zadeh",

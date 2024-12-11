@@ -1,9 +1,9 @@
 from   sympy          import symbols
 # Custom Imports
-from   Utils          import clear_terminal, print_specs
-import Global       as GlobalVariables              # Global vairables
-from   Circuit  import CircuitSolver, Circuit
-from   Experiment     import SymbolixExperimentCG
+from   MacAnalog_Symbolix.Utils          import clear_terminal, print_specs
+import MacAnalog_Symbolix.Global         as GlobalVariables              # Global vairables
+from   MacAnalog_Symbolix.Circuit        import CircuitSolver, Circuit
+from   MacAnalog_Symbolix.Experiment     import SymbolixExperimentCG
 
 clear_terminal()
 print_specs()
@@ -11,12 +11,12 @@ print_specs()
 # -------- Experiment hyper-parameters --------
 _output = [symbols("Vop"), symbols("Von")]
 _input  = [symbols("Iip"), symbols("Iin")]
-T_type  = "simple"              # options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
+T_type  = "test"              # options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
 experimentName = "TIA"          # Arbitrary name (affectes where the report is saved)
 experimentName += "_" + T_type  
 # define the boundries for search (NumOfActiveImpedance = 2 means all Zi_Zj combinations (i≠j))
-minNumOfActiveImpedances = 4    
-maxNumOfActiveImpedances = 5
+minNumOfActiveImpedances = 1    
+maxNumOfActiveImpedances = 2
 
 # -------- Create a Circuit Object --------------
 

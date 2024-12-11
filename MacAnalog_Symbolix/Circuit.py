@@ -4,8 +4,8 @@ from   sympy  import solve, simplify, symbols
 from   sympy  import oo as inf
 from   typing import Dict, List
 # Custom Imports
-import Global as GlobalVariables
-from   Utils  import Impedance, TransmissionMatrix
+import  Global  as GlobalVariables
+from    Utils   import Impedance, TransmissionMatrix
 
 class Circuit:
     def __init__(self, 
@@ -58,7 +58,7 @@ class CircuitSolver:
 
         # variables to be computed for
         self.impedanceConnections: List[Dict[str, List[sympy.Basic]]] = []
-        self._setPossibleImpedanceConnections()
+        # self._setPossibleImpedanceConnections()
 
         self.baseSymbolicHs: sympy.Basic             = None
         self.baseHs:         sympy.Basic             = None

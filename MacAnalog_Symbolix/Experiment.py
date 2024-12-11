@@ -1,13 +1,13 @@
 import sympy
 from   tqdm      import tqdm
-from   sympy     import symbols, Poly, numer, denom
+from   sympy     import symbols, Poly, numer, denom, sign
 from   sympy     import oo as inf
 from   symengine import expand as SE_expand, sympify as SE_sympify
 from   itertools import product
 from   typing    import Dict, List
 
 # Custom imports
-import Global as GlobalVariables
+import Global  as GlobalVariables
 from   Circuit import CircuitSolver
 from   Filter  import FilterClassification, FilterClassifier
 from   Utils   import FileSave, Impedance
@@ -91,12 +91,19 @@ class SymbolixExperimentCG:
         # Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression (experimenting showed its not needed and we can achieved higher speed)
         # Hs = SE_sympify(SE_expand(Hs))
 
+        # Handle unsupported terms (replace sign or other functions if present)
+        # Hs = Hs.replace(sign, lambda x: 1)  # Replace sign with 1 (adjust as needed)
+
         Hs = sympy.together(Hs)
         # Extract the numerator and denominator as polynomials
-        Hs_num = Poly(numer(Hs), s)
-        Hs_den = Poly(denom(Hs), s)
-        
-        Hs = Hs_num / Hs_den
+        try:
+            Hs_num = Poly(numer(Hs), s)
+            Hs_den = Poly(denom(Hs), s)
+            
+            Hs = Hs_num / Hs_den
+        except sympy.PolynomialError:
+            Hs = sympy.simplify(Hs)
+            # print(f"Polynomial error when computing {Hs}")
 
         return Hs
     

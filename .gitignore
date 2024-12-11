@@ -1,4 +1,7 @@
-Notebooks/Outputs/
+# Notebook outputs
+scripts/Runs/
+
+# LaTeX auxiliary files
 *.aux
 *.log
 *.fls
@@ -6,7 +9,22 @@ Notebooks/Outputs/
 *.fdb_latexmk
 *.toc
 *.tex
+
+# VS Code configuration
 .vscode
+
+# Python cache directories
 */__pycache__
+
+# Hidden files and directories
 .*
+
+# Python virtual environments
 venv/
+
+# Build and distribution directories
+build/
+dist/
+
+# Egg info
+*.egg-info/
