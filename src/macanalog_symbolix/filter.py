@@ -236,7 +236,67 @@ class FilterClassifier():
 
     def _getFirstOrderParameters(self, tf):
         print(" === inside FIRST ORDER Parameter Computation === ")
-        pass
+
+        # Define symbolic variable
+        s = symbols('s')
+        
+        # Extract numerator and denominator
+        denominator = denom(tf).expand()  # Denominator of tf
+        numerator = numer(tf).expand()    # Numerator of tf
+
+        # Determine orders
+        try:
+            den_order = degree(denominator, s)
+            num_order = degree(numerator, s)
+        except sympy.PolynomialError:
+
+            return {'valid' : False,
+                    'fType' : "PolynomialError",
+                    'parameters' : None}
+        
+        # Extract denominator coeffients
+        a1 = denominator.coeff(s, 1)
+        a0 = denominator.coeff(s, 0)
+        
+        # Validate filter form and coefficients
+        if not all([a1, a0]) or num_order > 2 or den_order > 2:
+            return {'valid': False,
+                    'fType': "INVALID-ORDER",
+                    'parameters': None}
+        
+        # Extract denominator coeffients
+        b1 = numerator.coeff(s, 1)
+        b0 = numerator.coeff(s, 0)
+
+        numeratorState = ((b1 != 0) << 1) | (b0 != 0)
+        match numeratorState:
+            case 0b10: # b1 s^1
+                fType = "HP"
+            case 0b11: # b1 *s  + b0
+                fType = "BP"
+            case 0b01: # b0
+                fType = "LP"
+            case _: 
+                fType = "INVALID-NUMER"
+
+        wo = a0/a1
+        if b1 != 0:
+            wz = b0/b1
+            K =  b1/a1
+        else:
+            wz = 0
+            K  = b0/a1
+        
+        # Return computed parameters
+        return {
+            "valid": True,
+            "fType": fType,
+            "parameters": {
+                "wo" : wo,
+                "wz" : wz,
+                "K": K
+            }
+        }
 
     def _getThirdOrderParameters(self, tf):
         print(" === inside THIRD ORDER Parameter Computation === ")
@@ -248,7 +308,7 @@ class FilterClassifier():
         # Wrap the zip iterator with tqdm for progress tracking
         for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
                                         total=self.countTF(),
-                                        desc="Computing filter parameters",
+                                        desc=f"Computing filter parameters for {filterOrder}",
                                         unit="filter"):
 
             results = self.possibleFilterOrders[filterOrder](tf)

@@ -3,7 +3,7 @@ from   pprint         import pprint
 # Custom Imports
 from   macanalog_symbolix.utils          import clear_terminal, print_specs
 from   macanalog_symbolix.circuit        import CircuitSolver, Circuit
-from   macanalog_symbolix.analysis     import SymbolixExperiment
+from   macanalog_symbolix.experiment     import SymbolixExperiment
 from   macanalog_symbolix.common_gate_setup   import common_gate_circuit # Used as demo data
 
 def run_cg_experiment():
