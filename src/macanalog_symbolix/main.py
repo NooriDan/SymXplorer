@@ -13,12 +13,34 @@ def run_cg_experiment(experimentName: str,   # Arbitrary name (affectes where th
                       T_type: str,        # Options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
                       minNumOfActiveImpedances: int,      # define the boundries for search (NumOfActiveImpedance = 2 means all Zi_Zj combinations (i≠j))     
                       maxNumOfActiveImpedances: int,
-                      impedanceKeysOverwrite: Optional[List[str]] = []  # If provided overwrites the systematic simulation run
-                      ):
+                      impedanceKeysOverwrite: Optional[List[str]],  # If provided overwrites the systematic simulation run
+                      outputFrom: List[str],  # Where the output is taken differentially from (TIA -> Vop Von)
+                      inputFrom: List[str]    # Where the input is taken differentially from (TIA -> Iip Iin)
+                      ) -> None:
 
+    """
+    Runs a symbolic experiment on a differential CG circuit based on the specified parameters.
+
+    Args:
+        experimentName (str): Arbitrary name (affectes where the report is saved)
+        T_type (str): The type of the transmission matrix used. Acceptable values are "symbolic", "simple", "some-parasitic", and "full-parasitic"
+        minNumOfActiveImpedances (int): The minimum number of active impedances to consider in the search space. For example, a value of 2 means all combinations of Zi_Zj (i≠j).
+        maxNumOfActiveImpedances (int): The maximum number of active impedances to consider in the search space.
+        impedanceKeysOverwrite (Optional[List[str]]): A list of impedance keys that, if provided, will override the default systematic simulation. 
+                                                      If None, the default simulation is run.
+        outputFrom (List[str]): A list of parameters to take as output from the experiment. These are typically voltage or current outputs (e.g., TIA -> Vop Von).
+        inputFrom (List[str]): A list of parameters to use as input to the experiment. These are typically voltage or current inputs (e.g., TIA -> Iip Iin).
+
+    Returns:
+        None: This function does not return any value. The results of the experiment are typically saved in a report file.
+    """
+
+    if (len(outputFrom)!= 2) or (len(inputFrom)!=2):
+        raise argparse.ArgumentTypeError(f"Exactly two values are required.\ninput_size = {len(inputFrom)}, output_size = {len(outputFrom)}")
+    
     # -------- Experiment hyper-parameters --------
-    _output = [symbols("Vop"), symbols("Von")]
-    _input  = [symbols("Iip"), symbols("Iin")]
+    _output = [symbols(sym) for sym in outputFrom]
+    _input  = [symbols(sym) for sym in inputFrom]
     experimentName += "_" + T_type  
 
     # -------- Create a Circuit Object --------------
@@ -123,7 +145,20 @@ def main():
                         nargs="+", 
                         help="List of impedances to examine seperated by space (e.g. Z1_Z2 Z2_Z3_ZL ...)."
                         )
+    
+    parser.add_argument("--output", 
+                        required=False,
+                        default= ["Vop", "Von"], # The case for TIA
+                        nargs=2,  # Ensure exactly two values are provided
+                        help="List of impedances to examine seperated by space (e.g. Z1_Z2 Z2_Z3_ZL ...)."
+                        )
 
+    parser.add_argument("--input", 
+                        required=False,
+                        default= ["Iip", "Iin"], # The case for TIA
+                        nargs=2,  # Ensure exactly two values are provided
+                        help="List of impedances to examine seperated by space (e.g. Z1_Z2 Z2_Z3_ZL ...)."
+                        )
 
     # Parse arguments
     args = parser.parse_args()
@@ -137,11 +172,13 @@ def main():
     print("\n")
 
     # Use arguments
-    run_cg_experiment(experimentName= args.name, 
-                      T_type= args.type, 
-                      minNumOfActiveImpedances= args.minNumOfActiveImpedances, 
-                      maxNumOfActiveImpedances= args.maxNumOfActiveImpedances,
-                      impedanceKeysOverwrite= args.impedanceKeys)
+    run_cg_experiment(experimentName = args.name, 
+                      T_type = args.type, 
+                      minNumOfActiveImpedances = args.minNumOfActiveImpedances, 
+                      maxNumOfActiveImpedances = args.maxNumOfActiveImpedances,
+                      impedanceKeysOverwrite   = args.impedanceKeys,
+                      outputFrom = args.output,
+                      inputFrom  = args.input)
 
 if __name__ == "__main__":
     main()
