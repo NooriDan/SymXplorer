@@ -1,38 +1,10 @@
 import sympy
-from   tqdm import tqdm
-from   sympy import denom, numer, degree, symbols, simplify, sqrt
-from   typing import Dict, List, Optional
+from   tqdm     import tqdm
+from   sympy    import denom, numer, degree, symbols, simplify, sqrt
+from   typing   import Dict, List, Optional
+from   dataclasses import dataclass, field
 # Custom Imports
-# from Global import *
-
-class FilterClassification:
-    def __init__(
-        self,
-        zCombo: List[sympy.Basic],
-        transferFunc: sympy.Basic,  # SymPy expression
-        valid: bool = False,
-        fType: Optional[str] = "None",
-        parameters: Optional[dict] = None,
-        filterOrder: Optional[str] = "None"
-    ):
-        self.filterOrder = filterOrder
-        self.zCombo = zCombo
-        self.transferFunc = transferFunc
-        self.valid = valid
-        self.fType = fType
-        self.parameters = parameters
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, FilterClassification):
-            return NotImplemented
-        return (self.fType == other.fType) and (self.filterOrder == other.filterOrder)
-
-    def __repr__(self) -> str:
-        return (
-            f"FilterClassification("
-            f"zCombo={self.zCombo}, transferFunc={self.transferFunc}, "
-            f"valid={self.valid}, fType={self.fType}, parameters={self.parameters})"
-        )
+from .domains import FilterClassification
 
 
 class FilterClassifier():

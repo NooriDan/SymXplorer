@@ -9,8 +9,8 @@ import pickle
 # Custom Imports
 if TYPE_CHECKING:
     # Imports for type checking only
-    from Filter import FilterClassification
-    from Circuit import CircuitSolver
+    from .domains import FilterClassification
+    from .circuit import CircuitSolver
 
 
 
@@ -62,6 +62,9 @@ class Impedance:
         }
         self.startOfFunctionToken: str  = "*START*"
         self.endOfFunctionToken:   str  = "*END*"
+    
+    def __repr__(self):
+        return self.Z
 
     def simplify(self):
         for i, _impedance in enumerate(self.allowedConnections):
@@ -554,26 +557,3 @@ if __name__ == "__main__":
     clear_terminal()
     print("You are running the Utils.py file!")
     print_specs()
-
-
-# def simplify_array(array_of_impedances: List[sympy.Mul]) -> List[sympy.Mul]:
-#     array =[]
-#     for _impedance in array_of_impedances:
-#         array.append(sympy.simplify(_impedance))
-#     return array
-
-# def seriesZ(list_of_impedances: List[sympy.Basic]) -> sympy.Mul:
-    
-#     equivalentZ = list_of_impedances[0]
-#     for impedance in list_of_impedances[1:]:
-#         equivalentZ += impedance
-    
-#     return sympy.simplify(equivalentZ)
-
-# def parallelZ(list_of_impedances: List[sympy.Basic]) -> sympy.Mul:
-    
-#     equivalentG = 1/list_of_impedances[0]
-#     for impedance in list_of_impedances[1:]:
-#         equivalentG += 1/impedance
-    
-#     return sympy.simplify(1/equivalentG)

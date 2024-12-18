@@ -1,16 +1,23 @@
-import os, sys
-from sympy import symbols, Eq, init_printing
-from typing import List, Dict, Optional   # for type checking
+"""
+Module Name: Example experiment setup to perform symbolic analysis
+
+Dependencies:
+- `sympy`: Used for defining the variables in 'nodal_equations'.
+- `.utils`: Provides utility classes such as 'Impedance' and 'TransmissionMatrix'
+- '.domains': Defines the Experiment setup dataclass
+
+Usage:
+- This module is used to demonstrate a usecase of MacAnalog_Symbolix on a common gate differential amplifier.
+
+Author: [Danial NZ]
+Date: [Dec 2024]
+
+"""
+
+from sympy import symbols, Eq
 # Cusom Imports
-from Utils import Impedance, TransmissionMatrix
-
-
-class ExperimentSetUP():
-    def __init__(self, impedances: List[Impedance], equations: List[Eq]):
-        self.impedances = impedances
-        self.equations = equations
-        self.solution = None
-
+from .utils     import Impedance, TransmissionMatrix
+from .domains   import Circuit
 
 # (1) Define possible impedances (assign names)
 # ---------------------------------------
@@ -166,6 +173,8 @@ nodalEquations = [
             # 3h
             Eq(I1a, T_a[1,0]*V2a + T_a[1,1]*I2a),
             Eq(I1b, T_b[1,0]*V2b + T_b[1,1]*I2b)
-      ]
+    ]
 # End of step (2)
 # ---------------------------------------
+
+common_gate_circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
