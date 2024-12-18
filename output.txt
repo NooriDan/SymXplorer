@@ -1,0 +1,70 @@
+[3J[H[2J
+====> Computer Specifications: <====
+OS: Darwin
+Node Name: Danials-MacBook-Air-4.local
+Release: 23.5.0
+Version: Darwin Kernel Version 23.5.0: Wed May  1 20:16:51 PDT 2024; root:xnu-10063.121.3~5/RELEASE_ARM64_T8103
+Machine: arm64
+Processor: arm
+CPU Cores (Physical): 8
+Logical CPUs: 8
+Total RAM (GB): 8.0
+Python Version: 3.12.2
+Model Name: MacBook Air
+Chip: Apple M1
+Memory: 8 GB
+-------------------------------------
+
+
+Command line arguments:
+[('name', 'TIA'),
+ ('type', 'simple'),
+ ('minNumOfActiveImpedances', 2),
+ ('maxNumOfActiveImpedances', 3),
+ ('impedanceKeys', ['Z1_Z2_ZL'])]
+
+
+=> Circuit can be solved?: True
+====Solving the Circuit====
+--- Computing the possible impedance connections for [Z_1, Z_2, Z_3, Z_4, Z_5, Z_L] ---
+--- Impedance connections stored in CircuitSetUp.impedanceConnections---
+ ----------------------------
+ Solving for (Vop - Von) / (Iip - Iin)
+Intermediate Variables: [Vin, V2a, V2b, V1a, V1b, Va, Vb, Von, Vop, Vip, Vx, Iip, Iin, I1a, I1b, I2a, I2b]
+ ----------------------------
+(1) set up the nodal equation
+(2) solved the base transfer function (symbolic [T])
+FOUND THE BASE TF
+*** --- Solving for T type: simple --- ***
+*** --- Done --- ***
+processing combo size 1
+processing combo size 2
+processing combo size 3
+processing combo size 4
+processing combo size 5
+processing combo size 6
+=====*Circuit Solved*=====
+--> Running the TIA_simple Experiment for Z1_Z2_ZL (1/1)
+
+combo key = Z1_Z2_ZL
+Number of transfer functions found: 880
+HP : 0
+BP : 6
+LP : 3
+BS : 4
+GE : 8
+AP : 0
+INVALID-NUMER : 25
+INVALID-WZ : 6
+INVALID-ORDER : 828
+PolynomialError : 0
+LaTeX report generated and saved to: Runs/TIA_simple/TIA_simple_Z1_Z2_ZL/TIA_simple_Z1_Z2_ZL_summary.tex
+
+=== Compiling the reports to PDF ===
+----** compiling Runs/TIA_simple/TIA_simple_Z1_Z2_ZL/TIA_simple_Z1_Z2_ZL_summary.tex **----
+PDF generated: Runs/TIA_simple/TIA_simple_Z1_Z2_ZL/TIA_simple_Z1_Z2_ZL_summary.pdf
+=== Compiling DONE ===
+
+<----> END OF EXPERIMENT <---->
+Impedance Keys analyzed: 
+['Z1_Z2_ZL']
