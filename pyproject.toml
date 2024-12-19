@@ -16,4 +16,4 @@ dependencies = [
 
 
 [project.scripts]
-run-cg = "macanalog_symbolix:main"
+run-symbolix = "macanalog_symbolix:main"

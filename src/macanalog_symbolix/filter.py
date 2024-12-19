@@ -4,10 +4,10 @@ from   sympy    import denom, numer, degree, symbols, simplify, sqrt
 from   typing   import Dict, List, Optional
 from   dataclasses import dataclass, field
 # Custom Imports
-from .domains import FilterClassification
+from .domains import Filter_Classification
 
 
-class FilterClassifier():
+class Filter_Classifier():
     """Implementation of algorithm 2"""
     def __init__(self, transferFunctionList: List = [], impedanceBatch: List = [], fTypes: List[str] = ["HP", "BP", "LP", "BS", "GE", "AP"]):
         self.transferFunctionsList = transferFunctionList
@@ -15,8 +15,8 @@ class FilterClassifier():
         self.filterParameters = []
         self._fTypes = fTypes
         # To be computed
-        self.classifications: List[FilterClassification] = []
-        self.clusteredByType:  Dict[str, List[FilterClassification]]= {}
+        self.classifications: List[Filter_Classification] = []
+        self.clusteredByType:  Dict[str, List[Filter_Classification]]= {}
         self.countByType:      Dict[str, int] = {}
 
         # Constants
@@ -97,7 +97,7 @@ class FilterClassifier():
 
             results = self._getBiQuadParameters(tf)
             if results['valid']:
-                self.classifications.append(FilterClassification(
+                self.classifications.append(Filter_Classification(
                     zCombo       = impedanceCombo,
                     transferFunc = tf,
                     valid= True,
@@ -105,7 +105,7 @@ class FilterClassifier():
                     parameters   = results["parameters"]
                 ))
             else:
-                self.classifications.append(FilterClassification(
+                self.classifications.append(Filter_Classification(
                     zCombo= impedanceCombo,
                     transferFunc= tf,
                     valid= False,
@@ -314,7 +314,7 @@ class FilterClassifier():
             results = self.possibleFilterOrders[filterOrder](tf)
 
             if results['valid']:
-                self.classifications.append(FilterClassification(
+                self.classifications.append(Filter_Classification(
                     zCombo       = impedanceCombo,
                     transferFunc = tf,
                     valid= True,
@@ -323,15 +323,13 @@ class FilterClassifier():
                 ))
             
             else:
-                self.classifications.append(FilterClassification(
+                self.classifications.append(Filter_Classification(
                     zCombo= impedanceCombo,
                     transferFunc= tf,
                     valid= False,
                     fType= results["fType"],
                     parameters= results["parameters"]
                 ))
-
-
 
 class FirstOrderParameters():
     def __init__(self, filterOrder):
