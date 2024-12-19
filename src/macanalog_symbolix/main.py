@@ -103,6 +103,7 @@ def main():
     if circuit is None:
         print(f"Selected circuit ({args.demoCircuit}) cannot be ressolved :(")
         return None
+    args.name = f"{args.demoCircuit}_{args.name}"
 
     # --------    Run the experiment   --------------
     run_experiment(experimentName = args.name, 
