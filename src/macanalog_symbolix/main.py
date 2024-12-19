@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--name", 
                         type= str,
                         required=False,
-                        default="TIA",
+                        default="Test",
                         help="The name of the directory to store the result"
                         )
     

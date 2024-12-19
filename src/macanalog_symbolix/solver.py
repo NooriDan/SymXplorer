@@ -22,21 +22,19 @@ class Circuit_Solver:
                 _output:    List[sympy.Basic], 
                 _input:     List[sympy.Basic],
                 transmissionMatrixType: str,
-                alwaysConnectedImpedances: List[Impedance_Block] = [],
                 transmissionMatrix: TransmissionMatrix = TransmissionMatrix() # Default T matrix (all symbolic)
                 ):
         # Extract information from the Circuit object
         self.equations:  List[sympy.Basic]  = circuit.nodal_equations
         self.solveFor:   List[sympy.Basic]  = circuit.solve_for
         self.impedances: List[Impedance_Block]    = circuit.impedances
-        self.impedancesToDisconnect:    List[sympy.Basic] = circuit.impedancesToDisconnect
+        self.impedancesToDisconnect:    List[sympy.Basic] = [impedance.symbol for impedance in circuit.impedances]
 
         # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
         self.input:      List[sympy.Basic]  = _input
         self.T_type:     str                = transmissionMatrixType
         self.T_analysis: TransmissionMatrix = transmissionMatrix  
-        self.alwaysConnectedImpedances: List[sympy.Basic] = alwaysConnectedImpedances
 
         # variables to be computed for
         self.impedanceConnections: List[Dict[str, List[sympy.Basic]]] = []
@@ -125,9 +123,6 @@ class Circuit_Solver:
 
         self.impedanceConnections = []
 
-        # Convert alwaysConnectedImpedances to a single string to append to each key
-        always_connected_str = '_'.join(str(var).replace('_', '') for var in self.alwaysConnectedImpedances)
-
         # Loop through different combination sizes (from 1 to len(variables))
         for combination_size in range(1, len(variables) + 1):
             # Generate combinations of the specified size
@@ -137,11 +132,6 @@ class Circuit_Solver:
             for comb in combinations:
                 # print(f"processing: {comb}")
                 key = '_'.join(str(var).replace('_', '') for var in comb)
-
-                # Append the always connected impedances to the key
-                if always_connected_str:
-                    key = f"{key}_{always_connected_str}"
-
                 myDict[key] =  comb
 
             self.impedanceConnections.append(myDict)
@@ -177,7 +167,8 @@ class Impedance_Analyzer:
          
         self.experimentName = _experimentName
         self.circuit_solver: Circuit_Solver = circuit_solver
-        self.ZZ: List[Impedance_Block] = circuit_solver.impedances
+        self.impedance_blocks:  List[Impedance_Block] = circuit_solver.impedances
+        self.impedance_symbols: List[sympy.Basic]     = circuit_solver.impedancesToDisconnect
 
         self.classifier: Filter_Classifier = Filter_Classifier()
         self.fileSave: FileSave = FileSave(outputDirectory=f"Runs/{self.experimentName}")
@@ -197,39 +188,31 @@ class Impedance_Analyzer:
         for combos in self.circuit_solver.impedanceConnections:
             for key, array in combos.items():
                 myList = []
-                for i, zi in enumerate(self.circuit_solver.impedancesToDisconnect + self.circuit_solver.alwaysConnectedImpedances):
+                for i, zi in enumerate(self.circuit_solver.impedancesToDisconnect):
                     if zi in array:
-                        myList.append(self.ZZ[i].allowedConnections)
+                        myList.append(self.impedance_blocks[i].allowedConnections)
                     else:
                         myList.append([inf])
 
                 results[key] = (itertools.product(*myList))
         
+        print("Zcombos")
         return results
     
     def computeTransferFunction(self, baseHs, zCombo):
-        _Z1, _Z2, _Z3, _Z4, _Z5, _ZL = zCombo
-        s = symbols("s")
-        sub_dict = {
-            symbols("Z_1"): _Z1,
-            symbols("Z_2"): _Z2,
-            symbols("Z_3"): _Z3,
-            symbols("Z_4"): _Z4,
-            symbols("Z_5"): _Z5,
-            symbols("Z_L"): _ZL
-        }
+
+        sub_dict: Dict[sympy.Symbol, sympy.Basic] = {}
+        for i, impedance  in enumerate(self.impedance_symbols):
+            sub_dict[impedance] = zCombo[i]   # Assumes zCombo is ordered the same as circuit.impedance_symbols
+
         Hs = baseHs 
         # if sub_dict[key] != inf:
         Hs = Hs.subs(sub_dict)  # Substitute the impedance values into the base function
-        
-        # Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression (experimenting showed its not needed and we can achieved higher speed)
-        # Hs = SE_sympify(SE_expand(Hs))
-
-        # Handle unsupported terms (replace sign or other functions if present)
-        # Hs = Hs.replace(sign, lambda x: 1)  # Replace sign with 1 (adjust as needed)
 
         Hs = sympy.together(Hs)
+        
         # Extract the numerator and denominator as polynomials
+        s = symbols("s")
         try:
             Hs_num = Poly(numer(Hs), s)
             Hs_den = Poly(denom(Hs), s)
