@@ -26,8 +26,7 @@ def select_demo_circuit(circuit_select: str) -> Circuit:
 
     return circuit
 
-
-def main():
+def get_parser():
     # Create argument parser
     parser = argparse.ArgumentParser(description="Running the symbolic simulation")
 
@@ -88,11 +87,18 @@ def main():
                         nargs=2,  # Ensure exactly two values are provided
                         help="The name of the node properties to take differential input (e.g., for TIA, Iip Iin)."
                         )
+    
+
 
     # Parse arguments
     args = parser.parse_args()
+    return args
 
-    
+
+def main():
+
+    args = get_parser()
+     
     clear_terminal()
     print_specs()
 

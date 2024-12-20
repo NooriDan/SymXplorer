@@ -1,8 +1,7 @@
 import sympy
 from   tqdm     import tqdm
 from   sympy    import denom, numer, degree, symbols, simplify, sqrt
-from   typing   import Dict, List, Optional
-from   dataclasses import dataclass, field
+from   typing   import Dict, List
 # Custom Imports
 from .domains import Filter_Classification
 
@@ -92,7 +91,7 @@ class Filter_Classifier():
         # Wrap the zip iterator with tqdm for progress tracking
         for tf, impedanceCombo in tqdm(zip(self.transferFunctionsList, self.impedanceList),
                                         total=self.countTF(),
-                                        desc="Computing filter parameters",
+                                        desc="Computing Biquad filter parameters",
                                         unit="filter"):
 
             results = self._getBiQuadParameters(tf)
