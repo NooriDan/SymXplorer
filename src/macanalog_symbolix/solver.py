@@ -91,12 +91,15 @@ class Circuit_Solver:
         # equations = self._getNodalEquations()
 
         # Solve for generic transfer function
-        solution = solve(self.equations, self.solveFor)
+        solutions = solve(self.equations, self.solveFor, dict=True)
         print("(2) solved the base transfer function (symbolic [T])")
+        print(solutions)
+        
 
-        if solution:
+        if solutions:
+            solution = solutions[0]  # Take the first solution
             print("FOUND THE BASE TF")
-            baseHs: sympy.Basic = (solution[oPos] - solution[oNeg]) / (solution[iPos] - solution[iNeg])
+            baseHs: sympy.Basic = (solution.get(oPos, oPos) - solution.get(oNeg, oNeg)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
             baseHs = simplify((baseHs.factor()))
             self.baseSymbolicHs = baseHs
             return baseHs

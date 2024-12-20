@@ -16,6 +16,9 @@ def select_demo_circuit(circuit_select: str) -> Circuit:
     if circuit_select == "CS":
         circuit = demo_setup.Common_Source.circuit
 
+    if circuit_select == "DIVIDER":
+        circuit = demo_setup.Voltage_Divider.circuit
+
     if circuit is None:
         return None
     
@@ -39,7 +42,7 @@ def main():
     parser.add_argument("--demoCircuit", 
                         type= str,
                         required=False,
-                        choices  = ["CG", "CS"],
+                        choices  = ["CG", "CS", "DIVIDER"],
                         default="CG",
                         help="Select the demo circuit (use --help for options)"
                         )

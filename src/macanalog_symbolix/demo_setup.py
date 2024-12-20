@@ -197,6 +197,7 @@ class Common_Gate:
 # ===================================================================
 @dataclass(frozen=True)
 class Common_Source:
+    """The Equation and Impedance definition of differential Common Gate Amplifier"""
     # (1) Define possible impedances (assign names)
     # ---------------------------------------
     # (1.1) Declare the impedance blocks in the problem
@@ -351,5 +352,83 @@ class Common_Source:
 # ===================================================================
 # End of Example 2 -- Common Source Differential Circuit
 
+@dataclass(frozen=True)
+class Voltage_Divider:
+    """Differential Voltage Divider circuit with three Z blocks. Input take differentially from ZL"""
+    # (1) Define possible impedances (assign names)
+    # ---------------------------------------
+    # (1.1) Declare the impedance blocks in the problem
+    z1_block = Impedance_Block("1")
+    z2_block = Impedance_Block("2")
+    zL_block = Impedance_Block("L")
 
+    # (1.2) Define the possible impedance types for each block AND assign it by calling self.setAllowedImpedanceConnections
+    z1_possible_combinations =[                                             
+                            "R",
+                            "L",
+                            "C"
+                            ]
+    z1_block.setAllowedImpedanceConnections(z1_possible_combinations)
+
+    z2_possible_combinations =[                                             
+                            "R",
+                            "L",
+                            "C"
+                            ]
+    z2_block.setAllowedImpedanceConnections(z2_possible_combinations)
+
+
+    zl_possible_combinations = [                                             
+                            "R",
+                            "L",
+                            "C"
+                            ]
+    zL_block.setAllowedImpedanceConnections(zl_possible_combinations)
+
+    # (1.3) Store all the declared impedances to be passed to the program
+    zz = [z1_block, z2_block, zL_block]
+
+    # End of step (1)
+    # ---------------------------------------
+
+
+    # (2)   NODAL EQUATION DEFINITION
+    # ---------------------------------------
+    # (2.1) Define symbolic variables (CG)
+    Iip, Iin, Iop, Ion = symbols('Iip Iin Iop Ion')
+    Von, Vop, Vip, Vin = symbols('Von Vop Vip Vin')
+
+    # (2.2) List all the nodal vairables to be fed into the solver
+    solveFor = [
+                Vin, Von, Vop, Vip, # Voltages
+                Iip, Iin
+                ]
+    
+
+    # (2.3) Select a transmission matrix (default = symbolic matrix)
+    T_a = TransmissionMatrix().getTranmissionMatrix()
+    T_b = TransmissionMatrix().getTranmissionMatrix()
+
+    # Need to extract the Z of the impedance block object 
+    Z1 = z1_block.symbol
+    Z2 = z2_block.symbol
+    ZL = zL_block.symbol
+
+    # (2.4) Define the impedances that can be disconnected in the circuit
+    impedancesToDisconnect = [Z1, ZL]
+
+    # (2.5) Define the Nodal Equations
+    nodalEquations = [
+                Eq((Vip - Vop)/Z1, (Vop-Von)/ZL),
+                Eq((Vip - Vin)/(Z1+ Z2 + ZL), (Vop-Von)/ZL),
+                Eq(Iin, -1*Iip),
+                Eq(Iin, (Vip - Vop)/Z1)
+            ]
+    # End of step (2)
+    # ---------------------------------------
+
+    # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
+    circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+# ===================================================================
+# End of Example 3 -- Voltage Divider Circuit
 
