@@ -93,7 +93,7 @@ class Circuit_Solver:
         # Solve for generic transfer function
         solutions = solve(self.equations, self.solveFor, dict=True)
         print("(2) solved the base transfer function (symbolic [T])")
-        print(solutions)
+        # print(solutions)
         
 
         if solutions:
