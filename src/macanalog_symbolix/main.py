@@ -91,7 +91,7 @@ def main():
 
     circuit = select_demo_circuit(args.demoCircuit)
     if circuit is None:
-        print(f"Selected circuit ({args.demoCircuit}) cannot be ressolved :(")
+        print(f"Selected demo circuit ({args.demoCircuit}) cannot be ressolved :(")
         return None
     args.name = f"{args.demoCircuit}_{args.name}"
 
