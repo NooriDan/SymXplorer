@@ -5,26 +5,7 @@ import argparse
 from   macanalog_symbolix.utils          import clear_terminal, print_specs
 from   macanalog_symbolix.domains        import Circuit
 from   macanalog_symbolix.solver         import run_experiment
-import macanalog_symbolix.demo_setup     as demo_setup # Used as demo data
-
-def select_demo_circuit(circuit_select: str) -> Circuit:
-    circuit: Circuit = None
-
-    if circuit_select == "CG":
-        circuit = demo_setup.Common_Gate.circuit
-        
-    if circuit_select == "CS":
-        circuit = demo_setup.Common_Source.circuit
-
-    if circuit_select == "DIVIDER":
-        circuit = demo_setup.Voltage_Divider.circuit
-
-    if circuit is None:
-        return None
-    
-    print(f"=> Circuit ({circuit_select}) can be solved?: {circuit.hasSolution()}") 
-
-    return circuit
+from   macanalog_symbolix.demo_setup     import select_demo_circuit  
 
 def get_parser():
     # Create argument parser

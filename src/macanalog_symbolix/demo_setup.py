@@ -432,3 +432,22 @@ class Voltage_Divider:
 # ===================================================================
 # End of Example 3 -- Voltage Divider Circuit
 
+
+
+
+def select_demo_circuit(circuit_select: str) -> Circuit:
+    circuit: Circuit = None
+    demo_circuit_dict = {
+        "CG"      : Common_Gate.circuit,
+        "CS"      : Common_Source.circuit,
+        "DIVIDER" : Voltage_Divider.circuit
+    }
+
+    circuit = demo_circuit_dict.get(circuit_select)
+
+    if circuit is None:
+        return None
+    
+    print(f"=> Circuit ({circuit_select}) can be solved?: {circuit.hasSolution()}") 
+
+    return circuit
