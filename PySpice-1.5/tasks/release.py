@@ -88,8 +88,8 @@ def update_git_sha(ctx):
         version = tag[1:]
     else:
         version = tag
-    if not re.match('\d+(\.\d+(\.\d+)?)?', version):
-        raise ValueError('Invalid version {}'.format(version))
+    # if not re.match('\d+(\.\d+(\.\d+)?)?', version):
+    #     raise ValueError('Invalid version {}'.format(version))
     result = ctx.run('git rev-parse HEAD', hide='out')
     sha = result.stdout.strip()
     print(sha)
