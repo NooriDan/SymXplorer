@@ -1,11 +1,16 @@
+"""
+This is the module where core solver logic is implmented. 
+Circuit_Solver      (Class)    => solves the generic form of the transfer function for a set of impedance blocks connected
+Impedance_Analyzer  (Class)    => sweeps over the possible configuration of each impedance block, computes its filter parameters and 
+run_experiment      (function) => A pre-configured application of the two class, handling data fetching, run orders, and report generation
+"""
 import itertools
+from   pprint    import pprint
+from   typing    import Dict, List, Optional
 import sympy
 from   sympy     import oo as inf
 from   sympy     import symbols, Poly, numer, denom, solve, simplify
-from   sympy     import oo as inf
-from   typing    import Dict, List, Optional
 from   tqdm      import tqdm
-from   pprint    import pprint
 
 # Custom Imports
 # import  .Global  as GlobalVariables

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing      import Dict, List, Optional
+from typing      import Dict, List, Optional, Callable
 import sympy
 from sympy import symbols, Matrix
 # Custom imports
@@ -11,9 +11,9 @@ class Impedance_Block:
         self.symbol: sympy.Basic = sympy.Symbol(f"Z_{name}")
 
         s = sympy.symbols("s")
-        self.Z_R: sympy.Basic = sympy.symbols(f"R_{name}")
-        self.Z_L: sympy.Basic = s * sympy.symbols(f"L_{name}")
-        self.Z_C: sympy.Basic = 1 / (s * sympy.symbols(f"C_{name}"))
+        self.Z_R: sympy.Basic = sympy.symbols(f"R_{name}", real=True)
+        self.Z_L: sympy.Basic = s * sympy.symbols(f"L_{name}", real=True)
+        self.Z_C: sympy.Basic = 1 / (s * sympy.symbols(f"C_{name}", real=True))
 
         # to be computed
         self.allowedConnections: List[sympy.Basic] = []
@@ -24,7 +24,7 @@ class Impedance_Block:
             "L" : self.Z_L,
             "C" : self.Z_C
         }
-        self.conectionSymbols: Dict[str, function] = {
+        self.conectionSymbols: Dict[str, Callable] = {
             "|" : self.parallel,
             "+" : self.series
         }
@@ -32,7 +32,7 @@ class Impedance_Block:
         self.endOfFunctionToken:   str  = "*END*"
     
     def __repr__(self):
-        return self.symbol
+        return str(self.symbol)
 
     def simplify(self):
         for i, _impedance in enumerate(self.allowedConnections):
@@ -124,7 +124,7 @@ class TransmissionMatrix:
         self.defaultType = defaultType
 
         # Variables global to the class
-        gm, ro, Cgd, Cgs    = symbols(f'g_m r_o C_gd C_gs')
+        gm, ro, Cgd, Cgs    = symbols(f'g_m r_o C_gd C_gs', real=True)
         t11, t12, t21, t22  = symbols(f'{element_name}_11 {element_name}_12 {element_name}_21 {element_name}_22')
         s = symbols("s")
 
@@ -150,8 +150,6 @@ class TransmissionMatrix:
             raise IndexError
         
         return transmission_matrix[row, col]
-
-        
 
 @dataclass
 class Circuit:
@@ -182,7 +180,6 @@ class Circuit:
 
         return len(self.solve_for) <= len(nonImpedanceSymbols)
     
-
 @dataclass
 class Filter_Classification:
     zCombo: List[sympy.Basic]
