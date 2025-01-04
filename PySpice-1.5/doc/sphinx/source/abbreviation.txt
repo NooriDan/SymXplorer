@@ -1,0 +1,31 @@
+.. -*- Mode: rst -*-
+
+.. _CFFI: http://cffi.readthedocs.org/en/latest/
+.. _Circuit_macros: http://ece.uwaterloo.ca/~aplevich/Circuit_macros
+.. _IPython: http://ipython.org
+.. _Kicad: http://www.kicad-pcb.org
+.. _Matplotlib: http://matplotlib.org
+.. _Modelica: http://www.modelica.org
+.. _Ngspice: http://ngspice.sourceforge.net
+.. _Numpy: http://www.numpy.org
+.. _PyPI: https://pypi.python.org/pypi
+.. _Pyterate: https://github.com/FabriceSalvaire/Pyterate
+.. _Python: http://python.org
+.. _Sphinx: http://sphinx-doc.org
+.. _Tikz: http://www.texample.net/tikz
+.. _Xyce: https://xyce.sandia.gov
+
+.. |CFFI| replace:: CFFI
+.. |Circuit_macros| replace:: Circuit_macros
+.. |IPython| replace:: IPython
+.. |Kicad| replace:: Kicad
+.. |Matplotlib| replace:: Matplotlib
+.. |Modelica| replace:: Modelica
+.. |Ngspice| replace:: Ngspice
+.. |Numpy| replace:: Numpy
+.. |PyPI| replace:: PyPI
+.. |Pyterate| replace:: Pyterate
+.. |Python| replace:: Python
+.. |Sphinx| replace:: Sphinx
+.. |Tikz| replace:: Tikz
+.. |Xyce| replace:: Xyce

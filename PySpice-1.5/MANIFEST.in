@@ -1,0 +1,34 @@
+include .gitignore
+include .travis.yml
+include CHANGES.txt
+include GPL-V3.0.txt
+include LICENSE.txt
+include MANIFEST.in
+include README.html
+include README.rst
+include README.txt
+include bower/bower.json
+include invoke.yaml
+include make-release.sh
+include requirements.txt requirements-dev.txt
+include setenv.sh start.sh
+include setup_data.py
+include tox.ini
+recursive-include PySpice *.py *.yml *.h
+recursive-include doc *
+recursive-include doc/sphinx/source/_static *
+recursive-include examples *
+recursive-include gh-pages *
+recursive-include tools *
+recursive-include unit-test *.py
+recursive-include spice-examples *
+recursive-include issues *.py *.lib
+global-exclude *~
+global-exclude *__pycache__*
+global-exclude *.pyc
+global-exclude *.pdf
+prune build
+prune doc/sphinx/build
+prune doc/sphinx/source/api
+prune doc/sphinx/source/examples
+prune doc/pelican
