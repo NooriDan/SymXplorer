@@ -36,23 +36,26 @@ class Impedance_Block:
 
     def simplify(self):
         for i, _impedance in enumerate(self.allowedConnections):
-            self.allowedConnections[i] = sympy.simplify(_impedance)
+            # self.allowedConnections[i] = sympy.expand(_impedance) # Inefficient
+            self.allowedConnections[i] = sympy.cancel(_impedance)
+            print(f"batch {i}")
+
     
     def series(self, list_of_impedances: List[sympy.Basic]):
         
         equivalentZ = list_of_impedances[0]
         for impedance in list_of_impedances[1:]:
             equivalentZ += impedance
-        
-        return sympy.simplify(equivalentZ)
+        # print(f"{self.symbol} = {sympy.factor(equivalentZ)}")
+        return sympy.factor(equivalentZ)
     
     def parallel(self,list_of_impedances: List[sympy.Basic]):
         
         equivalentG = 1/list_of_impedances[0]
         for impedance in list_of_impedances[1:]:
             equivalentG += 1/impedance
-        
-        return sympy.simplify(1/equivalentG)
+        # print(f"{self.symbol} = {sympy.factor(1/equivalentG)}")
+        return sympy.factor(1/equivalentG)
     
     def setAllowedImpedanceConnections(self, allowedConnections_texts: List[str]):
         """

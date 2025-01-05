@@ -1,6 +1,6 @@
 import sympy
 from   tqdm     import tqdm
-from   sympy    import denom, numer, degree, symbols, simplify, sqrt
+from   sympy    import denom, numer, degree, symbols, simplify, sqrt, factor, cancel
 from   typing   import Dict, List
 # Custom Imports
 from .domains import Filter_Classification
@@ -152,8 +152,8 @@ class Filter_Classifier():
                     'parameters': None}
 
         # Compute natural frequency (wo), quality factor (Q), and bandwidth
-        wo = sqrt(simplify(a0 / a2))
-        Q = simplify((a2 / a1) * wo)
+        wo = sqrt(cancel(a0 / a2))
+        Q = cancel((a2 / a1) * wo)
         bandwidth = wo / Q
 
         # Extract numerator coefficients
@@ -196,14 +196,14 @@ class Filter_Classifier():
         # Compute zero's natural frequency (wz) if applicable
         valid = True
         if b2 != 0 and b0 != 0:
-            wz = sqrt(simplify(b0 / b2))
+            wz = sqrt(cancel(b0 / b2))
         else:
             wz = None
 
         # Compute filter constants
-        K_HP = simplify(b2 / a2)
-        K_BP = simplify(b1 / (a2 * bandwidth))
-        K_LP = simplify(b0 / (a2 * wo**2))
+        K_HP = cancel(b2 / a2)
+        K_BP = cancel(b1 / (a2 * bandwidth))
+        K_LP = cancel(b0 / (a2 * wo**2))
 
 
         # # compare wz to wo
@@ -212,7 +212,7 @@ class Filter_Classifier():
             fType = "INVALID-WZ"
 
         # Additional parameter (Qz) for Generalized Equalizer (GE) filters
-        Qz = simplify((b2 / b1) * wo) if b1 != 0 else None
+        Qz = cancel((b2 / b1) * wo) if b1 != 0 else None
 
         if (Qz) and (Qz == -Q):
             fType = "AP"

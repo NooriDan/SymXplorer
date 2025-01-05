@@ -17,7 +17,7 @@ Date: [Dec 2024]
 from sympy import symbols, Eq
 from dataclasses import dataclass
 # Cusom Imports
-from .domains   import Circuit, Impedance_Block, TransmissionMatrix
+from domains   import Circuit, Impedance_Block, TransmissionMatrix
 
 
 # Example 1 -- Common Gate Differential Circuit
@@ -435,7 +435,7 @@ class Voltage_Divider:
 
 
 
-def select_demo_circuit(circuit_select: str) -> Circuit:
+def select_demo_circuit(circuit_select: str, printflag: bool = False) -> Circuit:
     circuit: Circuit = None
     demo_circuit_dict = {
         "CG"      : Common_Gate.circuit,
@@ -448,6 +448,17 @@ def select_demo_circuit(circuit_select: str) -> Circuit:
     if circuit is None:
         return None
     
-    print(f"=> Circuit ({circuit_select}) can be solved?: {circuit.hasSolution()}") 
+    if printflag:
+        print(f"=> Circuit ({circuit_select}) can be solved?: {circuit.hasSolution()}") 
 
     return circuit
+
+import datetime, tqdm
+if __name__ == "__main__":
+    start = datetime.datetime.now()
+    for i in tqdm.tqdm(range(50000000)):
+        select_demo_circuit("CG")
+    end = datetime.datetime.now()
+    duration = (end - start)
+
+    print(f"duration {duration} after {i} runs")

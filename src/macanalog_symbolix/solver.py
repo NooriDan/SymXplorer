@@ -105,7 +105,7 @@ class Circuit_Solver:
             solution = solutions[0]  # Take the first solution
             print("FOUND THE BASE TF")
             baseHs: sympy.Basic = (solution.get(oPos, oPos) - solution.get(oNeg, oNeg)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
-            baseHs = simplify((baseHs.factor()))
+            baseHs = sympy.cancel((baseHs.factor()))
             self.baseSymbolicHs = baseHs
             return baseHs
         print("!!!!!! COULD NOT SOLVE THE NODAL EQUATIONS !!!!!!")
@@ -120,7 +120,7 @@ class Circuit_Solver:
         }
 
         Hs = self.baseSymbolicHs.subs(sub_dict)  # Substitute the impedance values into the base function
-        Hs = simplify(Hs.factor())  # Simplify and factor the resulting expression
+        Hs = sympy.cancel(Hs.factor())  # Simplify and factor the resulting expression
         self.baseHs = Hs
         print(f"*** --- Done --- ***")
         return Hs
@@ -225,7 +225,8 @@ class Impedance_Analyzer:
             Hs_num = Poly(numer(Hs), s)
             Hs_den = Poly(denom(Hs), s)
             
-            Hs = Hs_num / Hs_den
+            Hs = sympy.Rational(Hs_num, Hs_den)
+            
         except sympy.PolynomialError:
             Hs = sympy.simplify(Hs)
             # print(f"Polynomial error when computing {Hs}")
