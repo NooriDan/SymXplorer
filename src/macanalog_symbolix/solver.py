@@ -13,15 +13,14 @@ from   sympy     import symbols, Poly, numer, denom, solve, simplify
 from   tqdm      import tqdm
 
 # Custom Imports
-# import  .Global  as GlobalVariables
-from   .domains import Circuit, Impedance_Block, TransmissionMatrix
+from   .domains import Circuit, Impedance_Block, TransmissionMatrix, ExperimentResult
 from   .filter  import Filter_Classifier
 from   .utils   import FileSave
 
 
 # ----------  Class Definitions  ----------
 class Circuit_Solver:
-    """Implementation of algorithm 1 -> finds the base transfer function"""
+    """Finds the base transfer function"""
     def __init__(self, 
                 circuit:    Circuit,
                 _output:    List[sympy.Basic], 
@@ -87,23 +86,19 @@ class Circuit_Solver:
         iPos, iNeg = self.input
 
         print(" ----------------------------")
-        print(f" Solving for ({oPos} - {oNeg}) / ({iPos} - {iNeg})")
-        print(f"Intermediate Variables: {self.solveFor}")
+        print(f"1 - Solving for ({oPos} - {oNeg}) / ({iPos} - {iNeg})")
+        print(f"2 - Intermediate Variables: {self.solveFor}")
         print(" ----------------------------")
-
-        # Define nodal equations
-        print("(1) set up the nodal equation")
-        # equations = self._getNodalEquations()
 
         # Solve for generic transfer function
         solutions = solve(self.equations, self.solveFor, dict=True)
-        print("(2) solved the base transfer function (symbolic [T])")
+        print("3 - solved the base transfer function (symbolic [T])")
         # print(solutions)
         
 
         if solutions:
             solution = solutions[0]  # Take the first solution
-            print("FOUND THE BASE TF")
+            print("4 - FOUND THE BASE TF")
             baseHs: sympy.Basic = (solution.get(oPos, oPos) - solution.get(oNeg, oNeg)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
             baseHs = sympy.cancel((baseHs.factor()))
             self.baseSymbolicHs = baseHs
@@ -173,17 +168,13 @@ class Impedance_Analyzer:
     """Main class putting everything together"""
     def __init__(self, _experimentName: str, circuit_solver: Circuit_Solver):
          
-        self.experimentName = _experimentName
-        self.circuit_solver: Circuit_Solver = circuit_solver
+        self.experimentName:    str = _experimentName
+        self.circuit_solver:    Circuit_Solver = circuit_solver
         self.impedance_blocks:  List[Impedance_Block] = circuit_solver.impedances
         self.impedance_symbols: List[sympy.Basic]     = circuit_solver.impedancesToDisconnect
 
         self.classifier: Filter_Classifier = Filter_Classifier()
-        self.fileSave: FileSave = FileSave(outputDirectory=f"Runs/{self.experimentName}")
-
-        self.transferFunctions: List[sympy.Basic] = []
-        self.solvedCombos: List[int]= []
-        self.numOfComputes: int = 0
+        self.fileSave:   FileSave = FileSave(outputDirectory=f"Runs/{self.experimentName}")
 
     def isCircuitSolved(self):
         return self.circuit_solver.isSolved()
@@ -225,7 +216,7 @@ class Impedance_Analyzer:
             Hs_num = Poly(numer(Hs), s)
             Hs_den = Poly(denom(Hs), s)
             
-            Hs = sympy.Rational(Hs_num, Hs_den)
+            Hs = Hs_num/Hs_den
             
         except sympy.PolynomialError:
             Hs = sympy.simplify(Hs)
@@ -260,7 +251,6 @@ class Impedance_Analyzer:
         
         # Add the computed transfer functions to the classifier
         self.classifier.addTFs(solvedTFs, impedanceBatch)
-        self.numOfComputes += 1
 
         # Output the number of transfer functions computed
         print(f"Number of transfer functions found: {len(solvedTFs)}")
@@ -352,7 +342,7 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
 
 
     # -------- Experiment Loop -----------------------
-
+    results = ExperimentResult(experimentName)
 
     if (not impedanceKeysOverwrite):
         for i, dictionary in enumerate(impedanceKeys, 1):
@@ -360,26 +350,33 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
             dictionarySize  = len(dictionary.keys())
             for j, key in enumerate(dictionary.keys(), 1):
                 print(f"==> Running the {experimentName} Experiment for {key} (progress: {j}/{dictionarySize} combo size: {i}/{comboSize})\n")
-                experiment = Impedance_Analyzer(experimentName, solver)
-                experiment.computeTFs(comboKey=key)
+                analysis = Impedance_Analyzer(experimentName, solver)
+                analysis.computeTFs(comboKey=key)
                 
-                experiment.classifier.classifyBiQuadFilters()
-                experiment.classifier.summarizeFilterType()
+                analysis.classifier.classifyBiQuadFilters()
+                analysis.classifier.summarizeFilterType()
 
-                experiment.reportSummary(experimentName, key)
-                experiment.compilePDF()
+                analysis.reportSummary(experimentName, key)
+                analysis.compilePDF()
+
+                results.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
     else: 
         for i, key in enumerate(impedanceKeys, 1):
             print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
-            experiment = Impedance_Analyzer(experimentName, solver)
-            experiment.computeTFs(comboKey=key)
+            analysis = Impedance_Analyzer(experimentName, solver)
+            analysis.computeTFs(comboKey=key)
             
-            experiment.classifier.classifyBiQuadFilters()
-            experiment.classifier.summarizeFilterType()
+            analysis.classifier.classifyBiQuadFilters()
+            analysis.classifier.summarizeFilterType()
 
-            experiment.reportSummary(experimentName, key)
-            experiment.compilePDF()
+            analysis.reportSummary(experimentName, key)
+            analysis.compilePDF()
+
+            results.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
 
     print("<----> END OF EXPERIMENT <---->")
-    print("Impedance Keys analyzed: ")
+    print(f"Impedance Keys analyzed (count: {len(impedanceKeys)}): ")
     pprint(impedanceKeys)
+
+    results.save()
+    # results.to_csv() # better to load the results through and then convert to csv

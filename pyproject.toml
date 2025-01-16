@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [project]
 name = "macanalog_symbolix"
 description = "Symbolic toolbox to analyze analog circuits"
-version = "1.0.0"
+version = "1.1.0"
 requires-python = ">=3.10"
 dependencies = [
     'pytest >= 8.2.2',

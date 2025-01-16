@@ -1,7 +1,12 @@
+from __future__ import annotations
+import os
 from dataclasses import dataclass, field
 from typing      import Dict, List, Optional, Callable
 import sympy
 from sympy import symbols, Matrix
+
+import pandas as pd
+import pickle
 # Custom imports
 
 
@@ -205,6 +210,136 @@ class Filter_Classification:
         )
     
 @dataclass
-class ExperimentResult():
-    baseHs: sympy.Basic
-    classifications: List[Filter_Classification]
+class ExperimentResult:
+    experiment_name:      str
+    output_directory:     Optional[str] = "Runs/Default"
+    base_tfs_dict:        Optional[Dict[str, sympy.Basic]]                    = field(default_factory=dict)  # Safely handle mutable defaults
+    classifications_dict: Optional[Dict[str, List[Filter_Classification]]]    = field(default_factory=dict)  # Safely handle mutable defaults
+    output_directory:     str
+
+    def add_result(self, impedance_key, baseHs, classifications):
+        self.classifications_dict[impedance_key] = classifications
+        self.base_tfs_dict[impedance_key] = baseHs
+
+    def flatten_classifications(self) -> pd.DataFrame:
+        """
+        Flatten the classifications_dict into a Pandas DataFrame.
+        Each row represents one Filter_Classification object, 
+        along with its associated impedance_key.
+        
+        Returns:
+            pd.DataFrame: Flattened DataFrame with attributes of Filter_Classification.
+        """
+        rows = []
+        for impedance_key, classifications in self.classifications_dict.items():
+            for classification in classifications:
+                rows.append({
+                    "impedance_key": impedance_key,
+                    "zCombo": classification.zCombo,
+                    "transferFunc": classification.transferFunc,
+                    "valid": classification.valid,
+                    "fType": classification.fType,
+                    "parameters": classification.parameters,
+                    "filterOrder": classification.filterOrder,
+                })
+
+        return pd.DataFrame(rows)
+    
+    def flatten_tfs(self, output_name: str = "tfs") -> pd.DataFrame:
+        """
+        Flatten the baseHs_dict into a Pandas DataFrame.
+        Each row represents an impedance key and its associated transfer function.
+
+        Returns:
+            pd.DataFrame: Flattened DataFrame with 'impedance_key' and 'transferFunc'.
+        """
+        rows = []
+        for impedance_key, transfer_func in self.base_tfs_dict.items():
+            rows.append({
+                "impedance_key": impedance_key,
+                "transferFunc": transfer_func
+            })
+
+        return pd.DataFrame(rows)
+
+    def to_csv(self):
+        self.output_directory = f"Runs/{self.experiment_name}"
+        os.makedirs(self.output_directory, exist_ok=True)
+
+        filename = f"{self.output_directory}/classifications.csv"
+        self.flatten_classifications().to_csv(filename)
+        print(f"flattened all the classifications to {filename}")
+
+        filename = f"{self.output_directory}/tfs.csv"
+        self.flatten_tfs().to_csv(filename)
+        print(f"flattened all the classifications to {filename}")
+
+    def save(self):
+        """
+        Save the ExperimentResult object to results.pkl in Runs/self.experiment_name folder
+        """
+        self.output_directory = f"Runs/{self.experiment_name}"
+        os.makedirs(self.output_directory, exist_ok=True)
+
+        filename = f"{self.output_directory}/results.pkl"
+        
+        try:
+            with open(filename, 'wb') as f:
+                pickle.dump(self, f)
+            print(f"ExperimentResult saved successfully to {filename}")
+        except Exception as e:
+            print(f"Error saving ExperimentResult: {e}")
+
+    def load(self, filename: str = "DEFAULT"):
+        """
+        Load an ExperimentResult object from a file.
+
+        Args:
+            filename (str): The filename to load the object from.
+
+        Returns:
+            ExperimentResult: The loaded ExperimentResult object, or None if an error occurred.
+        """
+
+        self.output_directory = f"Runs/{self.experiment_name}"
+        os.makedirs(self.output_directory, exist_ok=True)
+
+        if filename == "DEFAULT":
+            filename = f"{self.output_directory}/results.pkl"
+        
+        try:
+            with open(filename, 'rb') as f:
+                obj = pickle.load(f)
+
+            # # Ensure the loaded object is an instance of ExperimentResult
+            # if type(obj) == type(ExperimentResult("dummy")):
+            #     print(f"ExperimentResult loaded successfully from {filename}")
+            # else:
+            #     print(f"Loaded object is not of type ExperimentResult.")
+            
+            return obj
+
+        except Exception as e:
+            print(f"Error loading ExperimentResult: {e}")
+            return None
+
+    def find_results_file(self, start_dir: str = "./", filename: str = "results.pkl"):
+        # List to store all the directories that contain the file
+        directories = []
+        
+        for root, dirs, files in os.walk(start_dir):
+            if filename in files:
+                directories.append(root)
+        
+        return directories
+        
+if __name__=="__main__":
+    result_obj = ExperimentResult("Test")
+    directories = result_obj.find_results_file()
+    print(f"founded results.pkl in {directories}")
+
+    loaded_objs: List[ExperimentResult]  = []
+    for dir in directories:
+        loaded_objs.append(result_obj.load(f"{dir}/results.pkl"))
+    for obj in loaded_objs:
+        print(f"name: {obj.experiment_name}, dir: ./{obj.output_directory}, keys: {obj.base_tfs_dict.keys()}")

@@ -17,7 +17,7 @@ Date: [Dec 2024]
 from sympy import symbols, Eq
 from dataclasses import dataclass
 # Cusom Imports
-from domains   import Circuit, Impedance_Block, TransmissionMatrix
+from .domains   import Circuit, Impedance_Block, TransmissionMatrix
 
 
 # Example 1 -- Common Gate Differential Circuit
@@ -352,6 +352,8 @@ class Common_Source:
 # ===================================================================
 # End of Example 2 -- Common Source Differential Circuit
 
+# Example 3 -- Voltage Divider Circuit
+# ===================================================================
 @dataclass(frozen=True)
 class Voltage_Divider:
     """Differential Voltage Divider circuit with three Z blocks. Input take differentially from ZL"""
