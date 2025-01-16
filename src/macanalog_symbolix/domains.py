@@ -1,14 +1,16 @@
 from __future__ import annotations
 import os
 from dataclasses import dataclass, field
-from typing      import Dict, List, Optional, Callable
+from typing      import Dict, List, Optional, Callable, TYPE_CHECKING
 import sympy
-from sympy import symbols, Matrix
+from sympy import symbols, Matrix, latex
 
 import pandas as pd
 import pickle
 # Custom imports
-
+if TYPE_CHECKING:
+    # Imports for type checking only
+    from .solver import Circuit_Solver
 
 class Impedance_Block:
     def __init__(self, name: str):
@@ -209,13 +211,26 @@ class Filter_Classification:
             f"valid={self.valid}, fType={self.fType}, parameters={self.parameters})"
         )
     
-@dataclass
+
 class ExperimentResult:
-    experiment_name:      str
-    output_directory:     Optional[str] = "Runs/Default"
-    base_tfs_dict:        Optional[Dict[str, sympy.Basic]]                    = field(default_factory=dict)  # Safely handle mutable defaults
-    classifications_dict: Optional[Dict[str, List[Filter_Classification]]]    = field(default_factory=dict)  # Safely handle mutable defaults
-    output_directory:     str
+
+    def __init__(self, 
+                experiment_name:      str,
+                output_directory:     Optional[str] = "Runs/EXPERIMENT_NAME",
+                circuit_solver:       'Circuit_Solver' = None,
+                base_tfs_dict:        Optional[Dict[str, sympy.Basic]]  = {},                   # Safely handle mutable defaults
+                classifications_dict: Optional[Dict[str, List[Filter_Classification]]] = {}):  # Safely handle mutable defaults
+                
+        self.experiment_name:      str = experiment_name
+        self.output_directory:     Optional[str]   = output_directory
+        self.circuit_solver:       'Circuit_Solver'  = circuit_solver
+        self.base_tfs_dict:        Optional[Dict[str, sympy.Basic]] = base_tfs_dict         
+        self.classifications_dict: Optional[Dict[str, List[Filter_Classification]]] = classifications_dict
+
+        if output_directory == "Runs/EXPERIMENT_NAME":
+            self.output_directory = f"Runs/{self.experiment_name}"
+        os.makedirs(self.output_directory, exist_ok=True)
+        self.paths_to_pkl_file: str = self.find_results_file(start_dir=self.output_directory)
 
     def add_result(self, impedance_key, baseHs, classifications):
         self.classifications_dict[impedance_key] = classifications
@@ -237,6 +252,7 @@ class ExperimentResult:
                     "impedance_key": impedance_key,
                     "zCombo": classification.zCombo,
                     "transferFunc": classification.transferFunc,
+                    "transferFunc_latex": latex(classification.transferFunc),
                     "valid": classification.valid,
                     "fType": classification.fType,
                     "parameters": classification.parameters,
@@ -257,14 +273,14 @@ class ExperimentResult:
         for impedance_key, transfer_func in self.base_tfs_dict.items():
             rows.append({
                 "impedance_key": impedance_key,
-                "transferFunc": transfer_func
+                "transferFunc": transfer_func,
+                "transferFunc_latex": latex(transfer_func)
             })
 
         return pd.DataFrame(rows)
 
     def to_csv(self):
-        self.output_directory = f"Runs/{self.experiment_name}"
-        os.makedirs(self.output_directory, exist_ok=True)
+        print(f"Writting {self.experiment_name} to csv files")
 
         filename = f"{self.output_directory}/classifications.csv"
         self.flatten_classifications().to_csv(filename)
@@ -286,7 +302,7 @@ class ExperimentResult:
         try:
             with open(filename, 'wb') as f:
                 pickle.dump(self, f)
-            print(f"ExperimentResult saved successfully to {filename}")
+            print(f"ExperimentResult saved successfully to {filename} - {os.path.getsize(filename)/1000.} kb")
         except Exception as e:
             print(f"Error saving ExperimentResult: {e}")
 
@@ -301,8 +317,6 @@ class ExperimentResult:
             ExperimentResult: The loaded ExperimentResult object, or None if an error occurred.
         """
 
-        self.output_directory = f"Runs/{self.experiment_name}"
-        os.makedirs(self.output_directory, exist_ok=True)
 
         if filename == "DEFAULT":
             filename = f"{self.output_directory}/results.pkl"
@@ -332,6 +346,32 @@ class ExperimentResult:
                 directories.append(root)
         
         return directories
+    
+    def update(self, where_to_look: str = "") -> str:
+        if where_to_look == "":
+            where_to_look = self.output_directory
+
+        self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look)
+
+        if len(self.paths_to_pkl_file) == 1:
+            print(f"Found a unique pkl file at {self.paths_to_pkl_file[0]}")
+            obj: 'ExperimentResult' = self.load(f"{self.paths_to_pkl_file[0]}/results.pkl")
+            # update the current object
+            self.experiment_name = obj.experiment_name
+            self.base_tfs_dict   = obj.base_tfs_dict
+            self.classifications_dict = obj.classifications_dict
+
+            if (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
+                self.circuit_solver = obj.circuit_solver
+                print("Updated the circuit solver")
+            else: 
+                raise TypeError("Attempted to import the results for an experiment with different setup")
+
+            return self.paths_to_pkl_file[0]
+
+        print(f"could not ressolve the path to the pkl file (found {len(self.paths_to_pkl_file)})")
+        return ""
+
         
 if __name__=="__main__":
     result_obj = ExperimentResult("Test")
@@ -341,5 +381,9 @@ if __name__=="__main__":
     loaded_objs: List[ExperimentResult]  = []
     for dir in directories:
         loaded_objs.append(result_obj.load(f"{dir}/results.pkl"))
+        result_obj.update(where_to_look=dir)
+
+    print("==============")
     for obj in loaded_objs:
         print(f"name: {obj.experiment_name}, dir: ./{obj.output_directory}, keys: {obj.base_tfs_dict.keys()}")
+        

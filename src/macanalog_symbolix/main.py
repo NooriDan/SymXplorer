@@ -15,7 +15,7 @@ def get_parser():
     parser.add_argument("--name", 
                         type= str,
                         required=False,
-                        default="Test",
+                        default="TIA",
                         help="The name of the directory to store the result"
                         )
     
@@ -69,6 +69,11 @@ def get_parser():
                         help="The name of the node properties to take differential input (e.g., for TIA, Iip Iin)."
                         )
     
+    parser.add_argument(
+        "--createCSV",
+        action="store_true",  # This will set the flag to True if the argument is provided
+        help="Flag to create a CSV file.",
+    )
 
 
     # Parse arguments
@@ -96,14 +101,20 @@ def main():
     args.name = f"{args.demoCircuit}_{args.name}"
 
     # --------    Run the experiment   --------------
-    run_experiment(experimentName = args.name, 
-                    T_type = args.type, 
-                    circuit= circuit,
-                    minNumOfActiveImpedances = args.minNumOfActiveImpedances, 
-                    maxNumOfActiveImpedances = args.maxNumOfActiveImpedances,
-                    impedanceKeysOverwrite   = args.impedanceKeys,
-                    outputFrom = args.output,
-                    inputFrom  = args.input)
+    results = run_experiment(experimentName = args.name, 
+                            T_type = args.type, 
+                            circuit= circuit,
+                            minNumOfActiveImpedances = args.minNumOfActiveImpedances, 
+                            maxNumOfActiveImpedances = args.maxNumOfActiveImpedances,
+                            impedanceKeysOverwrite   = args.impedanceKeys,
+                            outputFrom = args.output,
+                            inputFrom  = args.input)
+    
+    if args.createCSV:
+        print("Creating CSV file...")
+        results.to_csv()
+    else:
+        print("CSV creation not requested.")
 
 if __name__ == "__main__":
     main()
