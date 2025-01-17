@@ -7,7 +7,7 @@ name = "SymCircuit"
 version = "1.2.0"
 description = "A symbolic circuit solver"
 readme = "README.md"
-license = {file = "LICENSE"}
+# license = {file = "LICENSE"}
 authors = [
     {name = "Danial, Noori Zadeh", email = "noorizad@mcmaster.com"}
 ]
