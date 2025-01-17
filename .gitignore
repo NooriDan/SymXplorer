@@ -1,3 +1,6 @@
+# pickle files
+*.pkl
+
 # Notebook outputs
 scripts/Runs/
 

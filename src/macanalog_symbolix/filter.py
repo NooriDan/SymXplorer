@@ -5,6 +5,17 @@ from   typing   import Dict, List
 # Custom Imports
 from .domains import Filter_Classification
 
+import logging
+
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 
 class Filter_Classifier():
     """Implementation of algorithm 2"""
@@ -43,7 +54,7 @@ class Filter_Classifier():
 
     def addTFs(self, transferFunctions, impedanceBatch):
         if(len(impedanceBatch) != len(transferFunctions)):
-            print("==== the TF and Z array size mismatch ====")
+            logger.warning("==== the TF and Z array size mismatch ====")
             return False
         
         for tf, zCombo in zip(transferFunctions, impedanceBatch):
@@ -51,9 +62,8 @@ class Filter_Classifier():
             self.impedanceList.append(zCombo)
         return True
 
-    def clearFilter(self):
-        print("!!!! Clearning the filter !!!!")
-        self.transferFunctionsList = []
+    def clear(self):
+        logger.info("!!!! Clearning the filter classifications !!!!")
         self.filterParameters = []
         self.classifications = []
     
@@ -63,9 +73,7 @@ class Filter_Classifier():
 
     def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER", "PolynomialError"]):
         if not self.isClassified():
-            print("===============")
-            print("Classify the TFs first")
-            print("===============")
+            logger.warning("Classify the TFs first")
 
         counts = {}
         for fType in filterTypes:
@@ -95,22 +103,16 @@ class Filter_Classifier():
                                         unit="filter"):
 
             results = self._getBiQuadParameters(tf)
-            if results['valid']:
-                self.classifications.append(Filter_Classification(
-                    zCombo       = impedanceCombo,
-                    transferFunc = tf,
-                    valid= True,
-                    fType        = results["fType"],
-                    parameters   = results["parameters"]
-                ))
-            else:
-                self.classifications.append(Filter_Classification(
-                    zCombo= impedanceCombo,
-                    transferFunc= tf,
-                    valid= False,
-                    fType= results["fType"],
-                    parameters= results["parameters"]
-                ))
+
+            self.classifications.append(Filter_Classification(
+                zCombo       = impedanceCombo,
+                transferFunc = tf,
+                valid        = results.get('valid', False),
+                fType        = results.get("fType", None),
+                parameters   = results.get("parameters", None),
+                filterOrder  = "BiQuad"
+            ))
+
     
     def _getBiQuadParameters(self, tf):
         """
@@ -211,8 +213,8 @@ class Filter_Classifier():
             valid = False
             fType = "INVALID-WZ"
 
-        # Additional parameter (Qz) for Generalized Equalizer (GE) filters
-        Qz = cancel((b2 / b1) * wo) if b1 != 0 else None
+        # Additional parameter (Qz) for GE filters
+        Qz = cancel((b2 / b1) * wo) if (b1 != 0 and fType == "GE") else None
 
         if (Qz) and (Qz == -Q):
             fType = "AP"
@@ -234,8 +236,7 @@ class Filter_Classifier():
         }
 
     def _getFirstOrderParameters(self, tf):
-        print(" === inside FIRST ORDER Parameter Computation === ")
-
+        logger.debug(" === inside FIRST ORDER Parameter Computation === ")
         # Define symbolic variable
         s = symbols('s')
         
@@ -243,6 +244,8 @@ class Filter_Classifier():
         denominator = denom(tf).expand()  # Denominator of tf
         numerator = numer(tf).expand()    # Numerator of tf
 
+        logger.debug(f"Analyzing transfer function: {tf}")
+        
         # Determine orders
         try:
             den_order = degree(denominator, s)
@@ -253,12 +256,14 @@ class Filter_Classifier():
                     'fType' : "PolynomialError",
                     'parameters' : None}
         
+        logger.debug(f"num_order = {num_order}")
+        
         # Extract denominator coeffients
         a1 = denominator.coeff(s, 1)
         a0 = denominator.coeff(s, 0)
         
         # Validate filter form and coefficients
-        if not all([a1, a0]) or num_order > 2 or den_order > 2:
+        if (not all([a1, a0])) or num_order >= 2 or den_order >= 2:
             return {'valid': False,
                     'fType': "INVALID-ORDER",
                     'parameters': None}
@@ -298,7 +303,7 @@ class Filter_Classifier():
         }
 
     def _getThirdOrderParameters(self, tf):
-        print(" === inside THIRD ORDER Parameter Computation === ")
+        logger.debug(" === inside THIRD ORDER Parameter Computation === ")
 
         pass
 
@@ -312,23 +317,14 @@ class Filter_Classifier():
 
             results = self.possibleFilterOrders[filterOrder](tf)
 
-            if results['valid']:
-                self.classifications.append(Filter_Classification(
-                    zCombo       = impedanceCombo,
-                    transferFunc = tf,
-                    valid= True,
-                    fType        = results["fType"],
-                    parameters   = results["parameters"]
-                ))
-            
-            else:
-                self.classifications.append(Filter_Classification(
-                    zCombo= impedanceCombo,
-                    transferFunc= tf,
-                    valid= False,
-                    fType= results["fType"],
-                    parameters= results["parameters"]
-                ))
+            self.classifications.append(Filter_Classification(
+                zCombo       = impedanceCombo,
+                transferFunc = tf,
+                valid        = results.get('valid', False),
+                fType        = results.get("fType", None),
+                parameters   = results.get("parameters", None),
+                filterOrder  = filterOrder
+            ))
 
 class FirstOrderParameters():
     def __init__(self, filterOrder):

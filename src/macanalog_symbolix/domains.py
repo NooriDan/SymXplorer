@@ -230,6 +230,7 @@ class ExperimentResult:
         if output_directory == "Runs/EXPERIMENT_NAME":
             self.output_directory = f"Runs/{self.experiment_name}"
         os.makedirs(self.output_directory, exist_ok=True)
+        
         self.paths_to_pkl_file: str = self.find_results_file(start_dir=self.output_directory)
 
     def add_result(self, impedance_key, baseHs, classifications):
@@ -290,14 +291,12 @@ class ExperimentResult:
         self.flatten_tfs().to_csv(filename)
         print(f"flattened all the classifications to {filename}")
 
-    def save(self):
+    def save(self, filename: str = "results.pkl") -> None:
         """
         Save the ExperimentResult object to results.pkl in Runs/self.experiment_name folder
         """
-        self.output_directory = f"Runs/{self.experiment_name}"
-        os.makedirs(self.output_directory, exist_ok=True)
 
-        filename = f"{self.output_directory}/results.pkl"
+        filename = f"{self.output_directory}/{filename}"
         
         try:
             with open(filename, 'wb') as f:
@@ -306,7 +305,7 @@ class ExperimentResult:
         except Exception as e:
             print(f"Error saving ExperimentResult: {e}")
 
-    def load(self, filename: str = "DEFAULT"):
+    def load(self, filename: str = "DEFAULT") -> ExperimentResult:
         """
         Load an ExperimentResult object from a file.
 
@@ -354,7 +353,7 @@ class ExperimentResult:
         self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look)
 
         if len(self.paths_to_pkl_file) == 1:
-            print(f"Found a unique pkl file at {self.paths_to_pkl_file[0]}")
+            print(f"Found a unique results.pkl file at {self.paths_to_pkl_file[0]}")
             obj: 'ExperimentResult' = self.load(f"{self.paths_to_pkl_file[0]}/results.pkl")
             # update the current object
             self.experiment_name = obj.experiment_name
@@ -368,6 +367,30 @@ class ExperimentResult:
                 raise TypeError("Attempted to import the results for an experiment with different setup")
 
             return self.paths_to_pkl_file[0]
+
+        print(f"could not ressolve the path to the pkl file (found {len(self.paths_to_pkl_file)})")
+        return ""
+    
+    def update_solver_only(self, where_to_look: str = "") -> str:
+        if where_to_look == "":
+            where_to_look = self.output_directory
+
+        filename = "results_circuit_solution.pkl"
+        self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look, filename=filename)
+
+        if len(self.paths_to_pkl_file) == 1:
+            print(f"Found a unique results_circuit_solution.pkl file at {self.paths_to_pkl_file[0]}")
+            obj: 'ExperimentResult' = self.load(f"{self.paths_to_pkl_file[0]}/{filename}")
+
+            if (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
+                # update the current object
+                self.experiment_name = obj.experiment_name
+                self.circuit_solver = obj.circuit_solver
+                print("Updated the circuit solver")
+            else: 
+                raise TypeError("Attempted to import the results for an experiment with different setup")
+
+            return f"{self.paths_to_pkl_file[0]}/{filename}"
 
         print(f"could not ressolve the path to the pkl file (found {len(self.paths_to_pkl_file)})")
         return ""

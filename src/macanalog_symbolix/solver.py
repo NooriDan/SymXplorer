@@ -6,7 +6,7 @@ run_experiment      (function) => A pre-configured application of the two class,
 """
 import itertools
 from   pprint    import pprint
-from   typing    import Dict, List, Optional
+from   typing    import Dict, List, Tuple, Set, Optional
 import sympy
 from   sympy     import oo as inf
 from   sympy     import symbols, Poly, numer, denom, solve, simplify
@@ -286,6 +286,65 @@ class Impedance_Analyzer:
 
 # ----------  Function Definitions  ----------
 
+def solve_circuit(experimentName: str,     # Arbitrary name (affectes where the report is saved)
+                    T_type: str,            # Options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
+                    circuit: Circuit,       # the circuit object containing the information about the circuit under test (impedance blocks, nodal equations, variable to solve for)
+                    outputFrom: List[str],  # Where the output is taken differentially from (TIA -> Vop Von)
+                    inputFrom: List[str]    # Where the input is taken differentially from (TIA -> Iip Iin)
+                    ) -> Circuit_Solver:
+    
+    if (len(outputFrom)!= 2) or (len(inputFrom)!=2):
+        raise IndexError(f"Exactly two values are required.\ninput_size = {len(inputFrom)}, output_size = {len(outputFrom)}")
+    
+    # -------- Experiment hyper-parameters --------
+    _output = [symbols(sym) for sym in outputFrom]
+    _input  = [symbols(sym) for sym in inputFrom]
+    experimentName += "_" + T_type  
+
+    # -------- Create a Solver Object --------------
+
+    solver = Circuit_Solver(circuit,
+                        _output, 
+                        _input,
+                        transmissionMatrixType=T_type)
+    
+    circuit_solver_history = ExperimentResult(experimentName)
+    circuit_solver_history.update()
+
+    if circuit_solver_history is None or  (circuit_solver_history.circuit_solver is None ) or (not circuit_solver_history.circuit_solver.isSolved()):
+        print(f"Solving the circuit for the first time")
+        solver.solve()
+        circuit_solver_history.circuit_solver = solver
+    else:
+        print(f"Loading the circuit solver from past runs")
+        solver = circuit_solver_history.circuit_solver
+    
+    circuit_solver_history.save("results_circuit_solution.pkl")
+    
+    return solver
+
+def get_impedance_keys_systematic(keys_to_remove: Set[str], solver: Circuit_Solver, minNumOfActiveImpedances: int, maxNumOfActiveImpedances: int)-> Tuple[ List[ Dict[str, Tuple[sympy.Basic]] ], int]:
+    # solver.impedanceConnections is of type (List[Dict[str, List[sympy.Basic]]]), 
+    # where str is the string representation of the collection of impedances (e.g., "Z1_Z2" : [Z_1, Z_2])
+    impedanceKeys = solver.impedanceConnections[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances]
+    count_of_new_keys = 0
+    for key_len, keypairs in enumerate(solver.impedanceConnections[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances], 0):
+        impedanceKeys[key_len] = {}
+        for key in keypairs.keys():
+            if not (key in keys_to_remove):
+                impedanceKeys[key_len][key] = keypairs[key]
+                count_of_new_keys += 1
+    
+    return impedanceKeys, count_of_new_keys
+
+def get_impedance_keys_overwrite(keys_to_remove: Set[str], impedanceKeysOverwrite: List[str]) -> Tuple[List[str], int]:
+    impedanceKeys: List[str] = impedanceKeysOverwrite
+    # Filter `impedanceKeys`
+    impedanceKeys = [key for key in impedanceKeys if key not in keys_to_remove]
+    count_of_new_keys: int = len(impedanceKeys)
+
+    return impedanceKeys, count_of_new_keys
+
 def run_experiment(experimentName: str,     # Arbitrary name (affectes where the report is saved)
                     T_type: str,            # Options are "symbolic", "simple", "some-parasitic", and "full-parasitic"
                     circuit: Circuit,      # the circuit object containing the information about the circuit under test (impedance blocks, nodal equations, variable to solve for)
@@ -313,59 +372,39 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
         None: This function does not return any value. The results of the experiment are typically saved in a report file.
     """
 
-    if (len(outputFrom)!= 2) or (len(inputFrom)!=2):
-        raise IndexError(f"Exactly two values are required.\ninput_size = {len(inputFrom)}, output_size = {len(outputFrom)}")
-    
-    # -------- Experiment hyper-parameters --------
-    _output = [symbols(sym) for sym in outputFrom]
-    _input  = [symbols(sym) for sym in inputFrom]
-    experimentName += "_" + T_type  
-
-    # -------- Create a Solver Object --------------
-
-    solver = Circuit_Solver(circuit,
-                        _output, 
-                        _input,
-                        transmissionMatrixType=T_type)
-    
-    results = ExperimentResult(experimentName, circuit_solver=solver)
-    results.update() # load previous results (if exists in Run/EXPERIMENT_NAME folder)
-
-    if (results.circuit_solver is None ) or (not results.circuit_solver.isSolved()):
-        print(f"Solving the circuit for the first time")
-        solver.solve()
-        results.circuit_solver = solver
-    else:
-        solver = results.circuit_solver
-        print(f"Loading the circuit solver from past runs")
-    
+    # -------- get the impedance combinations --------
+    solver = solve_circuit(
+        experimentName=experimentName,
+        T_type=T_type,
+        circuit=circuit,
+        outputFrom=outputFrom,
+        inputFrom=inputFrom
+    )
 
     # -------- get the impedance combinations --------
+    experiment_results_history = ExperimentResult(experimentName, circuit_solver=solver)
+    experiment_results_history.update() # load previous results (if exists in Run/EXPERIMENT_NAME folder)
 
     # Get the keys to be removed
-    keys_to_remove = set(results.base_tfs_dict.keys())
+    keys_to_remove = set(experiment_results_history.base_tfs_dict.keys())
     print(f"** found {len(keys_to_remove)} keys already computed")
-    count_of_new_keys = 0
 
     if not impedanceKeysOverwrite:
         print(f"Performing a systematic search: min_num_of_active_z = {minNumOfActiveImpedances} max_num_of_active_z = {maxNumOfActiveImpedances}")
-        # solver.impedanceConnections is of type (List[Dict[str, List[sympy.Basic]]]), 
-        # where str is the string representation of the collection of impedances (e.g., "Z1_Z2" : [Z_1, Z_2])
-        impedanceKeys = solver.impedanceConnections[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances]
-        for key_len, keypairs in enumerate(solver.impedanceConnections[(minNumOfActiveImpedances-1):maxNumOfActiveImpedances], 0):
-            impedanceKeys[key_len] = {}
-            for key in keypairs.keys():
-                if not (key in keys_to_remove):
-                    impedanceKeys[key_len][key] = keypairs[key]
-                    count_of_new_keys += 1
-        print(f"Experiment will be ran for {count_of_new_keys}")
+        impedanceKeys, count_of_new_keys = get_impedance_keys_systematic(
+            keys_to_remove=keys_to_remove,
+            minNumOfActiveImpedances=minNumOfActiveImpedances,
+            maxNumOfActiveImpedances=maxNumOfActiveImpedances
+            )
 
     else:
-        impedanceKeys = impedanceKeysOverwrite
-        # Filter `impedanceKeys`
-        impedanceKeys = [key for key in impedanceKeys if key not in keys_to_remove]
-        count_of_new_keys = len(impedanceKeys)
-        print(f"Experiment will be ran for {count_of_new_keys} keys: {impedanceKeys}")
+        impedanceKeys, count_of_new_keys = get_impedance_keys_overwrite(
+            keys_to_remove=keys_to_remove,
+            )
+        print(f"Experiment keys: {impedanceKeys}")
+
+    print(f"Experiment will be ran for {count_of_new_keys} keys: {impedanceKeys}")
+
     
     # -------- Experiment Loop -----------------------
 
@@ -384,7 +423,7 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
                 analysis.reportSummary(experimentName, key)
                 analysis.compilePDF()
 
-                results.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
+                experiment_results_history.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
     else: 
         for i, key in enumerate(impedanceKeys, 1):
             print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
@@ -397,13 +436,13 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
             analysis.reportSummary(experimentName, key)
             analysis.compilePDF()
 
-            results.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
+            experiment_results_history.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
 
     print("<----> END OF EXPERIMENT <---->")
     if(count_of_new_keys):
         print(f"Impedance Keys analyzed (count: {count_of_new_keys}): ")
         pprint(impedanceKeys)
 
-    results.save()
+    experiment_results_history.save()
 
-    return results
+    return experiment_results_history
