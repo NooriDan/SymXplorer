@@ -6,7 +6,7 @@ import sympy
 from sympy import symbols, Matrix, latex
 
 import pandas as pd
-import pickle
+import _pickle as pickle # cPickle
 # Custom imports
 if TYPE_CHECKING:
     # Imports for type checking only
@@ -360,7 +360,7 @@ class ExperimentResult:
             self.base_tfs_dict   = obj.base_tfs_dict
             self.classifications_dict = obj.classifications_dict
 
-            if (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
+            if (self.circuit_solver is None) or (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
                 self.circuit_solver = obj.circuit_solver
                 print("Updated the circuit solver")
             else: 
