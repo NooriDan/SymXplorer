@@ -301,7 +301,7 @@ class ExperimentResult:
         try:
             with open(filename, 'wb') as f:
                 pickle.dump(self, f)
-            print(f"ExperimentResult saved successfully to {filename} - {os.path.getsize(filename)/1000.} kb")
+            print(f"\n=== ExperimentResult saved successfully to {filename} - {os.path.getsize(filename)/1000.} kb ===\n")
         except Exception as e:
             print(f"Error saving ExperimentResult: {e}")
 
@@ -362,7 +362,6 @@ class ExperimentResult:
 
             if (self.circuit_solver is None) or (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
                 self.circuit_solver = obj.circuit_solver
-                print("Updated the circuit solver")
             else: 
                 raise TypeError("Attempted to import the results for an experiment with different setup")
 
@@ -379,20 +378,20 @@ class ExperimentResult:
         self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look, filename=filename)
 
         if len(self.paths_to_pkl_file) == 1:
-            print(f"Found a unique results_circuit_solution.pkl file at {self.paths_to_pkl_file[0]}")
+            print(f"\n--- Found a unique pkl file at {self.paths_to_pkl_file[0]}/{filename}")
             obj: 'ExperimentResult' = self.load(f"{self.paths_to_pkl_file[0]}/{filename}")
 
-            if (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
+            if (self.circuit_solver is None) or (obj.circuit_solver.input == self.circuit_solver.input and obj.circuit_solver.output == self.circuit_solver.output):
                 # update the current object
                 self.experiment_name = obj.experiment_name
                 self.circuit_solver = obj.circuit_solver
-                print("Updated the circuit solver")
+                print("--- Updated the circuit solver")
             else: 
-                raise TypeError("Attempted to import the results for an experiment with different setup")
+                raise TypeError("\n!!! Attempted to import the results for an experiment with different setup\n")
 
             return f"{self.paths_to_pkl_file[0]}/{filename}"
 
-        print(f"could not ressolve the path to the pkl file (found {len(self.paths_to_pkl_file)})")
+        print(f"\n!!! could not ressolve the path to the pkl file (found {len(self.paths_to_pkl_file)})\n")
         return ""
 
         

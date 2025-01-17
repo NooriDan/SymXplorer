@@ -75,6 +75,12 @@ def get_parser():
         help="Flag to create a CSV file.",
     )
 
+    parser.add_argument(
+        "--loadHistory",
+        action="store_true",  # This will set the flag to True if the argument is provided
+        help="Flag to load results of previous runs stored in results.pkl (could be time consuming for large files)",
+    )
+
 
     # Parse arguments
     args = parser.parse_args()
@@ -108,7 +114,8 @@ def main():
                             maxNumOfActiveImpedances = args.maxNumOfActiveImpedances,
                             impedanceKeysOverwrite   = args.impedanceKeys,
                             outputFrom = args.output,
-                            inputFrom  = args.input)
+                            inputFrom  = args.input,
+                            loadHistory = args.loadHistory)
     
     if args.createCSV:
         print("Creating CSV file...")

@@ -298,8 +298,7 @@ def solve_circuit(experimentName: str,     # Arbitrary name (affectes where the 
     
     # -------- Experiment hyper-parameters --------
     _output = [symbols(sym) for sym in outputFrom]
-    _input  = [symbols(sym) for sym in inputFrom]
-    experimentName += "_" + T_type  
+    _input  = [symbols(sym) for sym in inputFrom]  
 
     # -------- Create a Solver Object --------------
 
@@ -309,7 +308,7 @@ def solve_circuit(experimentName: str,     # Arbitrary name (affectes where the 
                         transmissionMatrixType=T_type)
     
     circuit_solver_history = ExperimentResult(experimentName)
-    circuit_solver_history.update()
+    circuit_solver_history.update_solver_only()
 
     if circuit_solver_history is None or  (circuit_solver_history.circuit_solver is None ) or (not circuit_solver_history.circuit_solver.isSolved()):
         print(f"Solving the circuit for the first time")
@@ -352,7 +351,8 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
                     maxNumOfActiveImpedances: int,
                     impedanceKeysOverwrite: Optional[List[str]],  # If provided overwrites the systematic simulation run
                     outputFrom: List[str],  # Where the output is taken differentially from (TIA -> Vop Von)
-                    inputFrom: List[str]    # Where the input is taken differentially from (TIA -> Iip Iin)
+                    inputFrom: List[str],   # Where the input is taken differentially from (TIA -> Iip Iin)
+                    loadHistory: bool
                     ) -> ExperimentResult:
 
     """
@@ -371,6 +371,7 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
     Returns:
         None: This function does not return any value. The results of the experiment are typically saved in a report file.
     """
+    experimentName += "_" + T_type
 
     # -------- get the impedance combinations --------
     solver = solve_circuit(
@@ -383,11 +384,14 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
 
     # -------- get the impedance combinations --------
     experiment_results_history = ExperimentResult(experimentName, circuit_solver=solver)
-    experiment_results_history.update() # load previous results (if exists in Run/EXPERIMENT_NAME folder)
-
-    # Get the keys to be removed
-    keys_to_remove = set(experiment_results_history.base_tfs_dict.keys())
-    print(f"** found {len(keys_to_remove)} keys already computed")
+    if loadHistory:
+        print("** Loading the circuit history")
+        experiment_results_history.update() # load previous results (if exists in Run/EXPERIMENT_NAME folder)
+        # Get the keys to be removed
+        keys_to_remove = set(experiment_results_history.base_tfs_dict.keys())
+        print(f"** Found {len(keys_to_remove)} keys already computed")
+    else:
+        keys_to_remove: set = set()
 
     if not impedanceKeysOverwrite:
         print(f"Performing a systematic search: min_num_of_active_z = {minNumOfActiveImpedances} max_num_of_active_z = {maxNumOfActiveImpedances}")
