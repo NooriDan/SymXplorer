@@ -2,10 +2,10 @@ from   pprint         import pprint
 import argparse
 
 # Custom Imports
-from   macanalog_symbolix.utils          import clear_terminal, print_specs
-from   macanalog_symbolix.domains        import Circuit
-from   macanalog_symbolix.solver         import run_experiment
-from   macanalog_symbolix.demo_setup     import select_demo_circuit  
+from   symcircuit.symbolic_solver.utils          import clear_terminal, print_specs
+from   symcircuit.symbolic_solver.domains        import Circuit
+from   symcircuit.symbolic_solver.solver         import run_experiment
+from   symcircuit.symbolic_solver.demo_setup     import select_demo_circuit  
 
 def get_parser():
     # Create argument parser

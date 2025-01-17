@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
 from dataclasses import dataclass, field
-from typing      import Dict, List, Optional, Callable, TYPE_CHECKING
+from typing      import Dict, List, Tuple, Optional, Callable, TYPE_CHECKING
 import sympy
 from sympy import symbols, Matrix, latex
 
@@ -233,9 +233,22 @@ class ExperimentResult:
         
         self.paths_to_pkl_file: str = self.find_results_file(start_dir=self.output_directory)
 
-    def add_result(self, impedance_key, baseHs, classifications):
+    def add_all(self, impedance_key, baseHs, classifications):
+        
         self.classifications_dict[impedance_key] = classifications
         self.base_tfs_dict[impedance_key] = baseHs
+
+    def add_tf_only(self, impedance_key:str, classifications: List[Filter_Classification]):
+        self.classifications_dict[impedance_key] = classifications
+
+    def get(self, impedance_key: str) -> Tuple[List[Filter_Classification], sympy.Basic]:
+        if self.classifications_dict.get(impedance_key) is None : 
+            raise IndexError(f"The impedance key {impedance_key} does not exist in {self.classifications_dict.keys()}")
+        
+        if self.base_tfs_dict.get(impedance_key) is None: 
+            raise IndexError(f"The impedance key {impedance_key} does not exist in {self.base_tfs_dict.keys()}")
+        
+        return self.classifications_dict[impedance_key], self.base_tfs_dict[impedance_key]
 
     def flatten_classifications(self) -> pd.DataFrame:
         """

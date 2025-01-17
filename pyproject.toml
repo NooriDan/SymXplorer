@@ -2,11 +2,15 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-
 [project]
-name = "macanalog_symbolix"
-description = "Symbolic toolbox to analyze analog circuits"
-version = "1.1.0"
+name = "SymCircuit"
+version = "1.2.0"
+description = "A symbolic circuit solver"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Danial, Noori Zadeh", email = "noorizad@mcmaster.com"}
+]
 requires-python = ">=3.10"
 dependencies = [
     'pytest >= 8.2.2',
@@ -14,6 +18,8 @@ dependencies = [
     'tqdm >= 4.67.1'
 ]
 
-
 [project.scripts]
-run-symbolix = "macanalog_symbolix:main"
+run-symbolix = "symcircuit.symbolic_solver.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/symcircuit"]

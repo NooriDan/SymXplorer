@@ -314,11 +314,10 @@ def solve_circuit(experimentName: str,     # Arbitrary name (affectes where the 
         print(f"Solving the circuit for the first time")
         solver.solve()
         circuit_solver_history.circuit_solver = solver
+        circuit_solver_history.save("results_circuit_solution.pkl")
     else:
         print(f"Loading the circuit solver from past runs")
         solver = circuit_solver_history.circuit_solver
-    
-    circuit_solver_history.save("results_circuit_solution.pkl")
     
     return solver
 
@@ -397,6 +396,7 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
         print(f"Performing a systematic search: min_num_of_active_z = {minNumOfActiveImpedances} max_num_of_active_z = {maxNumOfActiveImpedances}")
         impedanceKeys, count_of_new_keys = get_impedance_keys_systematic(
             keys_to_remove=keys_to_remove,
+            solver=solver,
             minNumOfActiveImpedances=minNumOfActiveImpedances,
             maxNumOfActiveImpedances=maxNumOfActiveImpedances
             )
@@ -428,7 +428,10 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
                 analysis.reportSummary(experimentName, key)
                 analysis.compilePDF()
 
-                experiment_results_history.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
+                experiment_results_history.add_all(impedance_key=key, 
+                                                      baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                      classifications=analysis.classifier.classifications)
+                experiment_results_history.save()
     else: 
         for i, key in enumerate(impedanceKeys, 1):
             print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
@@ -441,13 +444,15 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
             analysis.reportSummary(experimentName, key)
             analysis.compilePDF()
 
-            experiment_results_history.add_result(key, analysis.circuit_solver.baseHsDict[key], analysis.classifier.classifications)
-
+            experiment_results_history.add_all(impedance_key=key, 
+                                                  baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                  classifications=analysis.classifier.classifications)
+            experiment_results_history.save()
     print("<----> END OF EXPERIMENT <---->")
     if(count_of_new_keys):
         print(f"Impedance Keys analyzed (count: {count_of_new_keys}): ")
         pprint(impedanceKeys)
 
-    experiment_results_history.save()
+    # experiment_results_history.save()
 
     return experiment_results_history
