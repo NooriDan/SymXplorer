@@ -5,7 +5,7 @@ from symcircuit.symbolic_solver.domains   import Circuit # for type-checking
 
 
 
-def select_demo_circuit(circuit_select: str, printflag: bool = False) -> Circuit:
+def select_circuit(circuit_select: str, printflag: bool = False) -> Circuit:
     demo_circuit_dict = {
         # Differential Circuit Examples
         "CG"           : differential_examples.Common_Gate.circuit,
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     start = datetime.datetime.now()
     for i in tqdm.tqdm(range(50000000)):
-        select_demo_circuit("CG")
+        select_circuit("CG")
     end = datetime.datetime.now()
     duration = (end - start)
 

@@ -154,7 +154,7 @@ class Common_Gate:
     Z5 = z5_block.symbol
     ZL = zL_block.symbol
 
-    # (2.4) Define the impedances that can be disconnected in the circuit
+    # (2.4) Define the impedances that can be disconnected in the circuit (open circuited)
     impedancesToDisconnect = [Z1, Z2, Z3, Z4, Z5, ZL]
 
     # (2.5) Define the Nodal Equations
@@ -187,6 +187,10 @@ class Common_Gate:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
 # ===================================================================
 # End of Example 1 -- Common Gate Differential Circuit
 
@@ -348,6 +352,9 @@ class Common_Source:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
 # ===================================================================
 # End of Example 2 -- Common Source Differential Circuit
 
@@ -430,5 +437,9 @@ class Voltage_Divider:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+    
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
 # ===================================================================
 # End of Example 3 -- Voltage Divider Circuit

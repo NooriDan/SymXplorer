@@ -5,7 +5,7 @@ import argparse
 from   symcircuit.symbolic_solver.utils          import clear_terminal, print_specs
 from   symcircuit.symbolic_solver.domains        import Circuit
 from   symcircuit.symbolic_solver.solver         import run_experiment
-from   symcircuit.demo.examples                  import select_demo_circuit  
+from   symcircuit.demo.examples                  import select_circuit  
 
 def get_parser():
     # Create argument parser
@@ -100,7 +100,7 @@ def main():
 
     # -------- Create a Circuit Object --------------
 
-    circuit = select_demo_circuit(args.demoCircuit)
+    circuit = select_circuit(args.demoCircuit)
     if circuit is None:
         print(f"Selected demo circuit ({args.demoCircuit}) cannot be ressolved :(")
         return None

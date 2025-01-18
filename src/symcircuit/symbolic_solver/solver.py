@@ -32,7 +32,8 @@ class Circuit_Solver:
         self.equations:  List[sympy.Basic]  = circuit.nodal_equations
         self.solveFor:   List[sympy.Basic]  = circuit.solve_for
         self.impedances: List[Impedance_Block]    = circuit.impedances
-        self.impedancesToDisconnect:    List[sympy.Basic] = [impedance.symbol for impedance in circuit.impedances]
+        # self.impedancesToDisconnect:    List[sympy.Basic] = [impedance.symbol for impedance in circuit.impedances]
+        self.impedancesToDisconnect:    List[sympy.Basic] = circuit.impedancesToDisconnect
 
         # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
@@ -98,26 +99,46 @@ class Circuit_Solver:
 
         if solutions:
             solution = solutions[0]  # Take the first solution
-            print("4 - FOUND THE BASE TF")
-            baseHs: sympy.Basic = (solution.get(oPos, oPos) - solution.get(oNeg, oNeg)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
+            # print("FOUND THE BASE TF")
+
+            if (oNeg == sympy.symbols("0") and iNeg == sympy.symbols("0")):
+                print("-- Single-ended input/output")
+                baseHs: sympy.Basic = (solution.get(oPos, oPos)) / (solution.get(iPos, iPos))
+
+            elif (oNeg == sympy.symbols("0")):
+                print("-- Differential input + Single-ended  output")
+                baseHs: sympy.Basic = (solution.get(oPos, oPos)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
+            else:
+                print("--Differential-ended input/output")
+                baseHs: sympy.Basic = (solution.get(oPos, oPos) - solution.get(oNeg, oNeg)) / (solution.get(iPos, iPos) - solution.get(iNeg, iNeg))
+
             baseHs = sympy.cancel((baseHs.factor()))
             self.baseSymbolicHs = baseHs
             return baseHs
         print("!!!!!! COULD NOT SOLVE THE NODAL EQUATIONS !!!!!!")
     
     def _solveForAllImpedancesConnected(self):
-        print(f"*** --- Solving for T type: {self.T_type} --- ***")
-        sub_dict = {
-            self.T_analysis.get_element(0, 0, "symbolic"): self.T_analysis.get_element(0, 0, self.T_type),
-            self.T_analysis.get_element(0, 1, "symbolic"): self.T_analysis.get_element(0, 1, self.T_type),
-            self.T_analysis.get_element(1, 0, "symbolic"): self.T_analysis.get_element(1, 0, self.T_type),
-            self.T_analysis.get_element(1, 1, "symbolic"): self.T_analysis.get_element(1, 1, self.T_type)
-        }
+        """This function call does not affect circuits that do not have a transmission matrix"""
+        Hs = self.baseSymbolicHs
 
-        Hs = self.baseSymbolicHs.subs(sub_dict)  # Substitute the impedance values into the base function
-        Hs = sympy.cancel(Hs.factor())  # Simplify and factor the resulting expression
+        if(self.T_type != "NA"):
+            print(f"*** --- Solving for T type: {self.T_type} --- ***")
+            print("Getting the elements from the T matrix...")
+            sub_dict = {
+                self.T_analysis.get_element(0, 0, "symbolic"): self.T_analysis.get_element(0, 0, self.T_type),
+                self.T_analysis.get_element(0, 1, "symbolic"): self.T_analysis.get_element(0, 1, self.T_type),
+                self.T_analysis.get_element(1, 0, "symbolic"): self.T_analysis.get_element(1, 0, self.T_type),
+                self.T_analysis.get_element(1, 1, "symbolic"): self.T_analysis.get_element(1, 1, self.T_type)
+            }
+
+            if self.baseHsDict is None:
+                raise RuntimeError("Need to compute self.baseHsDict by solving the symbolix expression (immportant for circuits with transmission matric)")
+            print("Substituting the elements...")
+            Hs = self.baseSymbolicHs.subs(sub_dict)  # Substitute the impedance values into the base function
+            Hs = sympy.cancel(Hs.factor())  # Simplify and factor the resulting expression
+            print(f"*** --- Done --- ***")
+        
         self.baseHs = Hs
-        print(f"*** --- Done --- ***")
         return Hs
     
     def _setPossibleImpedanceConnections(self):
@@ -139,12 +160,16 @@ class Circuit_Solver:
 
             self.impedanceConnections.append(myDict)
 
-        print("--- Impedance connections stored in CircuitSetUp.impedanceConnections---")
+        print("--- Impedance connections stored in Circuit_Solver.impedanceConnections---")
         return self.impedanceConnections
 
     def _applyLimitsToBase(self, variables_to_limit: List[sympy.Symbol], limitingValue: sympy.Basic = sympy.oo):
         """Applies sympy.limit to a set of variables."""
         baseHs = self.baseHs  # Local variable, doesn't modify self.baseHs
+
+        if baseHs is None:
+            raise RuntimeError("Need to compute self.baseHs by solving for all impedances connected")
+        
         for var in variables_to_limit:
             baseHs = sympy.limit(baseHs, var, limitingValue)
         return baseHs
@@ -198,7 +223,7 @@ class Impedance_Analyzer:
         print("Zcombos")
         return results
     
-    def computeTransferFunction(self, baseHs, zCombo):
+    def _computeTransferFunction(self, baseHs, zCombo):
 
         sub_dict: Dict[sympy.Symbol, sympy.Basic] = {}
         for i, impedance  in enumerate(self.impedance_symbols):
@@ -245,7 +270,7 @@ class Impedance_Analyzer:
 
         # Use list comprehension for efficient transfer function computation
         solvedTFs = [
-            self.computeTransferFunction(baseHs, zCombo)
+            self._computeTransferFunction(baseHs, zCombo)
             for zCombo in tqdm(impedanceBatch, desc="Getting the TFs (CG)", unit="combo")
         ]
         
@@ -292,6 +317,7 @@ def solve_circuit(experimentName: str,     # Arbitrary name (affectes where the 
                     outputFrom: List[str],  # Where the output is taken differentially from (TIA -> Vop Von)
                     inputFrom: List[str]    # Where the input is taken differentially from (TIA -> Iip Iin)
                     ) -> Circuit_Solver:
+    
     
     if (len(outputFrom)!= 2) or (len(inputFrom)!=2):
         raise IndexError(f"Exactly two values are required.\ninput_size = {len(inputFrom)}, output_size = {len(outputFrom)}")

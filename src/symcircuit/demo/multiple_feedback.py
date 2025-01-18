@@ -116,6 +116,10 @@ class Customized_Current_Mode_Multiple_Feedback:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+    
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
 # ===================================================================
 # End of Example 1
 
@@ -221,6 +225,10 @@ class Voltage_Mode_Multiple_Feedback:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
 # ===================================================================
 # End of Example 2
 
@@ -291,13 +299,13 @@ class Current_Mode_Multiple_Feedback:
     # (2)   NODAL EQUATION DEFINITION
     # ---------------------------------------
     # (2.1) Define symbolic variables (CG)
-    Iin          = symbols('Iin')
+    I1, I2     = symbols('I1 I2')
     V1, V2, Va = symbols('V1 V2 Va')
 
     # (2.2) List all the nodal vairables to be fed into the solver
     solveFor = [
-                V1, V2, Va # Voltages
-                # Iin
+                V1, V2, Va, # Voltages
+                I1, I2
                 ]
     
 
@@ -326,5 +334,11 @@ class Current_Mode_Multiple_Feedback:
 
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
+
+    def update_circuit(self) -> Circuit:
+        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+        return self.circuit
+
+
 # ===================================================================
 # End of Example 2

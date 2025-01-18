@@ -236,7 +236,7 @@ class Filter_Classifier():
         }
 
     def _getFirstOrderParameters(self, tf):
-        logger.debug(" === inside FIRST ORDER Parameter Computation === ")
+        # logger.debug(" === inside FIRST ORDER Parameter Computation === ")
         # Define symbolic variable
         s = symbols('s')
         
@@ -244,7 +244,7 @@ class Filter_Classifier():
         denominator = denom(tf).expand()  # Denominator of tf
         numerator = numer(tf).expand()    # Numerator of tf
 
-        logger.debug(f"Analyzing transfer function: {tf}")
+        # logger.debug(f"Analyzing transfer function: {tf}")
         
         # Determine orders
         try:
@@ -256,7 +256,7 @@ class Filter_Classifier():
                     'fType' : "PolynomialError",
                     'parameters' : None}
         
-        logger.debug(f"num_order = {num_order}")
+        # logger.debug(f"num_order = {num_order}")
         
         # Extract denominator coeffients
         a1 = denominator.coeff(s, 1)

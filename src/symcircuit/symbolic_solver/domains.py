@@ -293,14 +293,14 @@ class ExperimentResult:
 
         return pd.DataFrame(rows)
 
-    def to_csv(self):
+    def to_csv(self, run_detail_comment: str = ""):
         print(f"Writting {self.experiment_name} to csv files")
 
-        filename = f"{self.output_directory}/classifications.csv"
+        filename = f"{self.output_directory}/classifications_{run_detail_comment}.csv"
         self.flatten_classifications().to_csv(filename)
         print(f"flattened all the classifications to {filename}")
 
-        filename = f"{self.output_directory}/tfs.csv"
+        filename = f"{self.output_directory}/tfs_{run_detail_comment}.csv"
         self.flatten_tfs().to_csv(filename)
         print(f"flattened all the classifications to {filename}")
 
