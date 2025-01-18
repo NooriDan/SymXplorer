@@ -5,7 +5,7 @@ import argparse
 from   symcircuit.symbolic_solver.utils          import clear_terminal, print_specs
 from   symcircuit.symbolic_solver.domains        import Circuit
 from   symcircuit.symbolic_solver.solver         import run_experiment
-from   symcircuit.symbolic_solver.demo_setup     import select_demo_circuit  
+from   symcircuit.demo.examples                  import select_demo_circuit  
 
 def get_parser():
     # Create argument parser

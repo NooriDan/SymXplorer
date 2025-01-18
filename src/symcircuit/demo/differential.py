@@ -3,7 +3,6 @@ Module Name: Example experiment setup to perform symbolic analysis
 
 Dependencies:
 - `sympy`: Used for defining the variables in 'nodal_equations'.
-- `.utils`: Provides utility classes such as 'Impedance' and 'TransmissionMatrix'
 - '.domains': Defines the Experiment setup dataclass
 
 Usage:
@@ -17,7 +16,7 @@ Date: [Dec 2024]
 from sympy import symbols, Eq
 from dataclasses import dataclass
 # Cusom Imports
-from .domains   import Circuit, Impedance_Block, TransmissionMatrix
+from symcircuit.symbolic_solver.domains   import Circuit, Impedance_Block, TransmissionMatrix
 
 
 # Example 1 -- Common Gate Differential Circuit
@@ -433,34 +432,3 @@ class Voltage_Divider:
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
 # ===================================================================
 # End of Example 3 -- Voltage Divider Circuit
-
-
-
-
-def select_demo_circuit(circuit_select: str, printflag: bool = False) -> Circuit:
-    circuit: Circuit = None
-    demo_circuit_dict = {
-        "CG"      : Common_Gate.circuit,
-        "CS"      : Common_Source.circuit,
-        "DIVIDER" : Voltage_Divider.circuit
-    }
-
-    circuit = demo_circuit_dict.get(circuit_select)
-
-    if circuit is None:
-        return None
-    
-    if printflag:
-        print(f"=> Circuit ({circuit_select}) can be solved?: {circuit.hasSolution()}") 
-
-    return circuit
-
-import datetime, tqdm
-if __name__ == "__main__":
-    start = datetime.datetime.now()
-    for i in tqdm.tqdm(range(50000000)):
-        select_demo_circuit("CG")
-    end = datetime.datetime.now()
-    duration = (end - start)
-
-    print(f"duration {duration} after {i} runs")
