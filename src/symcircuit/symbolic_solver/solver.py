@@ -49,6 +49,9 @@ class Circuit_Solver:
         self.baseHs:         sympy.Basic             = None
         self.baseHsDict:     Dict[str, sympy.Basic]  = {}
 
+        # For debugging:
+        self.solutions = None
+
     # Custom string representation for BaseTransferFunction
     def __repr__(self):
         return f"BaseTranferFunction object -> T_type {self.T_type}\n H(s) = ({self.output[0]} - {self.output[1]}) / ({self.input[0]} - {self.input[1]})"
@@ -93,6 +96,7 @@ class Circuit_Solver:
 
         # Solve for generic transfer function
         solutions = solve(self.equations, self.solveFor, dict=True)
+        self.solutions = solutions
         print("3 - solved the base transfer function (symbolic [T])")
         # print(solutions)
         
@@ -103,6 +107,9 @@ class Circuit_Solver:
 
             if (oNeg == sympy.symbols("0") and iNeg == sympy.symbols("0")):
                 print("-- Single-ended input/output")
+                numerator   = solution.get(oPos, None)
+                denominator = solution.get(iPos, None)
+
                 baseHs: sympy.Basic = (solution.get(oPos, oPos)) / (solution.get(iPos, iPos))
 
             elif (oNeg == sympy.symbols("0")):

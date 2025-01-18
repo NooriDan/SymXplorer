@@ -326,8 +326,10 @@ class Current_Mode_Multiple_Feedback:
 
     # (2.5) Define the Nodal Equations
     nodalEquations = [
-                Eq((V1-Va)/Z1 + (0 - Va)/Z4 + (0 - Va)/Z3 + (V2-Va)/Z2, 0),
-                Eq((Va - 0)/Z3, (0 - V2)/Z5)
+                Eq(I2, (V2 - Va)/Z5 + (V2 - V1)/Z2),
+                Eq(I1, (0 - V1)/Z4  + (Va - V1)/Z3 + (V2 - V1)/Z2),
+                Eq(I1, (V1 - 0)/Z1),
+                Eq(V2, 0)
             ]
     # End of step (2)
     # ---------------------------------------
