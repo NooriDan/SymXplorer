@@ -32,8 +32,8 @@ class Circuit_Solver:
         self.equations:  List[sympy.Basic]  = circuit.nodal_equations
         self.solveFor:   List[sympy.Basic]  = circuit.solve_for
         self.impedances: List[Impedance_Block]    = circuit.impedances
-        # self.impedancesToDisconnect:    List[sympy.Basic] = [impedance.symbol for impedance in circuit.impedances]
-        self.impedancesToDisconnect:    List[sympy.Basic] = circuit.impedancesToDisconnect
+        self.impedancesToDisconnect:    List[sympy.Basic] = [impedance.symbol for impedance in circuit.impedances]
+        # self.impedancesToDisconnect:    List[sympy.Basic] = circuit.impedancesToDisconnect
 
         # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
@@ -187,8 +187,8 @@ class Circuit_Solver:
             raise AttributeError("impedancesToDisconnect is not defined.")
         
         # Iterate through each list of combinations (which is a dictionary)
-        for index, combinations in enumerate(self.impedanceConnections):
-            print(f"processing combo size {index+1}")
+        for index, combinations in enumerate(self.impedanceConnections, 1):
+            print(f"processing combo index {index}")
             for key, symbols in combinations.items():
                 # print(f"key = {key}, symbolds = {symbols}")
                 # Filter the impedances that are not in the current combination
@@ -227,7 +227,6 @@ class Impedance_Analyzer:
 
                 results[key] = (itertools.product(*myList))
         
-        print("Zcombos")
         return results
     
     def _computeTransferFunction(self, baseHs, zCombo):
@@ -268,7 +267,7 @@ class Impedance_Analyzer:
         try:
             impedanceBatch = list(self.getZcombos()[comboKey])
         except KeyError:
-            raise ValueError(f"Invalid comboKey '{comboKey}' provided.")
+            raise ValueError(f"Invalid comboKey '{comboKey}' provided.\nchoose from {self.getZcombos().keys()}")
 
         # Prepare the base transfer function
         baseHs = self.circuit_solver.baseHsDict.get(comboKey)

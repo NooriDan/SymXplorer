@@ -103,7 +103,8 @@ class Customized_Current_Mode_Multiple_Feedback:
 
 
     # (2.4) Define the impedances that can be disconnected in the circuit
-    impedancesToDisconnect = [Z1, Z2, Z4]
+    # impedancesToDisconnect = [Z1, Z2, Z4]
+    impedancesToDisconnect = [Z1, Z2, Z3, Z4, Z5, Z6]
 
     # (2.5) Define the Nodal Equations
     nodalEquations = [
