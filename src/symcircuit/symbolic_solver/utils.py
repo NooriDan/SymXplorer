@@ -320,10 +320,15 @@ class FileSave:
                     # Transfer function
                     latex_file.write(f"\\textbf{{$H(s)$:}} ${latex(classification.transferFunc)}$ \\\\ \n")
                     
-                    # Ensure parameters are written in math mode
-                    latex_file.write(f"\\textbf{{Q:}} ${latex(classification.parameters['Q'])}$ \\\\ \n")
-                    latex_file.write(f"\\textbf{{$\\omega_0$:}} ${latex(classification.parameters['wo'])}$ \\\\ \n")
-                    latex_file.write(f"\\textbf{{Bandwidth:}} ${latex(classification.parameters['bandwidth'])}$ \\\\ \n")
+                    # # Ensure parameters are written in math mode
+                    # latex_file.write(f"\\textbf{{Q:}} ${latex(classification.parameters['Q'])}$ \\\\ \n")
+                    # latex_file.write(f"\\textbf{{$\\omega_0$:}} ${latex(classification.parameters['wo'])}$ \\\\ \n")
+                    # latex_file.write(f"\\textbf{{Bandwidth:}} ${latex(classification.parameters['bandwidth'])}$ \\\\ \n")
+
+                    # Print parameters dynamically
+                    for param_key, param_value in classification.parameters.items():
+                        latex_file.write(f"\\textbf{{{param_key}:}} ${latex(param_value)}$ \\\\ \n")
+
 
                     if (classification.fType == "GE"):
                         latex_file.write(f"\\textbf{{Qz:}} ${latex(classification.parameters['Qz'])}$ \\\\ \n")

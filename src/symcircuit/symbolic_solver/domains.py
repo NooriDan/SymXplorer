@@ -18,9 +18,9 @@ class Impedance_Block:
         self.symbol: sympy.Basic = sympy.Symbol(f"Z_{name}")
 
         s = sympy.symbols("s")
-        self.Z_R: sympy.Basic = sympy.symbols(f"R_{name}", real=True)
-        self.Z_L: sympy.Basic = s * sympy.symbols(f"L_{name}", real=True)
-        self.Z_C: sympy.Basic = 1 / (s * sympy.symbols(f"C_{name}", real=True))
+        self.Z_R: sympy.Basic = sympy.symbols(f"R_{name}", real=True, positive=True)
+        self.Z_L: sympy.Basic = s * sympy.symbols(f"L_{name}", real=True, positive=True)
+        self.Z_C: sympy.Basic = 1 / (s * sympy.symbols(f"C_{name}", real=True, positive=True))
 
         # to be computed
         self.allowedConnections: List[sympy.Basic] = []

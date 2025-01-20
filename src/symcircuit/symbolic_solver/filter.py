@@ -1,7 +1,7 @@
 import sympy
 from   tqdm     import tqdm
-from   sympy    import denom, numer, degree, symbols, simplify, sqrt, factor, cancel
-from   typing   import Dict, List
+from   sympy    import denom, numer, degree, symbols, sqrt, factor, cancel
+from   typing   import Dict, List, Set
 # Custom Imports
 from .domains import Filter_Classification
 
@@ -19,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 class Filter_Classifier():
     """Implementation of algorithm 2"""
-    def __init__(self, transferFunctionList: List = [], impedanceBatch: List = [], fTypes: List[str] = ["HP", "BP", "LP", "BS", "GE", "AP"]):
+    def __init__(self, transferFunctionList: List = [], impedanceBatch: List = [], fTypes: Set[str] = set(["HP", "BP", "LP", "BS", "GE", "AP", "X-INVALID-NUMER", "X-INVALID-WZ", "X-INVALID-ORDER", "X-PolynomialError"])):
         self.transferFunctionsList = transferFunctionList
         self.impedanceList         = impedanceBatch
         self.filterParameters = []
         self._fTypes = fTypes
         # To be computed
-        self.classifications: List[Filter_Classification] = []
+        self.classifications:  List[Filter_Classification] = []
         self.clusteredByType:  Dict[str, List[Filter_Classification]]= {}
         self.countByType:      Dict[str, int] = {}
 
@@ -66,19 +66,26 @@ class Filter_Classifier():
         logger.info("!!!! Clearning the filter classifications !!!!")
         self.filterParameters = []
         self.classifications = []
+        self.clusteredByType = {}
+        self.countByType     = {}
     
     def addFilterType(self, types: list):
         for _type in types:
             self._fTypes.append(_type)
 
-    def summarizeFilterType(self, filterTypes=["HP", "BP", "LP", "BS", "GE", "AP", "INVALID-NUMER", "INVALID-WZ", "INVALID-ORDER", "PolynomialError"]):
+    def summarizeFilterType(self, filterTypes: List[str] = None):
         if not self.isClassified():
             logger.warning("Classify the TFs first")
 
-        counts = {}
+        if filterTypes is None:
+            filterTypes = [t for t in self._fTypes] # overwrite by all the available types
+        filterTypes.sort()
+
+        print(f"summarizing for filters in {filterTypes}")
+
         for fType in filterTypes:
             self.clusteredByType[fType], self.countByType[fType] = self._findFilterInClassification(fType)
-        return self.clusteredByType, counts
+        return self.clusteredByType,  self.countByType
 
     # HELPER FUNCTIONS (private)
     def _findFilterInClassification(self, filterType, printMessage=True):
@@ -139,7 +146,7 @@ class Filter_Classifier():
         except sympy.PolynomialError:
 
             return {'valid' : False,
-                    'fType' : "PolynomialError",
+                    'fType' : "X-PolynomialError",
                     'parameters' : None}
 
         # Extract denominator coefficients
@@ -150,13 +157,13 @@ class Filter_Classifier():
         # Validate filter form and coefficients
         if not all([a2, a1, a0]) or num_order > 2 or den_order > 2:
             return {'valid': False,
-                    'fType': "INVALID-ORDER",
+                    'fType': "X-INVALID-ORDER",
                     'parameters': None}
 
         # Compute natural frequency (wo), quality factor (Q), and bandwidth
         wo = sqrt(cancel(a0 / a2))
         Q = cancel((a2 / a1) * wo)
-        bandwidth = wo / Q
+        bandwidth = (wo / Q)
 
         # Extract numerator coefficients
         b2 = numerator.coeff(s, 2)
@@ -188,11 +195,11 @@ class Filter_Classifier():
             case 0b111:
                 fType = "GE"    # GE or AP
             case 0b011:     # This situation is not accounted for in N_XY(s) scenarios
-                fType = "INVALID-NUMER"
+                fType = "X-INVALID-NUMER"
             case 0b110:     # This situation is not accounted for in N_XY(s) scenarios
-                fType = "INVALID-NUMER"
+                fType = "X-INVALID-NUMER"
             case _:         # catches other combos (i.e., 110, 011)
-                fType = "INVALID-NUMER"
+                fType = "X-INVALID-NUMER"
 
 
         # Compute zero's natural frequency (wz) if applicable
@@ -211,7 +218,7 @@ class Filter_Classifier():
         # # compare wz to wo
         if (fType in ["BS", "GE"]) and (wz != wo):
             valid = False
-            fType = "INVALID-WZ"
+            fType = "X-INVALID-WZ"
 
         # Additional parameter (Qz) for GE filters
         Qz = cancel((b2 / b1) * wo) if (b1 != 0 and fType == "GE") else None
@@ -265,10 +272,10 @@ class Filter_Classifier():
         # Validate filter form and coefficients
         if (not all([a1, a0])) or num_order >= 2 or den_order >= 2:
             return {'valid': False,
-                    'fType': "INVALID-ORDER",
+                    'fType': "X-INVALID-ORDER",
                     'parameters': None}
         
-        # Extract denominator coeffients
+        # Extract numerator coeffients
         b1 = numerator.coeff(s, 1)
         b0 = numerator.coeff(s, 0)
 
@@ -281,16 +288,18 @@ class Filter_Classifier():
             case 0b01: # b0
                 fType = "LP"
             case _: 
-                fType = "INVALID-NUMER"
+                fType = "X-INVALID-NUMER"
+                return {'valid': False,
+                    'fType': "X-INVALID-ORDER",
+                    'parameters': None}
 
         wo = a0/a1
         if b1 != 0:
             wz = b0/b1
             K =  b1/a1
         else:
-            wz = 0
+            wz = None
             K  = b0/a1
-        
         # Return computed parameters
         return {
             "valid": True,
@@ -320,20 +329,111 @@ class Filter_Classifier():
             self.classifications.append(Filter_Classification(
                 zCombo       = impedanceCombo,
                 transferFunc = tf,
-                valid        = results.get('valid', False),
+                valid        = results.get('valid', None),
                 fType        = results.get("fType", None),
                 parameters   = results.get("parameters", None),
                 filterOrder  = filterOrder
             ))
 
-class FirstOrderParameters():
-    def __init__(self, filterOrder):
-        pass
+    def validate_stability(self, fType: str, resummarize: bool = True) -> List[Filter_Classification]:
+        """Validates stability of the filter classifications and its tf (1st and 2nd)
+        Returns the list of unstable filters. Updates the self.classifications field in-place"""
+        # Define symbolic variable
+        s = symbols('s')
+        corrected_classifcations: List[Filter_Classification] = []
+        # classifications: List[Filter_Classification] = self.classifications
 
-class BiQuadParameters():
-    def __init__(self, filterOrder):
-        pass
+        for i, classification in tqdm(enumerate(self.classifications), 
+                                      total=len(self.classifications), 
+                                      unit="filter"):
 
-class ThirdOrderParameters():
-    def __init__(self, filterOrder):
-        pass
+            corrected_type = fType
+
+            if not (classification.fType == fType):
+                continue
+
+            tf = classification.transferFunc
+
+            # Extract numerator and denominator
+            denominator = denom(tf).expand()  # Denominator of tf
+            numerator = numer(tf).expand()    # Numerator of tf
+
+            if classification.filterOrder == "BiQuad":
+                # Extract denominator coefficients
+                a2 = denominator.coeff(s, 2)
+                a1 = denominator.coeff(s, 1)
+                # Extract numerator coefficients
+                b2 = numerator.coeff(s, 2)
+                b1 = numerator.coeff(s, 1)
+
+                stable = True
+                # Checks if the pole pairs could be in the RHP
+                if sympy.ask(sympy.Q.negative(b2*b1)):
+                    stable = False
+                    corrected_type += "-UNSTABLE-POLE"
+                # Checks if zero pairscould be in the RHP
+                if sympy.ask(sympy.Q.negative(a2*a1)):
+                    stable = False
+                    corrected_type += "-UNSTABLE-ZERO"
+
+
+            elif classification.filterOrder == "FirstOrder":
+                # Extract denominator coeffients
+                a1 = denominator.coeff(s, 1)
+                a0 = denominator.coeff(s, 0)
+                # Extract numerator coeffients
+                b1 = numerator.coeff(s, 1)
+                b0 = numerator.coeff(s, 0)
+
+                stable = True
+                # Checks if the pole could be in the RHP
+                if sympy.ask(sympy.Q.negative(b1*b0)):
+                    stable = False
+                    corrected_type += "-UNSTABLE-POLE"
+                # Checks if zero could be in the RHP
+                if sympy.ask(sympy.Q.negative(a1*a0)):
+                    stable = False
+                    corrected_type += "-UNSTABLE-ZERO"
+
+            if not stable:
+                self.classifications[i].valid = False
+                self.classifications[i].fType = corrected_type
+                self._fTypes.add(corrected_type)
+                corrected_classifcations.append(self.classifications[i])
+        
+        if resummarize:
+            self.summarizeFilterType() # Re-summarize all filters
+
+        return corrected_classifcations
+    
+    def validate_first_order_stability(self, tf):
+
+        # Define symbolic variable
+        s = symbols('s')
+        # Extract numerator and denominator
+        denominator = denom(tf).expand()  # Denominator of tf
+        numerator = numer(tf).expand()    # Numerator of tf
+
+        if degree(denominator)> 1 or degree(numerator)> 1:
+            raise ValueError(f"Cannot use first_order_stability criteria on numer_deg = {degree(numerator)}, denom_deg = {degree(denominator)}")
+
+        # Extract denominator coeffients
+        a1 = denominator.coeff(s, 1)
+        a0 = denominator.coeff(s, 0)
+        # Extract numerator coeffients
+        b1 = numerator.coeff(s, 1)
+        b0 = numerator.coeff(s, 0)
+
+        stable = True
+        type_correection = ""
+        # Checks if the pole could be in the RHP
+        if sympy.ask(sympy.Q.negative(b1*b0)):
+            stable = False
+            type_correection += "-UNSTABLE-POLE"
+        # Checks if zero could be in the RHP
+        if sympy.ask(sympy.Q.negative(a1*a0)):
+            stable = False
+            type_correection += "-UNSTABLE-ZERO"
+
+        return stable, type_correection
+
