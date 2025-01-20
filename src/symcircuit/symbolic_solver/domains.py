@@ -213,6 +213,14 @@ class Filter_Classification:
             f"zCombo={self.zCombo}, transferFunc={self.transferFunc}, "
         )
     
+    def has_impedance_combo(self, other) -> bool:
+        if len(other.zCombo) != len(self.zCombo):
+            raise IndexError(f"Unmatched impedance key size: {len(other.zCombo)} vs {len(self.zCombo)} ")
+        for i, element in enumerate(self.zCombo):
+            if element != other.zCombo[i]: 
+                return False
+        return True
+    
 
 class ExperimentResult:
 
@@ -243,7 +251,7 @@ class ExperimentResult:
     def add_tf_only(self, impedance_key:str, classifications: List[Filter_Classification]):
         self.classifications_dict[impedance_key] = classifications
 
-    def get(self, impedance_key: str) -> Tuple[List[Filter_Classification], sympy.Basic]:
+    def get_impedance_key(self, impedance_key: str) -> Tuple[List[Filter_Classification], sympy.Basic]:
         if self.classifications_dict.get(impedance_key) is None : 
             raise IndexError(f"The impedance key {impedance_key} does not exist in {self.classifications_dict.keys()}")
         
@@ -251,6 +259,13 @@ class ExperimentResult:
             raise IndexError(f"The impedance key {impedance_key} does not exist in {self.base_tfs_dict.keys()}")
         
         return self.classifications_dict[impedance_key], self.base_tfs_dict[impedance_key]
+    
+    def get_impedance_combo(self, impedance_combo) -> Filter_Classification:
+        for key, value in self.classifications_dict.items():
+            for classification in value:
+                if classification.has_impedance_combo(impedance_combo):
+                    return classification 
+        return None
 
     def flatten_classifications(self) -> pd.DataFrame:
         """

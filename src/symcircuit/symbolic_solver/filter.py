@@ -264,7 +264,6 @@ class Filter_Classifier():
 
         return numer_factors, denom_factors
 
-
     def decompose_tf(self, transfer_function: Expr) -> Tuple[Expr, List[Poly], List[Poly]]:
         """
         Decomposes the transfer function H(s) into:
@@ -316,8 +315,131 @@ class Filter_Classifier():
 
         return constant_factor, numer_factors_filtered, denom_factors_filtered
 
+    def is_poly_stable(self, poly: sympy.Poly) -> bool:
 
+        if poly.degree() == 2:
+            a2 = poly.as_dict().get((2,), None)
+            a1 = poly.as_dict().get((1,), None)
+            if a1 is None or a2 is None:
+                raise ValueError(f"Invalid second order poly: a2 = {a2} a1 = {a1} in {poly}")
+            if sympy.ask(sympy.Q.negative(a2*a1)):
+                return False
+            
+        elif poly.degree() == 1:
+            a1 = poly.as_dict().get((1,), None)
+            a0 = poly.as_dict().get((0,), None)
+            if a1 is None or a0 is None:
+                raise ValueError(f"Invalid first order poly: a2 = {a1} a1 = {a0} in {poly}")
+            
+            if sympy.ask(sympy.Q.negative(a1*a0)):
+                return False
+
+        else:
+            raise ValueError(f"Unsupported poly order: {poly.degree()}")
+        
+        return True
     
+    # HIGHER ORDER FILTER ANALYSIS
+    def get_3rd_order_lp(self, check_for_stability: bool = False) -> Dict:
+        classifications, count = self.findFilterInClassification(denom_order=3, numer_order=0, printMessage=False)
+        print(f"{count} candidates for 3rd-order LP")
+
+        output = []
+        count = 0
+        count_valid = 0
+        for classification in tqdm(classifications, total=len(classifications)):
+            count += 1
+            tf = classification.transferFunc
+            k, numer, denom = self.decompose_tf(tf)
+
+            valid = True
+            for poly in denom:
+                order = poly.degree()
+                if order == 1: 
+                    if (len(poly.as_dict()) != 2) or (check_for_stability and not self.is_poly_stable(poly)):
+                        valid = False
+                        break
+                    
+                elif order == 2:
+                    if (len(poly.as_dict()) != 3) or (check_for_stability and not self.is_poly_stable(poly)):
+                        valid = False
+                        break
+
+                else:
+                    valid = False
+                    break
+
+            if valid:
+                count_valid += 1
+                # print(f"ID {count} - valid")
+
+            output += [{
+                "valid": valid,
+                "zCombo": classification.zCombo,
+                "classification" : classification,
+                "k" :  k,
+                "numer": numer,
+                "denom": denom,
+                "num-factor-count":len(numer),
+                "denom-factor-count": len(denom)
+            }]
+
+        print(f"{count_valid} verified filters")
+
+        return output
+
+    def get_4th_order_bp(self, check_for_stability: bool = False) -> Dict:
+        classifications, count = self.findFilterInClassification(denom_order=4, numer_order=2, printMessage=False)
+        print(f"{count} candidates for 4th-order BP")
+
+        output = []
+        count = 0
+        count_valid = 0
+        for classification in tqdm(classifications, total=len(classifications)):
+            count += 1
+            tf = classification.transferFunc
+            k, numer, denom = self.decompose_tf(tf)
+
+            valid = True
+            for poly in denom:
+                order = poly.degree()
+                if order == 1: 
+                    if (len(poly.as_dict()) != 2) or (check_for_stability and not self.is_poly_stable(poly)):
+                        valid = False
+                        break
+                    
+                elif order == 2:
+                    if (len(poly.as_dict()) != 3) or (check_for_stability and not self.is_poly_stable(poly)):
+                        valid = False
+                        break
+
+                else:
+                    valid = False
+                    break
+
+            if len(numer) != 1:
+                valid = False
+
+            if valid:
+                count_valid += 1
+                # print(f"ID {count} - valid")
+
+            output += [{
+                "valid": valid,
+                "zCombo": classification.zCombo,
+                "classification" : classification,
+                "k" :  k,
+                "numer": numer,
+                "denom": denom,
+                "num-factor-count":len(numer),
+                "denom-factor-count": len(denom)
+            }]
+
+        print(f"{count_valid} verified filters")
+
+        return output
+
+
     # HELPER FUNCTIONS (private)
     def _getBiQuadParameters(self, tf) -> Dict:
         """
