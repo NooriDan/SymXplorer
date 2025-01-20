@@ -33,3 +33,5 @@ dist/
 *.egg-info/
 examples.zip
 *.zip
+*/.DS_Store
+.DS_Store

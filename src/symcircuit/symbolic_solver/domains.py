@@ -273,6 +273,8 @@ class ExperimentResult:
                     "fType": classification.fType,
                     "parameters": classification.parameters,
                     "filterOrder": classification.filterOrder,
+                    "denom_order": classification.tf_denom_order,
+                    "numer_order": classification.tf_numer_order
                 })
 
         return pd.DataFrame(rows)
