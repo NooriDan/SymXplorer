@@ -1,11 +1,13 @@
 # MacAnalog-Symbolix
 
-Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic toolbox for analyzing analog circuits based on SymPy in python. We're actively developing new features. A python-based toolbox means endless opportunities for future integeration with scientifict and machine learning (PyTorch) toolboxes.
+Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic toolbox for analyzing analog circuits based on SymPy in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. A python-based toolbox means endless opportunities for future integeration with scientifict and machine learning (PyTorch) toolboxes.
 
 ## Features
 - Customize nodal equation and impedance combination for new circuits under test
 - Analyze the possible filters, oscillators, and more!
+- Explore possiblem higher-order (2+) transfer functions for filter design
 - Generate automatic LaTeX report of your runs
+- Currently have demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output, and multipl-feedback filter designs in current and voltage mode.
 
 ## Installation
 After cloning the repository, open a terminal in the project directory and run the following command:
