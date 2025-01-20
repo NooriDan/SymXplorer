@@ -2,7 +2,7 @@
 *.pkl
 
 # Notebook outputs
-scripts/Runs/
+# scripts/Runs/
 
 # LaTeX auxiliary files
 *.aux
