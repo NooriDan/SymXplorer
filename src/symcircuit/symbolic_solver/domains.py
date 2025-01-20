@@ -197,7 +197,9 @@ class Filter_Classification:
     valid: bool = False
     fType: Optional[str] = "None"
     parameters: Optional[dict] = field(default_factory=dict)  # Safely handle mutable defaults
-    filterOrder: Optional[str] = "None"  
+    filterOrder: Optional[str] = "None"
+    tf_denom_order: Optional[int] = -1
+    tf_numer_order: Optional[int] = -1  
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Filter_Classification):
@@ -207,8 +209,8 @@ class Filter_Classification:
     def __repr__(self) -> str:
         return (
             f"FilterClassification("
-            f"zCombo={self.zCombo}, transferFunc={self.transferFunc}, "
             f"valid={self.valid}, fType={self.fType}, parameters={self.parameters})"
+            f"zCombo={self.zCombo}, transferFunc={self.transferFunc}, "
         )
     
 
