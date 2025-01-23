@@ -1,3 +1,4 @@
+import pandas   as pd
 import sympy
 from   tqdm     import tqdm
 from   sympy    import denom, numer, degree, symbols, sqrt, factor, cancel, Expr, Basic, Poly
@@ -116,6 +117,57 @@ class Filter_Classifier():
             print(f"{filterType} : {len(output)}")
 
         return output, count
+
+    def to_csv(self) -> pd.DataFrame:
+        if not self.isClassified():
+            logger.warning("Classify the TFs first")
+        
+        data = []
+        for x in tqdm(self.classifications, total = len(self.classifications)):
+            k, numer, denom = self.decompose_tf(x.transferFunc)
+            
+            degrees_list_denom = [poly.degree() for poly in denom]
+            if len(degrees_list_denom) != 0:
+                max_degrees_denom = max(degrees_list_denom)
+            else: 
+                max_degrees_denom = -1
+
+            degrees_list_numer = [poly.degree() for poly in numer]
+
+            if len(degrees_list_numer) != 0:
+                max_degrees_numer = max(degrees_list_numer)
+            else: 
+                max_degrees_numer = -1
+
+            data += [
+                {
+                    "filter-ID" : x.filter_id,
+                    "combo" : x.zCombo,
+                    "TF" : sympy.latex(x.transferFunc),
+                    "param" : x.parameters,
+                    "type" : x.fType,
+
+                    "denom order" : x.tf_denom_order,
+                    "denom factor count" : len(denom),
+                    "denom factor degrees": degrees_list_denom,
+                    "max denom degree" : max_degrees_denom,
+
+                    "numer order" : x.tf_numer_order,
+                    "numer facator count" : len(numer),
+                    "numer factor degrees": degrees_list_numer,
+                    "max numer degree" : max_degrees_numer,
+
+                    "k" : k,
+                    "numer factors" : numer,
+                    "denom factors" :denom
+
+                }
+            ]
+
+        df = pd.DataFrame(data)
+        df.to_csv(f"Runs/{self.experiment_name}/consice_summary.csv")
+
+        return df
 
     # Filter Analysis Logic
     def classifyBiQuadFilters(self) -> None:
@@ -341,8 +393,8 @@ class Filter_Classifier():
         return True
     
     # HIGHER ORDER FILTER ANALYSIS
-    def get_3rd_order_lp(self, check_for_stability: bool = False) -> Dict:
-        classifications, count = self.findFilterInClassification(denom_order=3, numer_order=0, printMessage=False)
+    def get_higher_order_lp(self, denom_order: int = 3, check_for_stability: bool = False) -> Dict:
+        classifications, count = self.findFilterInClassification(denom_order=denom_order, numer_order=0, printMessage=False)
         print(f"{count} candidates for 3rd-order LP")
 
         output = []
@@ -372,7 +424,6 @@ class Filter_Classifier():
 
             if valid:
                 count_valid += 1
-                # print(f"ID {count} - valid")
 
             output += [{
                 "valid": valid,
@@ -645,7 +696,3 @@ class Filter_Classifier():
             'tf_denom_order' : den_order
         }
 
-    def _getThirdOrderParameters(self, tf):
-        logger.debug(" === inside THIRD ORDER Parameter Computation === ")
-
-        pass

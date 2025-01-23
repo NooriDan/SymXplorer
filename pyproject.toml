@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "SymCircuit"
 version = "1.2.0"
-description = "A symbolic circuit solver"
+description = "A symbolic circuit explorer and design tool"
 readme = "README.md"
 # license = {file = "LICENSE"}
 authors = [
@@ -14,8 +14,12 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     'pytest >= 8.2.2',
-    'sympy >=1.13.3',
-    'tqdm >= 4.67.1'
+    'sympy  >=1.13.3',
+    'tqdm   >= 4.67.1',
+    'pandas >= 2.2.3 ',
+    'ax-platform >= 0.4.3',
+    'matplotlib >= 3.9.3',
+    'lcapy >= 1.24' # Optional: to automate extracting the nodal equations
 ]
 
 [project.scripts]

@@ -281,6 +281,15 @@ class ExperimentResult:
                     return classification 
         return None
 
+    def get_filter_types(self, fTypes: List[str]) -> List[Filter_Classification]:
+        if isinstance(fTypes, str):
+            fTypes = [fTypes]
+        output = []
+        for key, val in self.classifications_dict.items():
+            output += [obj for obj in val if obj.fType in fTypes]
+
+        return output
+
     def flatten_classifications(self) -> pd.DataFrame:
         """
         Flatten the classifications_dict into a Pandas DataFrame.

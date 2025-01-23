@@ -6,7 +6,7 @@ https://youtu.be/62BOYx1UCfs?si=JnSZknJMR895tzeb
 
 
 ----------------------------------------------------------------------------
-The recommended structure of a Python project:
+The structure of a Python project:
 project_name/
 │
 ├── project_name/           # Main package directory
