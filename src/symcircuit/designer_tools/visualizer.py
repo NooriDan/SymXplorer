@@ -1,6 +1,6 @@
 import sympy as sp
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
+from   matplotlib.ticker import AutoMinorLocator, LogLocator
 import numpy as np
 
 from typing import Dict, List, Tuple
@@ -125,7 +125,7 @@ class Visualizer:
 
         return float(magnitude_val), float(phase_val)
     
-    def visualize(self, start_freq_order: float = 1, end_freq_order: float = 7, point_per_dec: int = 100, title: str = ""):
+    def visualize(self, start_freq_order: float = 1, end_freq_order: float = 7, point_per_dec: int = 20, title: str = ""):
 
         # Get the magnitude and phase expressions
         magnitude_expr, phase_expr, H_numeric = self.get_bode_expression()
@@ -146,9 +146,11 @@ class Visualizer:
         axs[0].set_title(f"{title} - Magnitude Response")
         axs[0].set_xlabel("Frequency (Hz)")
         axs[0].set_ylabel("Magnitude (dB)")
-        axs[0].grid(True, which='both', linestyle='-', linewidth=0.75)  # Major grid
+        axs[0].grid(True, which='major', linestyle='-', linewidth=0.75)  # Major grid
         axs[0].grid(True, which='minor', linestyle=':', linewidth=0.5)  # Minor grid
-        axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+
+        # Adjust minor ticks for log scale
+        axs[0].xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(1.0, 10.0) * 0.1, numticks=10))
         axs[0].legend(loc='upper left', bbox_to_anchor=(1, 1), framealpha=0.8)
 
         # Phase Plot
@@ -156,9 +158,11 @@ class Visualizer:
         axs[1].set_title(f"{title} - Phase Response")
         axs[1].set_xlabel("Frequency (Hz)")
         axs[1].set_ylabel("Phase (degrees)")
-        axs[1].grid(True, which='both', linestyle='-', linewidth=0.75)  # Major grid
+        axs[1].grid(True, which='major', linestyle='-', linewidth=0.75)  # Major grid
         axs[1].grid(True, which='minor', linestyle=':', linewidth=0.5)  # Minor grid
-        axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+
+        # Adjust minor ticks for log scale
+        axs[1].xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(1.0, 10.0) * 0.1, numticks=10))
         axs[1].legend(loc='upper left', bbox_to_anchor=(1, 1), framealpha=0.8)
 
 

@@ -696,3 +696,6 @@ class Filter_Classifier():
             'tf_denom_order' : den_order
         }
 
+    def _getThirdOrderParameters(self, tf) -> Dict:
+        """NOT IMPLEMENTED"""
+        pass
