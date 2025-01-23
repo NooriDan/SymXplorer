@@ -244,11 +244,11 @@ class Filter_Classifier():
         stable = True
         type_correction: str = ""
         # Checks if the pole pairs could be in the RHP
-        if sympy.ask(sympy.Q.negative(b2*b1)):
+        if sympy.ask(sympy.Q.negative((b2*b1).simplify())):
             stable = False
             type_correction += "-UNSTABLE-POLE"
         # Checks if zero pairscould be in the RHP
-        if sympy.ask(sympy.Q.negative(a2*a1)):
+        if sympy.ask(sympy.Q.negative((a2*a1).simplify())):
             stable = False
             type_correction += "-UNSTABLE-ZERO"
 
@@ -283,8 +283,8 @@ class Filter_Classifier():
         denominator_poly = Poly(denominator, s)
 
         # Get leading coefficients
-        numer_lead_coeff = numerator_poly.LC()
-        denom_lead_coeff = denominator_poly.LC()
+        numer_lead_coeff = numerator_poly.TC()
+        denom_lead_coeff = denominator_poly.TC()
 
         # Normalize the leading coefficients
         constant_factor = numer_lead_coeff / denom_lead_coeff
@@ -304,14 +304,14 @@ class Filter_Classifier():
                 constant_factor *= factor
             else:
                 poly_factor = Poly(factor, s)
-                numer_factors_filtered.append(Poly(poly_factor / poly_factor.LC(), s))  # Normalize factor
+                numer_factors_filtered.append(Poly(poly_factor / poly_factor.TC(), s))  # Normalize factor
 
         for factor in denominator_factors:
             if s not in factor.free_symbols:
                 constant_factor /= factor
             else:
                 poly_factor = Poly(factor, s)
-                denom_factors_filtered.append(Poly(poly_factor / poly_factor.LC(), s))  # Normalize factor
+                denom_factors_filtered.append(Poly(poly_factor / poly_factor.TC(), s))  # Normalize factor
 
         return constant_factor, numer_factors_filtered, denom_factors_filtered
 
@@ -320,9 +320,10 @@ class Filter_Classifier():
         if poly.degree() == 2:
             a2 = poly.as_dict().get((2,), None)
             a1 = poly.as_dict().get((1,), None)
+            a0 = poly.as_dict().get((0,), None)
             if a1 is None or a2 is None:
                 raise ValueError(f"Invalid second order poly: a2 = {a2} a1 = {a1} in {poly}")
-            if sympy.ask(sympy.Q.negative(a2*a1)):
+            if sympy.ask(sympy.Q.negative(a2*a1).simplify()) or sympy.ask(sympy.Q.negative(a2*a0).simplify()):
                 return False
             
         elif poly.degree() == 1:
@@ -331,7 +332,7 @@ class Filter_Classifier():
             if a1 is None or a0 is None:
                 raise ValueError(f"Invalid first order poly: a2 = {a1} a1 = {a0} in {poly}")
             
-            if sympy.ask(sympy.Q.negative(a1*a0)):
+            if sympy.ask(sympy.Q.negative((a1*a0).simplify())):
                 return False
 
         else:

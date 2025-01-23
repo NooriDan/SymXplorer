@@ -192,6 +192,7 @@ class Circuit:
     
 @dataclass
 class Filter_Classification:
+    filter_id: int = field(init=False)  # ID will be set automatically
     zCombo: List[sympy.Basic]
     transferFunc: sympy.Basic  # SymPy expression
     valid: bool = False
@@ -201,6 +202,19 @@ class Filter_Classification:
     tf_denom_order: Optional[int] = -1
     tf_numer_order: Optional[int] = -1  
 
+    # Class-level variable to track the current ID
+    _id_counter = 0
+
+    def __post_init__(self):
+        # Automatically assign a unique ID to each instance
+        self.filter_id = Filter_Classification._id_counter
+        Filter_Classification._id_counter += 1
+
+    @classmethod
+    def reset_id_counter(cls):
+        """Reset the ID counter to zero."""
+        cls._id_counter = 0
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, Filter_Classification):
             return NotImplemented
@@ -209,8 +223,8 @@ class Filter_Classification:
     def __repr__(self) -> str:
         return (
             f"FilterClassification("
-            f"valid={self.valid}, fType={self.fType}, parameters={self.parameters})"
-            f"zCombo={self.zCombo}, transferFunc={self.transferFunc}, "
+            f"{self.valid}, {self.fType}, {self.parameters})"
+            f"{self.zCombo}, {self.transferFunc}"
         )
     
     def has_impedance_combo(self, other) -> bool:
