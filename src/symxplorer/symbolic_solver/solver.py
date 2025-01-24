@@ -286,6 +286,12 @@ class Impedance_Analyzer:
         # Output the number of transfer functions computed
         print(f"Number of transfer functions found: {len(solvedTFs)}")
 
+    def kill_parameter(self, tf: sympy.Expr, params_to_kill: List[sympy.Symbol], to_infinity: bool = True):
+        """"""
+        for param in params_to_kill:
+            if not (param in tf.free_symbols):
+                raise KeyError(f"{param} is not a free symbol in {tf.free_symbols}")
+
     # Reporting methods (generate pdf)
     def reportAll(self, experimentName, Z_arr):
         self.fileSave.generateLaTeXReport(self.classifier.classifications, 

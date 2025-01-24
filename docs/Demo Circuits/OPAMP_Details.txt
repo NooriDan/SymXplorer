@@ -1,5 +1,0 @@
-Possible Z combinations:
-    R, C, R + C, R//C
-
-Zs that cannot be open circuited
-    Z3, Z5, Z6
