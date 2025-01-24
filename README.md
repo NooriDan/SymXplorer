@@ -9,7 +9,7 @@ Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic to
 - Explore possiblem higher-order (2+) transfer functions for filter design.
 - Size (through [Ax](https://ax.dev/) Bayesian Optimization tool) and visualize the TF quickly for design.
 - Generate automatic LaTeX report of your runs
-- Currently have demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
+- Currently have pre-defined demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
 
 ## Installation
 After cloning the repository, open a terminal in the project directory and run the following command:
@@ -25,6 +25,7 @@ First Git clone the repo, and follow the instructions below you'll find informat
 - Quickly get started by running "run-symbolix" in the terminal to run the experiment defined in [common_gate_setup](src/symcircuit/demo/differential.py) and [main](src/symcircuit/symbolic_solver/main.py)
 - Check out summary report of previous the latest runs in [Runs](Runs)
 - Find Previous papers under [Papers](docs/Papers)
+- Refer to the [scripts](scripts) for jupyternotebooks on how to use the tool.
 - A demonstration video will be available soon
 
 ## License
