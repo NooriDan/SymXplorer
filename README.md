@@ -7,7 +7,7 @@ Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic to
 - Analyze the possible filters, oscillators, and more!
 - Model non-idealities of circuit components (e.g., FET transistors through their T matrix)
 - Explore possiblem higher-order (2+) transfer functions for filter design.
-- Size (through Ax Bayesian Optimization tool) and visualize the TF quickly for design.
+- Size (through [Ax](https://ax.dev/) Bayesian Optimization tool) and visualize the TF quickly for design.
 - Generate automatic LaTeX report of your runs
 - Currently have demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output, and multipl-feedback filter designs in current and voltage mode.
 
