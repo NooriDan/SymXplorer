@@ -3,7 +3,7 @@
 Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic toolbox for analyzing analog circuits based on SymPy in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. A python-based toolbox means endless opportunities for future integeration with scientifict and machine learning (PyTorch) toolboxes.
 
 ## Features
-- Customize nodal equation and impedance combination for new circuits under test (You can derive the symbolic nodal equations using [lcapy](https://lcapy.readthedocs.io/en/latest/)
+- Customize nodal equation and impedance combination for new circuits under test (derive the symbolic nodal equations using [lcapy](https://lcapy.readthedocs.io/en/latest/)
 - Analyze the possible filters, oscillators, and more!
 - Model non-idealities of circuit components (e.g., FET transistors through their T matrix)
 - Explore possiblem higher-order (2+) transfer functions for filter design.
