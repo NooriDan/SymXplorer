@@ -9,7 +9,7 @@ Welcome to the **MacAnalog-Symbolix** project! This is an opensource symbolic to
 - Explore possiblem higher-order (2+) transfer functions for filter design.
 - Size (through [Ax](https://ax.dev/) Bayesian Optimization tool) and visualize the TF quickly for design.
 - Generate automatic LaTeX report of your runs
-- Currently have demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output, and multipl-feedback filter designs in current and voltage mode.
+- Currently have demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
 
 ## Installation
 After cloning the repository, open a terminal in the project directory and run the following command:
