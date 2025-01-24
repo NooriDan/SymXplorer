@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "SymCircuit"
+name = "SymXplorer"
 version = "1.2.0"
 description = "A symbolic circuit explorer and design tool"
 readme = "README.md"
@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-run-symbolix = "symcircuit.symbolic_solver.main:main"
+run-symbolix = "symxplorer.symbolic_solver.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/symcircuit"]
+packages = ["src/symxplorer"]

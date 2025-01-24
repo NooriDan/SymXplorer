@@ -1,7 +1,7 @@
 from sympy import symbols, Eq
 from dataclasses import dataclass
 # Cusom Imports
-from symcircuit.symbolic_solver.domains   import Circuit, Impedance_Block
+from symxplorer.symbolic_solver.domains   import Circuit, Impedance_Block
 
 
 # Example 1 -- Sallen-Key with ideal op-amp (not GBW limitation)

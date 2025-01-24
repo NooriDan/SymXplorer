@@ -1,9 +1,9 @@
-import symcircuit.demo.differential            as differential_examples
-import symcircuit.demo.multiple_feedback       as multiple_feedback_examples
-import symcircuit.demo.sallen_key              as sallen_key_examples
-import symcircuit.demo.dual_amplifier          as dual_amplifier_examples
+import symxplorer.demo.differential            as differential_examples
+import symxplorer.demo.multiple_feedback       as multiple_feedback_examples
+import symxplorer.demo.sallen_key              as sallen_key_examples
+import symxplorer.demo.dual_amplifier          as dual_amplifier_examples
 
-from symcircuit.symbolic_solver.domains   import Circuit # for type-checking
+from symxplorer.symbolic_solver.domains   import Circuit # for type-checking
 
 
 

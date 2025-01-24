@@ -6,7 +6,7 @@ import numpy as np
 from typing import Dict, List, Tuple
 from copy   import deepcopy
 
-from symcircuit.symbolic_solver.domains import Filter_Classification
+from symxplorer.symbolic_solver.domains import Filter_Classification
 
 
 class Visualizer:

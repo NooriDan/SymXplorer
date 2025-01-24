@@ -16,7 +16,7 @@ Date: [Dec 2024]
 from sympy import symbols, Eq
 from dataclasses import dataclass
 # Cusom Imports
-from symcircuit.symbolic_solver.domains   import Circuit, Impedance_Block, TransmissionMatrix
+from symxplorer.symbolic_solver.domains   import Circuit, Impedance_Block, TransmissionMatrix
 
 
 # Example 1 -- Common Gate Differential Circuit
