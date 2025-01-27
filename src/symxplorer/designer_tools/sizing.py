@@ -70,15 +70,17 @@ class Sizing_Assist:
         self.metrics_dict[name] = metric_expression
         self.metrics_symbols_dict[name] = sp.symbols(name)
 
-    def remove_metric(self, name: str):
+    def remove_metric(self, name: str) -> bool:
         """Remove an objective from the sizing problem."""
         if self.metrics_dict.get(name):
             self.metrics_dict.pop(name)
             self.metrics_symbols_dict.pop(name)
+            return True
         else:
-            raise ValueError(f'{self.metrics_dict.get(name)}Metric {name} not found in {self.metrics_dict.keys()}')
+            print(f'{self.metrics_dict.get(name)}Metric {name} not found in {self.metrics_dict.keys()}')
+            return False
 
-    def kill_variable(self, design_variable_to_kill: str, design_variable_to_takeover: str):
+    def kill_variable(self, design_variable_to_kill: str, design_variable_to_takeover: str) -> bool:
         """Eliminates a design variable in the objective functions reducing the design space complexity."""
         if self.design_variables_dict.get(design_variable_to_kill) and self.design_variables_dict.get(design_variable_to_takeover):
             sub_dict = {
@@ -87,18 +89,68 @@ class Sizing_Assist:
             self.tf = self.tf.subs(sub_dict)
             self.metrics_dict = {k: v.subs(sub_dict) for k, v in self.metrics_dict.items()} 
             self.design_variables_dict.pop(design_variable_to_kill)
+            return True
 
         else:
-            raise ValueError(f'Design variable {design_variable_to_kill} (to kill) or {design_variable_to_takeover} (takeover) not found in {self.design_variables_dict.keys()}')
+            print (f'Design variable {design_variable_to_kill} (to kill) or {design_variable_to_takeover} (takeover) not found in {self.design_variables_dict.keys()}')
+            return False
     
     def get_problem_space(self) -> Tuple[int, int, int]:
         """Returns the dimension of the problem space."""
         return len(self.relax_design_variables), len(self.design_variables_dict), len(self.metrics_dict)
-    
+
     def is_overconstrained(self) -> bool:
         """Checks if the problem space is overconstrained. (only light check)"""
         return len(self.design_variables_dict) < len(self.metrics_dict)
     
+    def get_jacobian_of_metrics(self) -> sp.Matrix:
+        """Returns the Jacobian matrix of the metrics. Can be used before solving the system to check the problem dimensionality."""
+        # Form the Jacobian matrix
+        equations = [v.simplify() for k, v in self.metrics_dict.items()]
+        variables = self.design_variables_dict.values()
+        jacobian = sp.Matrix([[eq.diff(var) for var in variables] for eq in equations])
+
+        # Perform row reduction on the Jacobian
+        rref_matrix, pivot_columns = jacobian.rref()  # Row reduce the Jacobian
+        dependent_rows = [i for i in range(jacobian.rows) if i not in pivot_columns]
+
+        print("Jacobian Matrix:")
+        print(jacobian)
+        print("Row Reduced Jacobian Matrix:")
+        print(rref_matrix)
+        print("Dependent Rows (indices):", dependent_rows)
+
+        if dependent_rows:
+            print(f"The equations corresponding to rows {dependent_rows} are dependent.")
+
+        return jacobian, rref_matrix, dependent_rows
+    
+    def is_metrics_independant(self) -> bool:
+        """Checks if the metrics are independant of the design variables."""
+        if self.design_variables_dict and self.metrics_dict and self.metrics_symbols_dict:
+            # Form the Jacobian matrix
+            equations = [v.simplify() for k, v in self.metrics_dict.items()]
+            variables = self.design_variables_dict.values()
+            jacobian = sp.Matrix([[eq.diff(var) for var in variables] for eq in equations])
+
+            # Compute the rank of the Jacobian matrix
+            rank = jacobian.rank()
+
+            # Check if the rank equals the number of equations
+            print("Jacobian Matrix:")
+            print(jacobian)
+            print("Rank:", rank)
+            print("Number of equations:", len(equations))
+
+            if rank == len(equations):
+                print("The system is independent.")
+            else:
+                print("The system is dependent.")  
+            return rank == len(equations)
+        print("No metrics or design variables to check.")
+        return False  
+    
+
     # Solving tools
     def solve_inverse(self) -> Dict[str, sp.Expr]:
         """Computes the design variables in terms of the objectives."""
