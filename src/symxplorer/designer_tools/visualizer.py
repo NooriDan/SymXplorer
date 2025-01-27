@@ -2,12 +2,17 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from   matplotlib.ticker import AutoMinorLocator, LogLocator
 import numpy as np
+from tqdm import tqdm
+import logging
+
 
 from typing import Dict, List, Tuple
 from copy   import deepcopy
 
 from symxplorer.symbolic_solver.domains import Filter_Classification
 
+# Suppress info logging for matplotlib
+logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
 class Visualizer:
     def __init__(self, filter_classification: Filter_Classification = None, tf: sp.Expr = None):
@@ -98,21 +103,25 @@ class Visualizer:
         self._str_to_param:    Dict[str, sp.Basic] = {str(sym) : sym for sym in self.tf.free_symbols if sym != s}
         self.params_to_value:  Dict[sp.Basic, float] = {s: 2 * sp.pi * sp.I * f}
 
+
     def get_bode_expression(self) -> Tuple[sp.Basic, sp.Basic, sp.Basic]:
-        """Substitues the parameters in self.params_to_value into the symbolic TF in self.tf, 
-        and returns magnitude_expr, phase_expr, H_numeric. """
+        """Substitutes the parameters in self.params_to_value into the symbolic TF in self.tf, 
+        and returns magnitude_expr, phase_expr, H_numeric."""
 
         if not self.is_defined_numerically():
             print("!!Set the parameters of the TF through --self.set_params--!!!")
-            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. provided {self.params_to_value} but need {self.tf.free_symbols}")
+            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. Provided {self.params_to_value} but need {self.tf.free_symbols}")
 
         H_numeric = self.tf.subs(self.params_to_value)
 
-        # Compute the magnitude (in dB) and phase (in degrees)
-        self.magnitude_expr = 20 * sp.log(abs(H_numeric), 10)  # Magnitude in dB
-        self.phase_expr = sp.arg(H_numeric) * 180 / sp.pi      # Phase in degrees
+        # Compute the magnitude
+        self.magnitude_expr = sp.Abs(H_numeric)  # Magnitude in dB
+
+        # Compute the unwrapped phase (in degrees)
+        self.phase_expr = sp.arg(H_numeric) * 180 / sp.pi         # Phase in degress
 
         return self.magnitude_expr, self.phase_expr, H_numeric
+
     
     def eval_freq(self, frequency: float) -> Tuple[float, float]:
 
@@ -123,20 +132,23 @@ class Visualizer:
         magnitude_val = self.magnitude_expr.subs(f, frequency).evalf()
         phase_val     = self.phase_expr.subs(f, frequency).evalf()
 
-        return float(magnitude_val), float(phase_val)
+        return np.log10(float(sp.Abs(magnitude_val))), float(phase_val)
     
-    def visualize(self, start_freq_order: float = 1, end_freq_order: float = 7, point_per_dec: int = 20, title: str = ""):
+    def visualize(self, start_freq_order: float = 1, end_freq_order: float = 7, num_of_points: int = 20, title: str = ""):
 
         # Get the magnitude and phase expressions
         magnitude_expr, phase_expr, H_numeric = self.get_bode_expression()
 
         # Define the frequency range
-        frequencies = np.logspace(start_freq_order, end_freq_order, point_per_dec)
+        frequencies = np.logspace(start_freq_order, end_freq_order, num_of_points)
 
         # Evaluate the magnitude and phase for each frequency
         f = sp.symbols('f')
-        magnitude_vals = [magnitude_expr.subs(f, freq).evalf() for freq in frequencies]
-        phase_vals     = [phase_expr.subs(f, freq).evalf() for freq in frequencies]
+
+        magnitude_vals = [20*np.log10(float(sp.Abs(magnitude_expr.subs(f, freq).evalf()))) for freq in tqdm(frequencies, desc="Calculating Magnitudes", total=len(frequencies))]
+        phase_vals     = [phase_expr.subs(f, freq).evalf() for freq in tqdm(frequencies, desc="Calculating Phases", total=len(frequencies))]
+        phase_vals     = [float(p) for p in phase_vals]
+        phase_vals     = np.unwrap(np.radians(phase_vals)) * 180 / np.pi
 
         # Plotting
         fig, axs = plt.subplots(2, 1, figsize=(10, 8))

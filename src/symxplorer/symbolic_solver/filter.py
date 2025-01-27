@@ -55,8 +55,9 @@ class Filter_Classifier():
         return countValid, len(self.classifications)
     
     # Setters
-    def clear(self) -> None:
-        logger.info("!!!! Clearning the filter classifications !!!!")
+    def clear(self, log_info: bool = False) -> None:
+        if log_info:
+            logger.info("!!!! Clearning the filter classifications !!!!")
         self.filterParameters = []
         self.classifications = []
         self.clusteredByType = {}
