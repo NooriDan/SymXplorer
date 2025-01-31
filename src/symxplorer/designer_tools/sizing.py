@@ -1,18 +1,19 @@
 import torch
+import logging
 import numpy  as np
 import control as ctrl
 import sympy  as sp
 from   sympy  import Eq
 from   typing import Dict, List, Tuple
 from   copy   import deepcopy
+from   tqdm   import tqdm
 
 import ax
-from ax.service.ax_client import AxClient, ObjectiveProperties
+from ax   import SearchSpace
+from ax.modelbridge.generation_strategy import GenerationStep, GenerationStrategy
+from ax.modelbridge.registry    import Models
+from ax.service.ax_client       import AxClient, ObjectiveProperties
 from ax.utils.notebook.plotting import init_notebook_plotting, render
-
-# Plotting Tools
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 from   symxplorer.symbolic_solver.solver  import ExperimentResult
 from   symxplorer.symbolic_solver.domains import Filter_Classification
@@ -243,7 +244,7 @@ class Sizing_Assist:
         else:
             raise KeyError("No design variables to substitute.")
 
-class Ax_Wrapper:
+class Ax_TF_Fitter:
     def __init__(self, 
                  tf_to_size: sp.Expr,
                  target_tf: sp.Expr,
@@ -251,7 +252,9 @@ class Ax_Wrapper:
                  r_range: List[float] = [1e2, 1e5],
                  frequencies: torch.Tensor = torch.logspace(3, 8, 1000),
                  freq_weights: torch.Tensor = None,
+                 max_mse_loss: float = 20,
                  random_seed: int = 42,
+                 verbose_logging: bool = True
                  ):
         
         init_notebook_plotting()
@@ -262,9 +265,12 @@ class Ax_Wrapper:
         self.r_range = r_range
         self.frequencies = frequencies
         self.freq_weights = freq_weights if freq_weights is not None else torch.ones_like(frequencies)
-        self.ax_client = AxClient(random_seed=random_seed)
-            
-
+        self.max_mse_loss = max_mse_loss
+        self.random_seed  = random_seed
+        self.verbose_logging = verbose_logging
+        
+        self.ax_client  = None
+        self.gs         = None # Generation Strategy
         self.parameters = None
         self.cap_denormailization = None
         self.res_denormailization = None
@@ -326,33 +332,76 @@ class Ax_Wrapper:
     
     def evaluate(self, parameterization) -> Dict[str, Tuple[float, float]]:
 
-        parameterization = self.denormalize_params(parameterization)
+        parameterization  = self.denormalize_params(parameterization)
         fit_summary, loss = self.eval_symbolic_tf_fit(parameterization)
 
         l1norm = torch.sum(torch.tensor([val for val in parameterization.values()]))
-
+        loss = torch.clip(loss, min=0, max=self.max_mse_loss)
         return {"tf_fitting_loss" : (loss.detach(), 0.0), "l1norm" : (l1norm, 0)}
 
-    def create_experiment(self):
+    def create_experiment(self, num_sobol_trials: int = 50, max_parallelism_sobol: int = 5, max_parallelism_bo: int = 3) -> None:
+
+        self.gs = GenerationStrategy(
+                        steps=[
+                            # 1. Initialization step (does not require pre-existing data and is well-suited for
+                            # initial sampling of the search space)
+                            GenerationStep(
+                                model_name="Sobol Generator",
+                                model=Models.SOBOL,
+                                num_trials=num_sobol_trials,                # How many trials should be produced from this generation step
+                                min_trials_observed= num_sobol_trials-2,    # How many trials need to be completed to move to next model
+                                max_parallelism=max_parallelism_sobol,      # Max parallelism for this step
+                                model_kwargs={"seed": self.random_seed},    # Any kwargs you want passed into the model
+                                model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
+                            ),
+                            # 2. Bayesian optimization step (requires data obtained from previous phase and learns
+                            # from all data available at the time of each new candidate generation call)
+                            GenerationStep(
+                                model=Models.BOTORCH_MODULAR,
+                                num_trials=-1,                       # No limitation (-1) on how many trials should be produced from this step
+                                max_parallelism=max_parallelism_bo,  # Parallelism limit for this step, often lower than for Sobol
+                                # More on parallelism vs. required samples in BayesOpt:
+                                # https://ax.dev/docs/bayesopt.html#tradeoff-between-parallelism-and-total-number-of-trials
+                                model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
+                            ),
+                        ]
+                    )
+
+        self.ax_client = AxClient(
+            generation_strategy=self.gs,
+            random_seed=self.random_seed,
+            verbose_logging=self.verbose_logging)
+
         if self.parameters is None:
             print("Need to parameterize the variables first")
             return
+        
         self.ax_client.create_experiment(
             name="Transfer Function Optimization",  
             parameters=self.parameters,
             objectives={
-                "tf_fitting_loss": ObjectiveProperties(minimize=True),
-                # "l1norm" : ObjectiveProperties(minimize=True) # to minimize circuit component size
+                "tf_fitting_loss": ObjectiveProperties(minimize=True, threshold=0),
                 },
             overwrite_existing_experiment=True,
             # parameter_constraints = ["C_1 + C_2 <= 2.0"],
-            # outcome_constraints = ["l1norm <= 1.25"],
+            # outcome_constraints = ["tf_fitting_loss <= 10"],
+            tracking_metric_names= ["l1norm"]
         )
 
-    def optimization_loop(self, num_trials: int = 20):
-        for _ in range(num_trials):
-            parameterization, trial_index = self.ax_client.get_next_trial() 
-            self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization)) # Tell Ax the outcome
+    def optimization_loop(self, num_trials: int = 20, verbose_logging: bool = True):
+        # Save current logging level
+        previous_logging_level = logging.getLogger().level
+        
+        if not verbose_logging:
+            logging.getLogger().setLevel(logging.CRITICAL)
+        
+        try:
+            for _ in tqdm(range(num_trials), desc="Optimizing", unit="trial"):
+                parameterization, trial_index = self.ax_client.get_next_trial()
+                self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization))  # Tell Ax the outcome
+        finally:
+            # Restore previous logging level
+            logging.getLogger().setLevel(previous_logging_level)
 
     # 5. Get the best parameters and the bes1t loss value
     def get_best(self, render_trace: bool = True, denormalize: bool = True):
