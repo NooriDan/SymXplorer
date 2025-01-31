@@ -1,14 +1,34 @@
+import torch
+import numpy  as np
+import control as ctrl
 import sympy  as sp
 from   sympy  import Eq
 from   typing import Dict, List, Tuple
 from   copy   import deepcopy
+
+import ax
+from ax.service.ax_client import AxClient, ObjectiveProperties
+from ax.utils.notebook.plotting import init_notebook_plotting, render
+
+# Plotting Tools
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from   symxplorer.symbolic_solver.solver  import ExperimentResult
 from   symxplorer.symbolic_solver.domains import Filter_Classification
 from   symxplorer.symbolic_solver.filter  import Filter_Classifier
 
 from   .visualizer import Visualizer 
+from   .utils      import weighted_mse_loss, plot_ac_response, Transfer_Func_Helper
 
+s = sp.symbols("s")
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dtype  = torch.double
+
+torch.set_default_dtype(dtype)
+torch.set_default_device(device)
+print(f'Using device: {device} and dtype: {dtype}')
 
 class Sizing_Assist:
     def __init__(self, filter_classification: Filter_Classification = None, tf: sp.Expr = None, metrics: Dict[str, sp.Expr] = {}):
@@ -150,7 +170,6 @@ class Sizing_Assist:
         print("No metrics or design variables to check.")
         return False  
     
-
     # Solving tools
     def solve_inverse(self) -> Dict[str, sp.Expr]:
         """Computes the design variables in terms of the objectives."""
@@ -190,7 +209,7 @@ class Sizing_Assist:
             print("No design variables to substitute.")            
             raise KeyError("No metrics to substitute.")
 
-    def sub_val_design_vars(self, sub_dict: Dict[str, float]) -> Dict[str, sp.Basic]:
+    def sub_val_design_vars_in_metrics(self, sub_dict: Dict[str, float]) -> Dict[str, sp.Basic]:
         """Numeroically finds the metrics given the provided dictionary of the design variable values."""
         if self.design_variables_dict:
             sub_dict_validated: Dict[sp.Symbol, float] = {}
@@ -207,8 +226,164 @@ class Sizing_Assist:
         else:
             raise KeyError("No design variables to substitute.")
 
-
+    def sub_val_design_vars(self, sub_dict: Dict[str, float]) -> sp.Expr:
+        """Substitues the given parameters by their floating point realization and returns a symbolic TF"""
+        if self.design_variables_dict:
+            sub_dict_validated: Dict[sp.Symbol, float] = {}
+            for k, v in sub_dict.items():
+                if self.design_variables_dict.get(k):
+                    sub_dict_validated[self.design_variables_dict[k]] = v
+                else:
+                    print(f"Design variable {k} not found in {self.design_variables_dict.keys()}")
+                    print("Ignoring the variable.")
+            if sub_dict_validated:
+                return self.tf.subs(sub_dict_validated)
+            return None
+            
+        else:
+            raise KeyError("No design variables to substitute.")
 
 class Ax_Wrapper:
-    def __init__(self):
-        pass
+    def __init__(self, 
+                 tf_to_size: sp.Expr,
+                 target_tf: sp.Expr,
+                 c_range: List[float] = [1e-12, 1e-9], 
+                 r_range: List[float] = [1e2, 1e5],
+                 frequencies: torch.Tensor = torch.logspace(3, 8, 1000),
+                 freq_weights: torch.Tensor = None,
+                 random_seed: int = 42,
+                 ):
+        
+        init_notebook_plotting()
+
+        self.sizing_assist = Sizing_Assist(tf=tf_to_size)
+        self.target_tf = target_tf
+        self.c_range = c_range
+        self.r_range = r_range
+        self.frequencies = frequencies
+        self.freq_weights = freq_weights if freq_weights is not None else torch.ones_like(frequencies)
+        self.ax_client = AxClient(random_seed=random_seed)
+            
+
+        self.parameters = None
+        self.cap_denormailization = None
+        self.res_denormailization = None
+        self.helper_functions = Transfer_Func_Helper()
+
+    def parameterize(self) -> Tuple[Dict, List, List]:
+    
+        self.cap_denormailization = min(self.c_range)
+        self.res_denormailization = min(self.r_range) 
+
+        c_range_normalized = [1, max(self.c_range)/min(self.c_range)]
+        r_range_normalized = [1, max(self.r_range)/min(self.r_range)]
+
+        parameters: List[Dict] = []
+        for var in self.sizing_assist.design_variables_dict:
+            bound = None # Reset range
+            if "C_" in var:
+                bound = c_range_normalized
+            elif "R_" in var:
+                bound = r_range_normalized
+            parameters.append({
+                "name": str(var),
+                "type": "range",        # Type of parameter (range, choice, etc.)
+                "bounds": bound,        
+                "value_type": "float",  
+                "log_scale": True       # Indicate that the parameter should be on a log scale
+            })
+
+        self.parameters = parameters
+        
+        return parameters, self.cap_denormailization, self.res_denormailization
+
+    def denormalize_params(self, parameterization: Dict[str, float]) -> Dict[str, float]:
+
+        for key in parameterization.keys():
+            if "R_" in key:
+                parameterization[key] = parameterization[key] * self.res_denormailization
+            elif "C_" in key:
+                parameterization[key] = parameterization[key] * self.cap_denormailization
+
+        return parameterization
+
+    def eval_symbolic_tf_fit(self, parameterization: Dict[str, float]) -> Tuple[Dict[str, Tuple[torch.Tensor,torch.Tensor]], torch.Tensor]:
+        
+        tf_symbolic = self.sizing_assist.sub_val_design_vars(parameterization)
+        mag, phase  = self.helper_functions.get_ac_response_from_symbolic(tf_symbolic, self.frequencies)
+        mag_target, phase_target = self.helper_functions.get_ac_response_from_symbolic(self.target_tf, self.frequencies)
+
+        fit_summary = {
+            "ideal":      (mag_target, phase_target),
+            "experiment": (mag, phase),
+            "frequencies": (self.frequencies)
+        }
+
+        mag_loss,   _ = weighted_mse_loss(mag, mag_target, self.freq_weights)
+        phase_loss, _ = weighted_mse_loss(phase, phase_target, self.freq_weights)
+
+        return fit_summary, mag_loss + phase_loss
+    
+    def evaluate(self, parameterization) -> Dict[str, Tuple[float, float]]:
+
+        parameterization = self.denormalize_params(parameterization)
+        fit_summary, loss = self.eval_symbolic_tf_fit(parameterization)
+
+        l1norm = torch.sum(torch.tensor([val for val in parameterization.values()]))
+
+        return {"tf_fitting_loss" : (loss.detach(), 0.0), "l1norm" : (l1norm, 0)}
+
+    def create_experiment(self):
+        if self.parameters is None:
+            print("Need to parameterize the variables first")
+            return
+        self.ax_client.create_experiment(
+            name="Transfer Function Optimization",  
+            parameters=self.parameters,
+            objectives={
+                "tf_fitting_loss": ObjectiveProperties(minimize=True),
+                # "l1norm" : ObjectiveProperties(minimize=True) # to minimize circuit component size
+                },
+            overwrite_existing_experiment=True,
+            # parameter_constraints = ["C_1 + C_2 <= 2.0"],
+            # outcome_constraints = ["l1norm <= 1.25"],
+        )
+
+    def optimization_loop(self, num_trials: int = 20):
+        for _ in range(num_trials):
+            parameterization, trial_index = self.ax_client.get_next_trial() 
+            self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization)) # Tell Ax the outcome
+
+    # 5. Get the best parameters and the bes1t loss value
+    def get_best(self, render_trace: bool = True, denormalize: bool = True):
+        best_parameters, values = self.ax_client.get_best_parameters()
+        best_trial = self.ax_client.get_best_trial()
+
+        print(f"Best parameters: {best_parameters}")
+        print(f"Best loss: {best_trial}")
+
+        if render_trace: 
+            render(self.ax_client.get_optimization_trace(objective_optimum = 0))
+
+        if denormalize:
+            best_parameters = self.denormalize_params(best_parameters)
+
+        return best_parameters, best_trial
+    
+    def render_contour_plot(self, param_x: str, param_y: str, metric: str = "tf_fitting_loss"):
+        render(self.ax_client.get_contour_plot(param_x=param_x, param_y=param_y, metric_name=metric))
+
+    def get_trials_as_df(self):
+        return self.ax_client.generation_strategy.trials_as_df
+    
+    def plot_solution(self, prameterization = None):
+        if prameterization is None:
+            prameterization, values = self.ax_client.get_best_parameters()
+
+        fit_summary, loss = self.eval_symbolic_tf_fit(prameterization)
+
+        mag_target, phase_target   = fit_summary["ideal"]
+        mag, phase = fit_summary["experiment"]
+        frequencies                = fit_summary["frequencies"]
+        plot_ac_response(frequencies, [mag, mag_target], [phase, phase_target], ["Optimized", "Target"], "Frequency Response")
+
