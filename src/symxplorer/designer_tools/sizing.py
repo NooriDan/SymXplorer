@@ -276,7 +276,7 @@ class Ax_TF_Fitter:
         self.res_denormailization = None
         self.helper_functions = Transfer_Func_Helper()
 
-    def parameterize(self) -> Tuple[Dict, List, List]:
+    def parameterize(self, log_scale: bool = False) -> Tuple[Dict, List, List]:
     
         self.cap_denormailization = min(self.c_range)
         self.res_denormailization = min(self.r_range) 
@@ -296,7 +296,7 @@ class Ax_TF_Fitter:
                 "type": "range",        # Type of parameter (range, choice, etc.)
                 "bounds": bound,        
                 "value_type": "float",  
-                "log_scale": True       # Indicate that the parameter should be on a log scale
+                "log_scale": log_scale       # Indicate that the parameter should be on a log scale
             })
 
         self.parameters = parameters
@@ -328,14 +328,18 @@ class Ax_TF_Fitter:
         mag_loss,   _ = weighted_mse_loss(mag, mag_target, self.freq_weights)
         phase_loss, _ = weighted_mse_loss(phase, phase_target, self.freq_weights)
 
-        return fit_summary, mag_loss + phase_loss
+        return fit_summary, mag_loss, phase_loss
     
-    def evaluate(self, parameterization) -> Dict[str, Tuple[float, float]]:
+    def evaluate(self, parameterization, include_phase_loss: bool = True, include_mag_loss: bool = True) -> Dict[str, Tuple[float, float]]:
 
         parameterization  = self.denormalize_params(parameterization)
-        fit_summary, loss = self.eval_symbolic_tf_fit(parameterization)
-
+        fit_summary, mag_loss, phase_loss = self.eval_symbolic_tf_fit(parameterization)
         l1norm = torch.sum(torch.tensor([val for val in parameterization.values()]))
+
+        loss = 0
+        loss += mag_loss if include_mag_loss else 0
+        loss += phase_loss if include_phase_loss else 0
+
         loss = torch.clip(loss, min=0, max=self.max_mse_loss)
         return {"tf_fitting_loss" : (loss.detach(), 0.0), "l1norm" : (l1norm, 0)}
 
@@ -388,7 +392,7 @@ class Ax_TF_Fitter:
             tracking_metric_names= ["l1norm"]
         )
 
-    def optimization_loop(self, num_trials: int = 20, verbose_logging: bool = True):
+    def optimization_loop(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, verbose_logging: bool = True):
         # Save current logging level
         previous_logging_level = logging.getLogger().level
         
@@ -398,7 +402,7 @@ class Ax_TF_Fitter:
         try:
             for _ in tqdm(range(num_trials), desc="Optimizing", unit="trial"):
                 parameterization, trial_index = self.ax_client.get_next_trial()
-                self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization))  # Tell Ax the outcome
+                self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization, include_phase_loss=include_phase_loss, include_mag_loss=include_mag_loss))  # Tell Ax the outcome
         finally:
             # Restore previous logging level
             logging.getLogger().setLevel(previous_logging_level)
@@ -429,10 +433,11 @@ class Ax_TF_Fitter:
         if prameterization is None:
             prameterization, values = self.ax_client.get_best_parameters()
 
-        fit_summary, loss = self.eval_symbolic_tf_fit(prameterization)
-
+        fit_summary, mag_loss, phase_loss = self.eval_symbolic_tf_fit(prameterization)
+        print(f"mag_loss {mag_loss}, phase_loss {phase_loss}")
         mag_target, phase_target   = fit_summary["ideal"]
-        mag, phase = fit_summary["experiment"]
+        mag, phase                 = fit_summary["experiment"]
         frequencies                = fit_summary["frequencies"]
         plot_ac_response(frequencies, [mag, mag_target], [phase, phase_target], ["Optimized", "Target"], "Frequency Response")
+        
 
