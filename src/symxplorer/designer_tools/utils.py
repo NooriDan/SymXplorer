@@ -8,30 +8,57 @@ from   typing import Dict, List, Tuple
 import plotly.graph_objects as go
 from   plotly.subplots import make_subplots
 
-def weighted_mse_loss(response, target_response, weights, normalize_method="z-score") -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
-    """Computes the weighted mean squared error loss between the response and the target response."""
-    if normalize_method == "z-score":
-        mean = torch.mean(target_response)
-        std  = torch.std(target_response)
-        target_response_norm = (target_response - mean) / std
+def weighted_mse_loss(
+    response: torch.Tensor, 
+    target_response: torch.Tensor, 
+    weights: torch.Tensor, 
+    normalize_method: str = None, 
+    epsilon: float = 1e-10
+) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
 
-        response_norm = (response - mean) / std if response is not None else None
+    """Computes the weighted mean squared error loss between the response and the target response."""
+
+    # Clamp response and target_response to avoid log10 instability for phase response
+    if epsilon > 0: 
+        response = torch.log10(torch.clamp(response, min=epsilon))
+        target_response = torch.log10(torch.clamp(target_response, min=epsilon))
+
+    norm_params = {}
+
+    # weights = weights / torch.sum(weights)  # Normalize weights
+
+    if normalize_method is None:
+        return torch.mean(weights * (response - target_response) ** 2), norm_params
+
+    elif normalize_method == "z-score":
+        mean = torch.mean(target_response)
+        std = torch.std(target_response)
+
+        # Avoid division by zero
+        std = torch.clamp(std, min=epsilon)
+
+        target_response_norm = (target_response - mean) / std
+        response_norm = (response - mean) / std
 
         norm_params = {"mean": mean, "std": std}
 
     elif normalize_method == "min-max":
         min_val = torch.min(target_response)
         max_val = torch.max(target_response)
-        target_response_norm = (target_response - min_val) / (max_val - min_val)
 
-        response_norm = (response - min_val) / (max_val - min_val) if response is not None else None
+        # Avoid division by zero
+        range_val = torch.clamp(max_val - min_val, min=epsilon)
+
+        target_response_norm = (target_response - min_val) / range_val
+        response_norm = (response - min_val) / range_val
 
         norm_params = {"min": min_val, "max": max_val}
 
     else:
-        raise ValueError("Invalid normalization method. Choose 'z-score' or 'min-max'.")
-  
-    return torch.mean(weights * (response_norm - target_response_norm)**2), norm_params
+        raise ValueError("Invalid normalization method. Choose 'z-score' or 'min-max' or None.")
+
+    return torch.mean(weights * (response_norm - target_response_norm) ** 2), norm_params
+
 
 # Plotting 
 def plot_ac_response(frequencies: torch.Tensor, H_f_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
@@ -87,8 +114,16 @@ class Transfer_Func_Helper:
 
     def eval_tf(self, tf: sp.Expr, f_val: torch.Tensor) -> torch.Tensor:
         s = sp.symbols("s")
-        H_f = sp.lambdify((s,), tf, "numpy")
-        return torch.tensor(H_f(f_val*2*torch.pi*1j), dtype=torch.complex64)
+        
+        # Convert torch tensor to NumPy before passing to lambdify
+        H_f = sp.lambdify(s, tf, "numpy")
+        f_numpy = f_val.cpu().numpy()  # Ensure f_val is a NumPy array
+        
+        # Evaluate transfer function
+        H_result = H_f(f_numpy * 2 * np.pi * 1j)  # Keep NumPy operations
+        
+        # Convert back to PyTorch tensor using torch.from_numpy
+        return torch.from_numpy(np.asarray(H_result, dtype=np.complex64)).to(f_val.device)
 
     def get_ac_response_from_symbolic(self, tf: sp.Expr, frequencies: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         H_f = self.eval_tf(tf, frequencies)

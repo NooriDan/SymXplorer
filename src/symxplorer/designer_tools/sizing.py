@@ -253,6 +253,7 @@ class Ax_TF_Fitter:
                  frequencies: torch.Tensor = torch.logspace(3, 8, 1000),
                  freq_weights: torch.Tensor = None,
                  max_mse_loss: float = 20,
+                 mse_norm_method: str = "min-max",
                  random_seed: int = 42,
                  verbose_logging: bool = True
                  ):
@@ -266,6 +267,7 @@ class Ax_TF_Fitter:
         self.frequencies = frequencies
         self.freq_weights = freq_weights if freq_weights is not None else torch.ones_like(frequencies)
         self.max_mse_loss = max_mse_loss
+        self.mse_norm_method  = mse_norm_method
         self.random_seed  = random_seed
         self.verbose_logging = verbose_logging
         
@@ -313,7 +315,7 @@ class Ax_TF_Fitter:
 
         return parameterization
 
-    def eval_symbolic_tf_fit(self, parameterization: Dict[str, float]) -> Tuple[Dict[str, Tuple[torch.Tensor,torch.Tensor]], torch.Tensor]:
+    def eval_symbolic_tf_fit(self, parameterization: Dict[str, float], epsilon: float = 1e-10) -> Tuple[Dict[str, Tuple[torch.Tensor,torch.Tensor]], torch.Tensor]:
         
         tf_symbolic = self.sizing_assist.sub_val_design_vars(parameterization)
         mag, phase  = self.helper_functions.get_ac_response_from_symbolic(tf_symbolic, self.frequencies)
@@ -325,15 +327,15 @@ class Ax_TF_Fitter:
             "frequencies": (self.frequencies)
         }
 
-        mag_loss,   _ = weighted_mse_loss(mag, mag_target, self.freq_weights)
-        phase_loss, _ = weighted_mse_loss(phase, phase_target, self.freq_weights)
+        mag_loss,   _ = weighted_mse_loss(mag,   mag_target,   self.freq_weights, normalize_method=self.mse_norm_method, epsilon=epsilon)
+        phase_loss, _ = weighted_mse_loss(phase, phase_target, self.freq_weights, normalize_method=self.mse_norm_method, epsilon=float('-inf'))
 
         return fit_summary, mag_loss, phase_loss
     
-    def evaluate(self, parameterization, include_phase_loss: bool = True, include_mag_loss: bool = True) -> Dict[str, Tuple[float, float]]:
+    def evaluate(self, parameterization, include_phase_loss: bool = True, include_mag_loss: bool = True, epsilon: float = 1e-10) -> Dict[str, Tuple[float, float]]:
 
         parameterization  = self.denormalize_params(parameterization)
-        fit_summary, mag_loss, phase_loss = self.eval_symbolic_tf_fit(parameterization)
+        fit_summary, mag_loss, phase_loss = self.eval_symbolic_tf_fit(parameterization, epsilon=epsilon)
         l1norm = torch.sum(torch.tensor([val for val in parameterization.values()]))
 
         loss = 0
@@ -368,6 +370,15 @@ class Ax_TF_Fitter:
                                 # https://ax.dev/docs/bayesopt.html#tradeoff-between-parallelism-and-total-number-of-trials
                                 model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
                             ),
+
+                            # GenerationStep(
+                            #     model=Models.SAASBO,
+                            #     num_trials= -1,                       # No limitation (-1) on how many trials should be produced from this step
+                            #     max_parallelism=max_parallelism_bo,  # Parallelism limit for this step, often lower than for Sobol
+                            #     # More on parallelism vs. required samples in BayesOpt:
+                            #     # https://ax.dev/docs/bayesopt.html#tradeoff-between-parallelism-and-total-number-of-trials
+                            #     model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
+                            # ),
                         ]
                     )
 
@@ -392,7 +403,7 @@ class Ax_TF_Fitter:
             tracking_metric_names= ["l1norm"]
         )
 
-    def optimization_loop(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, verbose_logging: bool = True):
+    def optimization_loop(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, epsilon: float = 1e-10, verbose_logging: bool = True):
         # Save current logging level
         previous_logging_level = logging.getLogger().level
         
@@ -402,18 +413,16 @@ class Ax_TF_Fitter:
         try:
             for _ in tqdm(range(num_trials), desc="Optimizing", unit="trial"):
                 parameterization, trial_index = self.ax_client.get_next_trial()
-                self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization, include_phase_loss=include_phase_loss, include_mag_loss=include_mag_loss))  # Tell Ax the outcome
+                self.ax_client.complete_trial(trial_index=trial_index, raw_data=self.evaluate(parameterization, include_phase_loss=include_phase_loss, include_mag_loss=include_mag_loss, epsilon=epsilon))  # Tell Ax the outcome
         finally:
             # Restore previous logging level
             logging.getLogger().setLevel(previous_logging_level)
 
     # 5. Get the best parameters and the bes1t loss value
-    def get_best(self, render_trace: bool = True, denormalize: bool = True):
-        best_parameters, values = self.ax_client.get_best_parameters()
-        best_trial = self.ax_client.get_best_trial()
+    def get_best(self, render_trace: bool = True, denormalize: bool = True, use_model_predictions: bool = False):
+        best_parameters, values = self.ax_client.get_best_parameters(use_model_predictions=use_model_predictions)
+        # best_trial = self.ax_client.get_best_trial()
 
-        print(f"Best parameters: {best_parameters}")
-        print(f"Best loss: {best_trial}")
 
         if render_trace: 
             render(self.ax_client.get_optimization_trace(objective_optimum = 0))
@@ -421,7 +430,7 @@ class Ax_TF_Fitter:
         if denormalize:
             best_parameters = self.denormalize_params(best_parameters)
 
-        return best_parameters, best_trial
+        return best_parameters, values[0]
     
     def render_contour_plot(self, param_x: str, param_y: str, metric: str = "tf_fitting_loss"):
         render(self.ax_client.get_contour_plot(param_x=param_x, param_y=param_y, metric_name=metric))
