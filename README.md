@@ -22,7 +22,7 @@ pip install -e .
 First Git clone the repo, and follow the instructions below you'll find information and links to the key notebooks.
 
 - The main codeblocks are under [src](src/macanalog_symbolix/) 
-- Quickly get started by running "run-symbolix" in the terminal to run the symbolic experiment defined in [common_gate_setup](src/symcircuit/demo/differential.py) and [main](src/symcircuit/symbolic_solver/main.py)
+- Quickly get started by running "run-symbolix" in a CLI to run the symbolic experiment defined in [common_gate_setup](src/symcircuit/demo/differential.py) and [main](src/symcircuit/symbolic_solver/main.py)
 - Check out summary report of previous the latest runs in [Runs](Runs)
 - Find Previous papers under [Papers](docs/Papers)
 - Refer to the [scripts](scripts) for jupyternotebooks on how to use the tool.
