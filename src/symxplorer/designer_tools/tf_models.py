@@ -1,17 +1,25 @@
 import torch
-import numpy  as np
 import control as ctrl
 import sympy  as sp
-from   sympy  import Eq
 from   typing import Dict, List, Tuple
-from   copy   import deepcopy
+from abc import ABC, abstractmethod
 
-from .sizing import Transfer_Func_Helper
+from .utils import Transfer_Func_Helper
+
+class Base_TF(ABC):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def get_tf(self) -> sp.Expr:
+        """Returns the symbolic transfer function."""
+        pass
 
 # Custom Target TFs
-class Pole_Zero_TF:
+class Pole_Zero_TF(Base_TF):
     def __init__(self, zeros: List[complex] = None, poles: list[complex] = None, gain: float = 1):
         """Pole/zero locations can be complex. DC gain is in dB. """
+        # super.__init__()
         self._dtype  = torch.complex64
         self.zeros = zeros
         self.poles = poles
@@ -45,8 +53,9 @@ class Pole_Zero_TF:
 
         return self.tf_sympy
     
-class Second_Order_LP_TF:
+class Second_Order_LP_TF(Base_TF):
     def __init__(self, q: float, fc: float, dc_gain: float):
+        # super.__init__()
         self.q = q
         self.fc = fc
         self.dc_gain = dc_gain
@@ -56,8 +65,9 @@ class Second_Order_LP_TF:
         wc = 2 * sp.pi * self.fc
         return self.dc_gain/(s**2/wc**2 + s/(wc*self.q) + 1)
 
-class First_Order_LP_TF:
+class First_Order_LP_TF(Base_TF):
     def __init__(self, fc: float, dc_gain: float):
+        # super.__init__()
         self.fc = fc
         self.dc_gain = dc_gain
 
@@ -66,8 +76,9 @@ class First_Order_LP_TF:
         wc = 2 * sp.pi * self.fc
         return self.dc_gain/(s/wc + 1)
 
-class Second_Order_BP_TF:
+class Second_Order_BP_TF(Base_TF):
     def __init__(self, q: float, fc: float, k_bp: float):
+        # super.__init__()
         self.q = q
         self.fc = fc
         self.k_bp = k_bp
@@ -76,3 +87,11 @@ class Second_Order_BP_TF:
         s = sp.symbols("s")
         wc = 2 * sp.pi * self.fc
         return self.k_bp*(wc/self.q)*s/(s**2 + (wc/self.q)*s + wc**2)
+    
+
+def cascade_tf(list_of_tfs: List[Base_TF], dc_gain_multiplier: float = 1.0) -> sp.Expr:
+    """Can be used to cascaded first and second order filters for Chebyshev, Butterworth, etc filter types"""
+    cascaded = dc_gain_multiplier
+    for obj in list_of_tfs:
+        cascaded *= obj.get_tf()
+    return cascaded

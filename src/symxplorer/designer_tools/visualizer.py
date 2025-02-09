@@ -1,20 +1,20 @@
-import sympy as sp
-import matplotlib.pyplot as plt
-from   matplotlib.ticker import AutoMinorLocator, LogLocator
-import numpy as np
-from tqdm import tqdm
 import logging
+import sympy as sp
+import numpy as np
 
-
+import matplotlib.pyplot as plt
+from   matplotlib.ticker import LogLocator
+from   tqdm import tqdm
 from typing import Dict, List, Tuple
 from copy   import deepcopy
 
+# Custom Imports
 from symxplorer.symbolic_solver.domains import Filter_Classification
 
 # Suppress info logging for matplotlib
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
-class Visualizer:
+class Symbolic_Visualizer:
     def __init__(self, filter_classification: Filter_Classification = None, tf: sp.Expr = None):
         """Either pass the TF or the filter classification object for more visualization"""
         if filter_classification is None and tf is None:
@@ -201,4 +201,40 @@ class Visualizer:
         value = expression.subs(self.params_to_value)
 
         return value, round(float(value.evalf()), num_of_decimals)
-    
+
+class Bode_Visualizer:
+    def __init__(self, frequencies: np.ndarray, complex_response: np.ndarray):
+        """
+        Initialize the Bode_Visualizer with frequency data and complex response.
+
+        Parameters:
+        frequencies (np.ndarray): Array of frequency values in Hz.
+        complex_response (np.ndarray): Array of complex response values (H(jw)).
+        """
+        self.frequencies = frequencies
+        self.complex_response = complex_response
+
+    def plot_bode(self):
+        """
+        Plot the Bode magnitude and phase plots.
+        """
+        magnitude = 20 * np.log10(np.abs(self.complex_response))  # Convert to dB
+        phase = np.unwrap(np.angle(self.complex_response, deg=True))  # Convert to degrees
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+        
+        # Magnitude plot
+        ax1.semilogx(self.frequencies, magnitude, 'b')
+        ax1.set_title("Bode Magnitude Plot")
+        ax1.set_ylabel("Magnitude (dB)")
+        ax1.grid(True, which='both', linestyle='--')
+        
+        # Phase plot
+        ax2.semilogx(self.frequencies, phase, 'r')
+        ax2.set_title("Bode Phase Plot")
+        ax2.set_ylabel("Phase (degrees)")
+        ax2.set_xlabel("Frequency (Hz)")
+        ax2.grid(True, which='both', linestyle='--')
+        
+        plt.tight_layout()
+        plt.show()
