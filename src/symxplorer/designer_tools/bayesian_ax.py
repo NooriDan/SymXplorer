@@ -291,15 +291,16 @@ class Ax_LTspice_Bode_Fitter:
 
         for var, given_bounds in self.design_params.items():
             bound = None # Reset range
-            if var.startswith("C"):
+
+            if isinstance(given_bounds, list) and len(given_bounds) == 2:
+                bound = given_bounds
+            elif var.startswith("C"):
                 bound = self.c_range
             elif var.startswith("R"):
                 bound = self.r_range
-            elif len(given_bounds) == 2:
-                bound = given_bounds
             else:
-                print(f"{var} does not have a valid defined range")
                 bound = [1, 1e2] # default bound for undetermined variables!
+                print(f"{var} does not have a valid defined range using the default bound {bound}")
             parameters.append({
                 "name": str(var),
                 "type": "range",        # Type of parameter (range, choice, etc.)
@@ -350,9 +351,17 @@ class Ax_LTspice_Bode_Fitter:
         
         current_complex_response = self.ltspice_wrapper.extract_wave(self.output_node)
 
-        mag_loss, phase_loss = get_bode_fitness_loss(current_complex_response=current_complex_response, target_complex_response=self.target_complex_response, freq_weights=self.frequency_weight.weights, norm_method='min-max')
+        fit_summary = get_bode_fitness_loss(current_complex_response=current_complex_response, 
+                                                     target_complex_response=self.target_complex_response, 
+                                                     freq_weights=self.frequency_weight.weights, 
+                                                     norm_method='min-max',
+                                                     loss_type=self.loss_fn)
         
-        metric_value = 0
+        mag_loss     = fit_summary['mag_loss']
+        phase_loss   = fit_summary['phase_loss']
+        curr_max_mag = fit_summary['curr_max_mag']
+
+        metric_value  = 0
         metric_value += mag_loss if include_mag_loss else 0
         metric_value += phase_loss if include_phase_loss else 0
 
@@ -362,12 +371,17 @@ class Ax_LTspice_Bode_Fitter:
             "complex_response" : current_complex_response,
             "mag_loss" : mag_loss.detach(),
             "phase_loss" : phase_loss.detach(),
+            "max_mag": curr_max_mag.detach(),
             "bode_fitting_loss" : metric_value.detach(),
             "l1norm" : l1norm.detach(),
             "params" : params
         })
 
-        return {"bode_fitting_loss" : (metric_value.detach(), 0.0), "l1norm" : (l1norm.detach(), 0)}
+        return {
+            "bode_fitting_loss" : (metric_value.detach(), 0.0), 
+            "max_mag" : (curr_max_mag.detach(), 0), 
+            "l1norm" : (l1norm.detach(), 0)
+            }
 
     def create_experiment(self, num_sobol_trials: int = 5, verbose_logging: bool = False) -> None:
 

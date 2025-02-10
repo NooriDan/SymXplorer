@@ -25,14 +25,7 @@ def weighted_mse_loss(
 
     """Computes the weighted mean squared error loss between the response and the target response."""
 
-    # Clamp response and target_response to avoid log10 instability for phase response
-    # if epsilon > 0: 
-    #     response = torch.log10(torch.clamp(response, min=epsilon))
-    #     target_response = torch.log10(torch.clamp(target_response, min=epsilon))
-
     norm_params = {}
-
-    # weights = weights / torch.sum(weights)  # Normalize weights
 
     if normalize_method is None:
         norm_params = None
@@ -55,14 +48,9 @@ def weighted_mse_loss(
         min_val = torch.min(target_response)
         max_val = torch.max(target_response)
 
-        # # Avoid division by zero
-        # range_val = torch.clamp(max_val - min_val, min=epsilon)
-
-        # target_response_norm = (target_response - min_val) / range_val
-        # response_norm = (response - min_val) / range_val
-
         norm_params = {"min": min_val, "max": max_val}
-        loss = torch.mean(weights * (response_norm - target_response_norm) ** 2 / ((max_val-min_val)** 0.5))
+
+        loss = torch.mean(weights * (response - target_response) ** 2 / ((max_val-min_val)** 0.5))
 
     else:
         raise ValueError("Invalid normalization method. Choose 'z-score' or 'min-max' or None.")
@@ -109,7 +97,7 @@ def weighted_mae_loss(
 
     return loss, norm_params
 
-def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_complex_response: torch.Tensor, freq_weights: torch.Tensor = None, loss_type: str = 'mae',norm_method: str = "min-max",  epsilon: float = 1e-10):
+def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_complex_response: torch.Tensor, freq_weights: torch.Tensor = None, loss_type: str = 'mae',norm_method: str = "min-max", rescale:bool = True, epsilon: float = 1e-10) -> Dict[str, torch.Tensor]:
     # Ensure inputs are tensors
     if not isinstance(current_complex_response, torch.Tensor):
         current_complex_response = torch.tensor(current_complex_response, dtype=torch.cfloat)
@@ -123,24 +111,39 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
     helper = Transfer_Func_Helper()
 
     # Extract magnitude and phase
-    mag, phase = helper.get_mag_phase_from_complex_response(current_complex_response)
-    mag_target, phase_target = helper.get_mag_phase_from_complex_response(target_complex_response)
+    curr_mag, curr_phase     = helper.get_mag_phase_from_complex_response(current_complex_response)
+    target_mag, target_phase = helper.get_mag_phase_from_complex_response(target_complex_response)
     
+    fit_summary = {}
+    if rescale:
+        curr_max_mag    = torch.max(curr_mag)
+        target_max_mag  = torch.max(target_mag)
+
+        # mag is in dB so we normalize to
+        curr_mag   -= curr_max_mag  
+        target_mag -= target_max_mag
+
+        # log in the summary
+        fit_summary['curr_max_mag'] = curr_max_mag
+        fit_summary['target_max_mag'] = target_max_mag
+
     # Compute losses
     if loss_type == 'mae':
-        mag_loss, _   = weighted_mae_loss(mag, mag_target, freq_weights, norm_method, epsilon=epsilon)
-        phase_loss, _ = weighted_mae_loss(phase, phase_target, freq_weights, norm_method, epsilon=epsilon) 
+        mag_loss, _   = weighted_mae_loss(curr_mag, target_mag, freq_weights, norm_method, epsilon=epsilon)
+        phase_loss, _ = weighted_mae_loss(curr_phase, target_phase, freq_weights, norm_method, epsilon=epsilon) 
     elif loss_type == 'mse':
-        mag_loss, _   = weighted_mse_loss(mag, mag_target, freq_weights, norm_method, epsilon=epsilon)
-        phase_loss, _ = weighted_mse_loss(phase, phase_target, freq_weights, norm_method, epsilon=epsilon)
+        mag_loss, _   = weighted_mse_loss(curr_mag, target_mag, freq_weights, norm_method, epsilon=epsilon)
+        phase_loss, _ = weighted_mse_loss(curr_phase, target_phase, freq_weights, norm_method, epsilon=epsilon)
     else:
         raise KeyError(f"{loss_type} is a loss type option... choose from: ['mae', 'mse']")  
     
-    
-    return mag_loss, phase_loss
+    fit_summary['mag_loss']   = mag_loss
+    fit_summary['phase_loss'] = phase_loss
+
+    return fit_summary
 
 # Plotting 
-def plot_ac_response(frequencies: torch.Tensor, H_f_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
+def plot_ac_response(frequencies: torch.Tensor, mag_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
     """Plots multiple AC responses on the same plot using Plotly for interactivity.
 
     Args:
@@ -152,11 +155,11 @@ def plot_ac_response(frequencies: torch.Tensor, H_f_list: list, phase_list: list
     """
 
     if labels is None:
-        labels = [f"Series {i}" for i in range(len(H_f_list))]
+        labels = [f"Series {i}" for i in range(len(mag_list))]
 
     fig = make_subplots(rows=2, cols=1, subplot_titles=("Gain (dB)", "Phase (deg)"))
     helper = Transfer_Func_Helper()
-    for H_f, phase, label in zip(H_f_list, phase_list, labels):
+    for H_f, phase, label in zip(mag_list, phase_list, labels):
         fig.add_trace(go.Scatter(x=frequencies.tolist(), y=helper.convert_to_dB(H_f).tolist(), mode='lines', name=f"{label}-mag"), row=1, col=1)  # Gain
         fig.add_trace(go.Scatter(x=frequencies.tolist(), y=phase.tolist(), mode='lines', name=f"{label}-phase"), row=2, col=1)  # Phase
 
@@ -314,8 +317,6 @@ class Transfer_Func_Helper:
 
         # Create control.TransferFunction
         return ctrl.TransferFunction(num_coeffs, den_coeffs)
-
-
 class Frequency_Weight:
     def __init__(self, lower: float, upper: float, frequency_array: torch.Tensor = None, bias: float = 10):
         """
