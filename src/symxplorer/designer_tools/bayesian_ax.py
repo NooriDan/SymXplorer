@@ -17,7 +17,7 @@ from ax.utils.notebook.plotting import init_notebook_plotting, render
 from   symxplorer.spice_engine.spicelib   import LTspice_Wrapper
 
 from   .symbolic_sizing import Symbolic_Sizing_Assist
-from   .utils           import weighted_mse_loss, plot_ac_response, plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
+from   .utils           import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
 
 
 s = sp.symbols("s")
@@ -33,12 +33,15 @@ class Ax_Symbolic_Bode_Fitter:
     def __init__(self, 
                  tf_to_size: sp.Expr,
                  target_tf: sp.Expr,
+                 mag_threshold: float,
                  c_range: List[float] = [1e-12, 1e-9], 
                  r_range: List[float] = [1e2, 1e5],
                  frequencies: torch.Tensor = torch.logspace(3, 8, 1000),
                  freq_weights: torch.Tensor = None,
-                 max_mse_loss: float = 20,
-                 mse_norm_method: str = "min-max",
+                 max_loss: float = float('inf'),
+                 loss_norm_method: str = "min-max",
+                 loss_type: str = 'mse',
+                 rescale_mag: bool = True,
                  random_seed: int = 42,
                  verbose_logging: bool = True
                  ):
@@ -49,11 +52,17 @@ class Ax_Symbolic_Bode_Fitter:
         self.target_tf = target_tf
         self.c_range = c_range
         self.r_range = r_range
+        self.max_mag_limit = mag_threshold
+
         self.frequencies = frequencies
         self.freq_weights = freq_weights if freq_weights is not None else torch.ones_like(frequencies)
-        self.max_mse_loss = max_mse_loss
-        self.mse_norm_method  = mse_norm_method
-        self.random_seed  = random_seed
+
+        self.max_mse_loss = max_loss
+        self.loss_norm_method  = loss_norm_method
+        self.loss_type = loss_type
+        self.rescale_mag = rescale_mag
+
+        self.random_seed = random_seed
         self.verbose_logging = verbose_logging
         
         self.ax_client  = None
@@ -62,6 +71,8 @@ class Ax_Symbolic_Bode_Fitter:
         self.cap_denormailization = None
         self.res_denormailization = None
         self.helper_functions = Transfer_Func_Helper()
+        self.penality_mult = 1 # Default to 1
+
 
     def parameterize(self, log_scale: bool = True) -> Tuple[Dict, List, List]:
     
@@ -100,20 +111,30 @@ class Ax_Symbolic_Bode_Fitter:
 
         return parameterization
 
-    def eval_symbolic_tf_fit(self, parameterization: Dict[str, float], epsilon: float = 1e-10) -> Tuple[Dict[str, Tuple[torch.Tensor,torch.Tensor]], torch.Tensor]:
+    def eval_symbolic_tf_fit(self, parameterization: Dict[str, float], epsilon: float = 1e-10) -> Tuple[Dict, torch.Tensor]:
         
-        tf_symbolic = self.sizing_assist.sub_val_design_vars(parameterization)
-        mag, phase  = self.helper_functions.get_ac_response_from_symbolic(tf_symbolic, self.frequencies,  epsilon=epsilon)
-        mag_target, phase_target = self.helper_functions.get_ac_response_from_symbolic(self.target_tf, self.frequencies,  epsilon=epsilon)
+        curr_tf_symbolic = self.sizing_assist.sub_val_design_vars(parameterization)
 
-        fit_summary = {
-            "ideal":      (mag_target, phase_target),
-            "experiment": (mag, phase),
-            "frequencies": (self.frequencies)
-        }
+        current_complex_response = self.helper_functions.eval_tf(tf=curr_tf_symbolic, f_val=self.frequencies)
+        target_complex_response  = self.helper_functions.eval_tf(tf=self.target_tf, f_val=self.frequencies)
 
-        mag_loss,   _ = weighted_mse_loss(mag,   mag_target,   self.freq_weights, normalize_method=self.mse_norm_method)
-        phase_loss, _ = weighted_mse_loss(phase, phase_target, self.freq_weights, normalize_method=self.mse_norm_method)
+        fit_summary = get_bode_fitness_loss(
+            current_complex_response=current_complex_response, 
+            target_complex_response=target_complex_response, 
+            freq_weights=self.freq_weights, 
+            loss_type=self.loss_type, 
+            norm_method=self.loss_norm_method,
+            rescale=self.rescale_mag)
+        
+        mag_loss   = fit_summary['mag_loss']
+        phase_loss = fit_summary['phase_loss']
+
+        # Add new data to the summary
+        fit_summary["current_complex_response"] = current_complex_response
+        fit_summary['target_complex_response']  = target_complex_response
+        fit_summary["mag-phase-target"]    = self.helper_functions.get_mag_phase_from_complex_response(complex_response_array=target_complex_response, epsilon=epsilon)
+        fit_summary["mag-phase-optimized"] = self.helper_functions.get_mag_phase_from_complex_response(complex_response_array=current_complex_response, epsilon=epsilon)
+        fit_summary["frequencies"] = self.frequencies       
 
         return fit_summary, mag_loss, phase_loss
     
@@ -124,13 +145,19 @@ class Ax_Symbolic_Bode_Fitter:
         l1norm = torch.sum(torch.tensor([val for val in parameterization.values()]))
 
         loss = 0
-        loss += mag_loss if include_mag_loss else 0
+        loss += mag_loss   if include_mag_loss else 0
         loss += phase_loss if include_phase_loss else 0
+        loss  = torch.clip(loss, min=0, max=self.max_mse_loss)
 
-        loss = torch.clip(loss, min=0, max=self.max_mse_loss)
-        return {"tf_fitting_loss" : (loss.detach(), 0.0), "l1norm" : (l1norm, 0)}
+        # Add penalty for violating mag
+        loss += self.penality_mult * max(0, fit_summary['target_max_mag'] - fit_summary['curr_max_mag'])**2
+        
+        return {
+            "tf_fitting_loss" : (loss.detach(), 0.0), 
+            "max_mag" : (fit_summary['curr_max_mag'].detach(), 0),  
+            "l1norm" : (l1norm.detach(), 0)}
 
-    def create_experiment(self, num_sobol_trials: int = 5, max_parallelism_sobol: int = 5, max_parallelism_bo: int = 3) -> None:
+    def create_experiment(self, num_sobol_trials: int = 5, use_outcome_constraint: bool = True) -> None:
 
         self.gs = GenerationStrategy(
                         steps=[
@@ -141,7 +168,6 @@ class Ax_Symbolic_Bode_Fitter:
                                 model=Models.SOBOL,
                                 num_trials=num_sobol_trials,                # How many trials should be produced from this generation step
                                 min_trials_observed= num_sobol_trials-2,    # How many trials need to be completed to move to next model
-                                max_parallelism=max_parallelism_sobol,      # Max parallelism for this step
                                 model_kwargs={"seed": self.random_seed},    # Any kwargs you want passed into the model
                                 model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
                             ),
@@ -151,7 +177,6 @@ class Ax_Symbolic_Bode_Fitter:
                                 model=Models.BOTORCH_MODULAR,
                                 # model_kwargs = {"botorch_model_class" : SaasFullyBayesianSingleTaskGP},
                                 num_trials=-1,                       # No limitation (-1) on how many trials should be produced from this step
-                                max_parallelism=max_parallelism_bo,  # Parallelism limit for this step, often lower than for Sobol
                                 # More on parallelism vs. required samples in BayesOpt:
                                 # https://ax.dev/docs/bayesopt.html#tradeoff-between-parallelism-and-total-number-of-trials
                                 model_gen_kwargs={"torch_device": device},  # Any kwargs you want passed to `modelbridge.gen`
@@ -169,6 +194,11 @@ class Ax_Symbolic_Bode_Fitter:
             print("Need to parameterize the variables first")
             return
         
+        if use_outcome_constraint:
+            outcome_constraints = [f"max_mag >= {self.max_mag_limit}"]
+        else: 
+            outcome_constraints = []
+        
         self.ax_client.create_experiment(
             name="Transfer Function Optimization",  
             parameters=self.parameters,
@@ -177,11 +207,11 @@ class Ax_Symbolic_Bode_Fitter:
                 },
             overwrite_existing_experiment=True,
             # parameter_constraints = ["C_1 + C_2 <= 2.0"],
-            # outcome_constraints = ["tf_fitting_loss <= 10"],
-            tracking_metric_names= ["l1norm"]
+            outcome_constraints = outcome_constraints,
+            tracking_metric_names= ["l1norm", 'max_mag']
         )
 
-    def optimization_loop(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, epsilon: float = 1e-10, verbose_logging: bool = True):
+    def optimize(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, epsilon: float = 1e-10, verbose_logging: bool = True):
         # Save current logging level
         previous_logging_level = logging.getLogger().level
         
@@ -196,7 +226,6 @@ class Ax_Symbolic_Bode_Fitter:
             # Restore previous logging level
             logging.getLogger().setLevel(previous_logging_level)
 
-    # 5. Get the best parameters and the bes1t loss value
     def get_best(self, render_trace: bool = True, denormalize: bool = True, use_model_predictions: bool = False):
         best_parameters, values = self.ax_client.get_best_parameters(use_model_predictions=use_model_predictions)
         # best_trial = self.ax_client.get_best_trial()
@@ -222,12 +251,14 @@ class Ax_Symbolic_Bode_Fitter:
             prameterization = self.denormalize_params(parameterization=prameterization)
 
         fit_summary, mag_loss, phase_loss = self.eval_symbolic_tf_fit(prameterization)
-        print(f"mag_loss {mag_loss}, phase_loss {phase_loss}")
-        mag_target, phase_target   = fit_summary["ideal"]
-        mag, phase                 = fit_summary["experiment"]
-        frequencies                = fit_summary["frequencies"]
-        plot_ac_response(frequencies, [mag, mag_target], [phase, phase_target], ["Optimized", "Target"], "Frequency Response")
-    
+        print(f"mag_loss {mag_loss}, phase_loss {phase_loss}, max-mag {fit_summary['curr_max_mag']}")
+
+        target_complex_response  = fit_summary['target_complex_response']
+        current_complex_response = fit_summary['current_complex_response']
+        frequencies = fit_summary['frequencies']
+
+        plot_complex_response(frequencies=frequencies, complex_response_list=[target_complex_response, current_complex_response], labels=['Target', 'Optimized'])
+
     # Utility
     def save_ax(self, name: str) -> str:
         # Generate a timestamp

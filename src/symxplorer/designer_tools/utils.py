@@ -144,7 +144,7 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
 
 # Plotting 
 def plot_ac_response(frequencies: torch.Tensor, mag_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
-    """Plots multiple AC responses on the same plot using Plotly for interactivity.
+    """(Deprecated) Plots multiple AC responses on the same plot using Plotly for interactivity.
 
     Args:
         frequencies: A PyTorch tensor of frequencies (shared by all responses).
