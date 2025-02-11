@@ -290,18 +290,20 @@ class Filter_Classifier():
         # Extract denominator coefficients
         a2 = denominator.coeff(s, 2)
         a1 = denominator.coeff(s, 1)
+        a0 = denominator.coeff(s, 0)
         # Extract numerator coefficients
         b2 = numerator.coeff(s, 2)
         b1 = numerator.coeff(s, 1)
+        b0 = numerator.coeff(s, 0)
 
         stable = True
         type_correction: str = ""
         # Checks if the pole pairs could be in the RHP
-        if sympy.ask(sympy.Q.negative((b2*b1).simplify())):
+        if sympy.ask(sympy.Q.negative((b2*b1*b0).simplify())):
             stable = False
             type_correction += "-UNSTABLE-POLE"
         # Checks if zero pairscould be in the RHP
-        if sympy.ask(sympy.Q.negative((a2*a1).simplify())):
+        if sympy.ask(sympy.Q.negative((a2*a1*a0).simplify())):
             stable = False
             type_correction += "-UNSTABLE-ZERO"
 
