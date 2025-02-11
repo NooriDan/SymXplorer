@@ -5,9 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "SymXplorer"
 version = "1.2.0"
-description = "A symbolic circuit explorer and design tool"
+description = "A symbolic circuit explorer and design tool with SPICE simulators binding"
 readme = "README.md"
-# license = {file = "LICENSE"}
+license = {file = "LICENSE"}
 authors = [
     {name = "Danial, Noori Zadeh", email = "noorizad@mcmaster.com"}
 ]
