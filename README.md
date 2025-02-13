@@ -21,7 +21,7 @@ pip install -e .
 # How to get started
 First Git clone the repo, and follow the instructions below you'll find information and links to the key notebooks.
 
-- The main codeblocks are under [src](src/macanalog_symbolix/) 
+- The main codeblocks are under [src](src/symxplorer/) 
 - Quickly get started by running "run-symbolix" in a CLI to run the symbolic experiment defined in [common_gate_setup](src/symcircuit/demo/differential.py) and [main](src/symcircuit/symbolic_solver/main.py)
 - Check out summary report of previous the latest runs in [Runs](Runs)
 - Find Previous papers under [Papers](docs/Papers)
