@@ -3,6 +3,7 @@
 
 # Notebook outputs
 # scripts/Runs/
+_test*.ipynb
 
 # LaTeX auxiliary files
 *.aux

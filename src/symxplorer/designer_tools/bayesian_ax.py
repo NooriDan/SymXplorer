@@ -57,7 +57,7 @@ class Ax_Symbolic_Bode_Fitter:
         self.frequencies = frequencies
         self.freq_weights = freq_weights if freq_weights is not None else torch.ones_like(frequencies)
 
-        self.max_mse_loss = max_loss
+        self.max_loss = max_loss
         self.loss_norm_method  = loss_norm_method
         self.loss_type = loss_type
         self.rescale_mag = rescale_mag
@@ -147,7 +147,7 @@ class Ax_Symbolic_Bode_Fitter:
         loss = 0
         loss += mag_loss   if include_mag_loss else 0
         loss += phase_loss if include_phase_loss else 0
-        loss  = torch.clip(loss, min=0, max=self.max_mse_loss)
+        loss  = torch.clip(loss, min=0, max=self.max_loss)
 
         # Add penalty for violating mag
         loss += self.penality_mult * max(0, fit_summary['target_max_mag'] - fit_summary['curr_max_mag'])**2
@@ -211,11 +211,11 @@ class Ax_Symbolic_Bode_Fitter:
             tracking_metric_names= ["l1norm", 'max_mag']
         )
 
-    def optimize(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, epsilon: float = 1e-10, verbose_logging: bool = True):
+    def optimize(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, epsilon: float = 1e-10):
         # Save current logging level
         previous_logging_level = logging.getLogger().level
         
-        if not verbose_logging:
+        if not self.verbose_logging:
             logging.getLogger().setLevel(logging.CRITICAL)
         
         try:
@@ -283,28 +283,40 @@ class Ax_LTspice_Bode_Fitter:
     def __init__(self, 
                  ltspice_wrapper: LTspice_Wrapper,
                  target_tf: sp.Expr,
+                 mag_threshold: float,
                  design_params: Dict[str, List[float]],  # optional bound as List[float] --> [lower, upper]
                  c_range: List[float] = [1e0, 1e3],  # default in pico Farad 
                  r_range: List[float] = [1e1, 1e6],  # default in Ohm
                  output_node: str = "Vout",
                  frequency_weight: Frequency_Weight = None,
-                 max_loss: float = 20,
-                 loss_fn:  str   = 'mse',
-                 norm_method: str = "min-max",
-                 random_seed: int = 42,):
+                 max_loss: float = float('inf'),
+                 loss_norm_method: str = "min-max",
+                 loss_type:   str = 'mse',
+                 rescale_mag: bool = True,
+                 random_seed: int = 42,
+                 verbose: bool = False):
         
         self.ltspice_wrapper = ltspice_wrapper
         self.target_tf = target_tf
+        self.mag_threshold = mag_threshold
         self.design_params = design_params
         self.c_range = c_range
         self.r_range = r_range
         self.output_node = output_node
+        # to be computed when the target_tf is evaluated
+        self.target_fc_low:  float = None
+        self.target_fc_high: float = None
+        self._count_of_fc: int = None
 
         self.frequency_weight = frequency_weight
-        self.random_seed = random_seed
-        self.norm_method = norm_method
+        self.norm_method = loss_norm_method
         self.max_loss = max_loss
-        self.loss_fn = loss_fn
+        self.loss_type = loss_type
+        self.rescale_mag = rescale_mag
+
+        self.random_seed = random_seed
+        self.verbose_logging = verbose
+        self.penality_mult = 1
 
         init_notebook_plotting()
         self.ax_client  = None
@@ -315,6 +327,25 @@ class Ax_LTspice_Bode_Fitter:
         self.frequency_array: torch.Tensor = None # is resolved the first time the LTspice is run
 
         self.optimization_log = []
+
+    def examine_target(self, f_array: torch.Tensor = None):
+
+        if f_array is None:
+            f_array = f_val=torch.logspace(1, 12, 10000)
+        
+        self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=f_array)
+
+        mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
+        fc_array, count = self.helper_functions.compute_cutoff(freq=f_array, 
+                                                                mag_db=mag, 
+                                                                drop_by=3)
+        if count == 1:
+            self.target_fc_low = fc_array[0]
+        elif count == 2:
+            self.target_fc_low  = fc_array[0]
+            self.target_fc_high = fc_array[1]
+
+        self._count_of_fc = count
 
     def parameterize(self, log_scale: bool = True) -> Tuple[Dict, List, List]:
 
@@ -374,7 +405,7 @@ class Ax_LTspice_Bode_Fitter:
         # Only for the first run
         if self.frequency_array is None:
             self.frequency_array = self.ltspice_wrapper.extract_wave("frequency", is_real=True)
-            self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=self.frequency_array)
+            self.examine_target(f_array=self.frequency_array)
 
         if self.frequency_weight is None or self.frequency_weight.weights is None:
             self.frequency_weight.parent_frequency_array = self.frequency_array
@@ -385,24 +416,55 @@ class Ax_LTspice_Bode_Fitter:
         fit_summary = get_bode_fitness_loss(current_complex_response=current_complex_response, 
                                                      target_complex_response=self.target_complex_response, 
                                                      freq_weights=self.frequency_weight.weights, 
-                                                     norm_method='min-max',
-                                                     loss_type=self.loss_fn)
+                                                     norm_method=self.norm_method,
+                                                     loss_type=self.loss_type,
+                                                     rescale=self.rescale_mag)
         
         mag_loss     = fit_summary['mag_loss']
         phase_loss   = fit_summary['phase_loss']
-        curr_max_mag = fit_summary['curr_max_mag']
 
-        metric_value  = 0
-        metric_value += mag_loss if include_mag_loss else 0
+        mag, _ = self.helper_functions.get_mag_phase_from_complex_response(complex_response_array=current_complex_response)
+
+        fc_array, count = self.helper_functions.compute_cutoff(freq=self.frequency_array, mag_db=mag, drop_by=3)
+        if count == 1:
+            fc_low  = fc_array[0]
+            fc_high = torch.tensor(0)
+
+        elif count == 2:
+            fc_low  = fc_array[0]
+            fc_high = fc_array[1]
+
+        else:
+            fc_low  = torch.tensor(0)
+            fc_high = torch.tensor(0)
+
+        metric_value  = torch.tensor(0, dtype=dtype)
+        metric_value += mag_loss   if include_mag_loss else 0
         metric_value += phase_loss if include_phase_loss else 0
 
+        # Add penalty for violating mag
+        metric_value += self.penality_mult * max(0, fit_summary['target_max_mag'] - fit_summary['curr_max_mag'])**2
+
+        ## Add penalty for violating fc
+        # if self._count_of_fc == count:
+        #     if count == 1:
+        #         metric_value += torch.log(max(1, torch.abs(self.target_fc_low - fc_low) - 0.1 * self.target_fc_low)).detach()
+        #     if count == 2:
+        #         metric_value += max(0, torch.abs(self.target_fc_low - fc_low)   - 0.1 * self.target_fc_low)
+        #         metric_value += max(0, torch.abs(self.target_fc_high - fc_high) - 0.1 * self.target_fc_high)
+        # else:
+        #     metric_value += self.target_fc_low**2  if self.target_fc_low  is not None else 0
+        #     metric_value += self.target_fc_high**2 if self.target_fc_high is not None else 0
+            
         l1norm = torch.sum(torch.tensor([val for val in params.values()]))
 
         self.optimization_log.append({
             "complex_response" : current_complex_response,
             "mag_loss" : mag_loss.detach(),
             "phase_loss" : phase_loss.detach(),
-            "max_mag": curr_max_mag.detach(),
+            "max_mag": fit_summary['curr_max_mag'].detach(),
+            "fc-low"  : fc_low.detach(),
+            "fc-high" : fc_high.detach(),
             "bode_fitting_loss" : metric_value.detach(),
             "l1norm" : l1norm.detach(),
             "params" : params
@@ -410,16 +472,16 @@ class Ax_LTspice_Bode_Fitter:
 
         return {
             "bode_fitting_loss" : (metric_value.detach(), 0.0), 
-            "max_mag" : (curr_max_mag.detach(), 0), 
-            "l1norm" : (l1norm.detach(), 0)
+            "max_mag" : (fit_summary['curr_max_mag'].detach(), 0), 
+            "fc-low"  : (fc_low.detach(), 0),
+            # "fc-high" : (fc_high.detach(), 0),
+            "l1norm" :  (l1norm.detach(), 0)
             }
 
-    def create_experiment(self, num_sobol_trials: int = 5, verbose_logging: bool = False) -> None:
+    def create_experiment(self, num_sobol_trials: int = 5, use_outcome_constraint: bool = True) -> None:
 
         self.gs = GenerationStrategy(
                         steps=[
-                            # 1. Initialization step (does not require pre-existing data and is well-suited for
-                            # initial sampling of the search space)
                             GenerationStep(
                                 model_name="Sobol Generator",
                                 model=Models.SOBOL,
@@ -440,11 +502,21 @@ class Ax_LTspice_Bode_Fitter:
         self.ax_client = AxClient(
             generation_strategy=self.gs,
             random_seed=self.random_seed,
-            verbose_logging=verbose_logging)
+            verbose_logging=self.verbose_logging)
 
         if self.parameters is None:
             print("Need to parameterize the variables first")
             return
+        
+        if use_outcome_constraint:
+            self.examine_target() # to extract the cut off frequency
+            outcome_constraints = [
+                f"max_mag >= {self.mag_threshold}",
+                # f"fc-low >= {0.75 * self.target_fc_low}",
+                # f"fc-low <= {1.25 * self.target_fc_low}",
+                ]
+        else: 
+            outcome_constraints = []
         
         self.ax_client.create_experiment(
             name="Transfer Function Optimization",  
@@ -454,15 +526,15 @@ class Ax_LTspice_Bode_Fitter:
                 },
             overwrite_existing_experiment=True,
             # parameter_constraints = ["C_1 + C_2 <= 2.0"],
-            # outcome_constraints = ["tf_fitting_loss <= 10"],
-            tracking_metric_names= ["l1norm"]
+            outcome_constraints = outcome_constraints,
+            tracking_metric_names= ["l1norm", "max_mag", "fc-low", "fc-high"]
         )
 
-    def optimization_loop(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True, verbose_logging: bool = True):
+    def optimize(self, num_trials: int = 20, include_mag_loss: bool = True, include_phase_loss: bool = True):
         # Save current logging level
         previous_logging_level = logging.getLogger().level
         
-        if not verbose_logging:
+        if not self.verbose_logging:
             logging.getLogger().setLevel(logging.CRITICAL)
         
         try:
@@ -474,6 +546,31 @@ class Ax_LTspice_Bode_Fitter:
             logging.getLogger().setLevel(previous_logging_level)
     
     # Utility
+    def get_best(self, render_trace: bool = True, use_model_predictions: bool = False) ->  Tuple[Dict, float]:
+        best_parameters, values = self.ax_client.get_best_parameters(use_model_predictions=use_model_predictions)
+        # best_trial = self.ax_client.get_best_trial()
+        if render_trace: 
+            render(self.ax_client.get_optimization_trace(objective_optimum = 0))
+        print(f"params:{best_parameters}")
+        print(f"loss: {values[0]}")
+        return best_parameters, values[0]
+    
+    def plot_solution(self, trial_idx: int = None):
+        if trial_idx is None:
+            trial, params, loss = self.ax_client.get_best_trial()
+
+        print(f"loss: {loss}")
+
+        current_complex_response = self.optimization_log[trial]["complex_response"]
+
+        plot_complex_response(frequencies=self.frequency_array, complex_response_list=[self.target_complex_response, current_complex_response], labels=['Target', 'Optimized'])
+
+    def render_contour_plot(self, param_x: str, param_y: str, metric: str = "bode_fitting_loss"):
+        render(self.ax_client.get_contour_plot(param_x=param_x, param_y=param_y, metric_name=metric))
+
+    def get_trials_as_df(self):
+        return self.ax_client.generation_strategy.trials_as_df
+    
     def spicelib_cleanup(self):
         self.ltspice_wrapper.runner.cleanup_files()
 
@@ -493,6 +590,6 @@ class Ax_LTspice_Bode_Fitter:
         return save_path
     
     @classmethod
-    def load_ax(save_path: str) -> AxClient:
+    def load_ax(self, save_path: str) -> AxClient:
         return AxClient.load_from_json_file(save_path)
     

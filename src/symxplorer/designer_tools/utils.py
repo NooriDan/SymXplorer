@@ -15,6 +15,12 @@ UNIT_DICT: Dict[str, float] ={
     'k' : 1e3
 }
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dtype  = torch.double
+
+torch.set_default_dtype(dtype)
+torch.set_default_device(device)
+
 def weighted_mse_loss(
     response: torch.Tensor, 
     target_response: torch.Tensor, 
@@ -115,17 +121,21 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
     target_mag, target_phase = helper.get_mag_phase_from_complex_response(target_complex_response)
     
     fit_summary = {}
-    if rescale:
-        curr_max_mag    = torch.max(curr_mag)
-        target_max_mag  = torch.max(target_mag)
 
-        # mag is in dB so we normalize to
+
+    # --- Compute gain ---
+    curr_max_mag    = torch.max(curr_mag)
+    target_max_mag  = torch.max(target_mag)
+    # log in the summary
+    fit_summary['curr_max_mag'] = curr_max_mag
+    fit_summary['target_max_mag'] = target_max_mag
+    if rescale:  # mag is in dB so we normalize to
         curr_mag   -= curr_max_mag  
         target_mag -= target_max_mag
 
-        # log in the summary
-        fit_summary['curr_max_mag'] = curr_max_mag
-        fit_summary['target_max_mag'] = target_max_mag
+    # --- Compute 3dB cutoff ---
+    # TODO
+
 
     # Compute losses
     if loss_type == 'mae':
@@ -229,6 +239,12 @@ def plot_complex_response(frequencies: torch.Tensor, complex_response_list: list
     fig.show()
 
 # Helper Functions
+def _linear_interpolate(x1, y1, x2, y2, target_y):
+        """Interpolates x for a given target_y using two known points (x1, y1) and (x2, y2)."""
+        if y1 == y2:  # Avoid division by zero
+            return x1
+        return x1 + (x2 - x1) * ((target_y - y1) / (y2 - y1))
+
 class Transfer_Func_Helper:
     def __init__(self):
         pass
@@ -317,6 +333,44 @@ class Transfer_Func_Helper:
 
         # Create control.TransferFunction
         return ctrl.TransferFunction(num_coeffs, den_coeffs)
+
+    def compute_cutoff(self, freq: torch.Tensor, mag_db: torch.Tensor, drop_by: float = 3.0) -> Tuple[Tuple[torch.Tensor], int]:
+        """
+        Computes the 3dB (can be changed) cutoff frequencies for a Low-Pass or Band-Pass filter.
+        
+        Args:
+            freq (torch.Tensor): Frequency vector (1D tensor).
+            mag_db (torch.Tensor): Magnitude response (1D tensor in dB).
+            drop_by (float): The dB drop defining the cutoff.
+        """
+        # Find max gain and cutoff level
+        curr_max_mag = torch.max(mag_db)
+        cutoff_level = curr_max_mag - drop_by
+
+        # Find transitions where mag_db crosses the cutoff level
+        crossings = []
+        for i in range(1, len(mag_db)):
+            if (mag_db[i-1] > cutoff_level and mag_db[i] <= cutoff_level) or \
+            (mag_db[i-1] < cutoff_level and mag_db[i] >= cutoff_level):
+                # Interpolate for more accurate cutoff frequency
+                f_c = _linear_interpolate(freq[i-1].item(), mag_db[i-1].item(),
+                                        freq[i].item(), mag_db[i].item(),
+                                        cutoff_level)
+                crossings.append(f_c)
+
+        if len(crossings) == 0:
+            return None, 0  # No valid cutoff found
+
+        elif len(crossings) == 1:
+            # Single cutoff -> LPF or HPF
+            return (crossings[0],), 1
+
+        elif len(crossings) >= 2:
+            # Two cutoffs -> BPF
+            return (crossings[0], crossings[-1]), 2
+
+        return None, 0  # Fallback case
+
 class Frequency_Weight:
     def __init__(self, lower: float, upper: float, frequency_array: torch.Tensor = None, bias: float = 10):
         """
