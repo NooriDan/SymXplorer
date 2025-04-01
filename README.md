@@ -1,6 +1,6 @@
 # SymXplorer
 
-Welcome to the **SymXplorer** project! This is an opensource symbolic toolbox for analyzing analog circuits based on [SymPy](https://www.sympy.org/en/index.html) in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. A python-based toolbox means endless opportunities for future integeration with scientifict and machine learning ([PyTorch](https://pytorch.org/)) toolboxes.
+Welcome to the **SymXplorer** project! This is an opensource symbolic toolbox for analyzing analog circuits based on [SymPy](https://www.sympy.org/en/index.html) in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. A python-based toolbox means endless opportunities for future integeration with scientifict, machine learning, and optimization toolboxes such as [PyTorch](https://pytorch.org/), [Ax](https://ax.dev/), and [Nevergrad](https://facebookresearch.github.io/nevergrad/).
 
 ## Features
 - Customize nodal equation and impedance combination for new circuits under test (derive the symbolic nodal equations using [lcapy](https://lcapy.readthedocs.io/en/latest/))
