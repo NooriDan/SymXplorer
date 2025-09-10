@@ -36,3 +36,5 @@ examples.zip
 *.zip
 */.DS_Store
 .DS_Store
+examples/tunable-tia/docs/ECE748 Final Project.pdf
+.DS_Store

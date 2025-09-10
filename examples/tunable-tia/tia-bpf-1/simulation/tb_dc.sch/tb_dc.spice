@@ -1,0 +1,187 @@
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/tia-bpf-1/tb_dc.sch
+**.subckt tb_dc
+V0 VSS GND 0
+V2 VDD GND {vdd}
+x_dut VDD VSS Vop Von In Ip Vbias bpf-tia-1-all-r-c
+V1 Vbias GND {vbias}
+C1 Von GND {cload} m=1
+C2 Vop GND {cload} m=1
+Icm In GND {icm}
+Idn In GND dc 0 ac 0
+Icm1 Ip GND {icm}
+Idp Ip GND PULSE(0 {i_step} 100n 1n 1n 1u 2u)
+**** begin user architecture code
+
+
+.control
+
+    echo ==================================
+    echo start of Control
+    echo ==================================
+
+    save all
+
+    echo
+    echo (A) start of OP
+    echo ----------------------------------
+
+    * operating point
+    op
+
+    let gm_id_1_2 = @m.x_dut.xm1.m0[gm]/@m.x_dut.xm1.m0[id]
+
+    print all
+    write op.raw
+
+    echo ----------------------------------
+    echo END of OP
+    echo ----------------------------------
+
+    * set appendwrite
+echo
+    echo (B) start of DC Sweep
+    echo ----------------------------------
+
+    * example: sweep VIN from 0V to 1.8V in 0.01V steps
+    *dc VIN 0 1.8 0.01
+
+    * we sweep the differential current
+    dc ICM 0 1.8u 0.01
+
+
+    * post-processing
+    let Vout_dc = v(Vop) - v(Von)
+
+    * The following works if the DUT is voltage follower and configured in unity-gain
+    *meas dc Vout_mid find Vout_dc when VIN=0.9
+    *meas dc Vin_th when Vout_dc=0.9 cross=1
+    plot Vout_dc vs ip
+
+    echo ----------------------------------
+    echo END of DC Sweep
+    echo ----------------------------------
+
+    echo
+    echo (C) start of Transient Sim (step input)
+    echo ----------------------------------
+
+    * step input should be defined in netlist, e.g.:
+    * VIN in 0 pulse(0 1.8 0 1n 1n 1u 2u)
+    tran 1n 10u
+
+    * post-processing
+    let Vout_tran = v(Vop) - v(Von)
+    meas tran t_delay trig v(Vin) val=0.9 rise=1 targ Vout_tran val=0.9 rise=1
+    plot Vout_tran
+
+    echo ----------------------------------
+    echo END of Transient Step Sim
+    echo ----------------------------------
+
+    echo
+    echo (D) start of Transient Sim (sinusoidal input)
+    echo ----------------------------------
+
+    * sinusoidal input should be defined in netlist, e.g.:
+    * VIN in 0 sin(0 0.5 1e6 0 0)
+    tran 1n 10u
+
+    * post-processing
+    let Vout_sin = v(Vop) - v(Von)
+    fft Vout_sin
+    plot Vout_sin
+
+    echo ----------------------------------
+    echo END of Transient Sin Sim
+    echo ----------------------------------
+
+    echo SAVING SIMULATION RESULTS IN THE RAW FILE
+    save all
+    write
+
+    echo ==================================
+    echo END of Control
+    echo ==================================
+.endc
+
+
+
+.include /foss/pdks/gf180mcuD/libs.tech/ngspice/design.ngspice
+.lib /foss/pdks/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+
+.lib /foss/pdks/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* .lib /foss/pdks/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_statistical
+
+
+
+
+*.option savecurrents
+* Saving gm values for transistors
+.save @m.x_dut.xm1.m0[gm]
+.save @m.x_dut.xm2.m0[gm]
+
+* Saving id values for transistors
+.save @m.x_dut.xm1.m0[id]
+.save @m.x_dut.xm2.m0[id]
+
+
+
+
+
+.param icm=0.5e-6
+.param i_step=0.5e-6
+
+.param vdd=6.0
+.param vbias=1.0
+
+.param cload=1p
+
+
+
+
+
+* All DUT parameters
+
+* MOSFET PARAMETERS
+.param x_dut_m1_2_w=0.22u
+.param x_dut_m1_2_l=0.40u
+.param x_dut_m1_2_nf=2
+
+* PASSIVE ELEMENT PARAMETERS
+.param x_dut_ldd=2n
+.param x_dut_cdd=1n
+
+.param x_dut_rs=1k
+
+.param x_dut_r4=1k
+
+
+**** end user architecture code
+**.ends
+
+* expanding   symbol:  tia-bpf-1/bpf-tia-1-all-r-c.sym # of pins=7
+** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/tia-bpf-1/bpf-tia-1-all-r-c.sym
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/tia-bpf-1/bpf-tia-1-all-r-c.sch
+.subckt bpf-tia-1-all-r-c vdd vss vop von inn inp vbias
+*.iopin vdd
+*.iopin vss
+*.ipin inp
+*.ipin inn
+*.opin von
+*.opin vop
+*.ipin vbias
+XM1 von vbias inp vss nfet_03v3 L={x_dut_m1_2_l} W={x_dut_m1_2_w} nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u'
++ pd='2*int((nf+1)/2) * (W/nf + 0.18u)' ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 vop vbias inn vss nfet_03v3 L={x_dut_m1_2_l} W={x_dut_m1_2_w} nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u'
++ pd='2*int((nf+1)/2) * (W/nf + 0.18u)' ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+R1 inp vss {x_dut_rs} m=1
+R2 inn vss {x_dut_rs} m=1
+C1 vdd von {x_dut_cdd} m=1
+C2 vdd vop {x_dut_cdd} m=1
+L2 vdd von {x_dut_ldd} m=1
+L3 vdd vop {x_dut_ldd} m=1
+R4 von vop {x_dut_r4} m=1
+.ends
+
+.GLOBAL GND
+.end
