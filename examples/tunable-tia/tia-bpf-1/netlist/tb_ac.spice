@@ -29,7 +29,7 @@ Idp Ip GND ac 0.5
     op
     let gm_id = @m.x_dut.xm1.m0[gm]/@m.x_dut.xm1.m0[id]
     print all
-    write op.raw
+    write
 
     echo ----------------------------------
     echo END of OP

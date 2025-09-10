@@ -38,3 +38,5 @@ examples.zip
 .DS_Store
 examples/tunable-tia/docs/ECE748 Final Project.pdf
 .DS_Store
+
+examples/tunable-tia/scripts/sizing/runs/*
