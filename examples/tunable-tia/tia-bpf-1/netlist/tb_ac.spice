@@ -86,6 +86,7 @@ Idp Ip GND ac 0.5
     echo ==================================
     echo END of Control
     echo ==================================
+    quit
 .endc
 
 
