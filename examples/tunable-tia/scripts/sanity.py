@@ -1,15 +1,12 @@
-from spicelib import SpiceEditor, SimRunner, RawRead
-from spicelib.simulators import ngspice_simulator 
-
-import logging
 import os
+import logging
 import shutil
-
 
 from pathlib import Path
 
+from spicelib import SpiceEditor, SimRunner, RawRead
+from spicelib.simulators import ngspice_simulator
 
-import logging
 
 # --- Your notebook logger (unchanged) ---
 logger = logging.getLogger("notebook_logger")
@@ -59,7 +56,7 @@ logger.info(f"project: {PROJECT_NAME}, schematic: {SCHEMATIC_NAME}")
 
 
 simulator = ngspice_simulator.NGspiceSimulator.create_from(path_to_exe=PATH_TO_NGSPICE)
-simulator.set_compatibility_mode("a")
+simulator.set_compatibility_mode("lt")
 
 runner = SimRunner(
     simulator=simulator, 
@@ -88,7 +85,8 @@ logger.info(f"DUT parameters: {dut_params}")
 runtask = runner.run_now(
     netlist=INITIAL_NETLIST,
     exe_log=True )
+
+
+
 runtask
-
-
-
+print(runtask)

@@ -1,0 +1,13 @@
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/tia-bpf-1/bpf-tia-1-all-pdk.sch
+.subckt bpf-tia-1-all-pdk vdd vss inp inn von vop vbias
+*.PININFO vdd:B vss:B inp:I inn:I von:O vop:O vbias:I
+M1 von vbias inp vss nfet_03v3 L={x_dut_m1_2_l} W={x_dut_m1_2_w} nf=2 m=1
+M2 vop vbias inn vss nfet_03v3 L={x_dut_m1_2_l} W={x_dut_m1_2_w} nf=2 m=1
+L2 vdd von {x_dut_ldd} m=1
+L3 vdd vop {x_dut_ldd} m=1
+XR1 vss inp vdd ppolyf_u_1k_6p0 r_width=1e-6 r_length=1e-6 m=1
+XR2 vss inn vdd ppolyf_u_1k_6p0 r_width=1e-6 r_length=1e-6 m=1
+XR3 vop von vdd ppolyf_u_1k_6p0 r_width=1e-6 r_length=1e-6 m=1
+XC1 vdd von cap_mim_2f0_m3m4_noshield c_width=1e-6 c_length=1e-6 m=1
+XC2 vdd vop cap_mim_2f0_m3m4_noshield c_width=1e-6 c_length=1e-6 m=1
+.ends
