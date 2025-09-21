@@ -8,6 +8,63 @@ from   typing import Dict, List, Tuple
 import plotly.graph_objects as go
 from   plotly.subplots import make_subplots
 
+import logging
+from pathlib import Path
+
+def setup_logger(
+    name: str = "default_SymXplorer_logger",
+    level: int = logging.DEBUG,
+    log_file: Path | str | None = None
+) -> logging.Logger:
+    """
+    Setup a logger with console output and optional file logging.
+    
+    Args:
+        name: Logger name.
+        level: Logging level (DEBUG, INFO, etc.).
+        log_file: Optional path to a file to save logs.
+    
+    Returns:
+        Configured logging.Logger instance.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.propagate = False  # Prevent double logging if root logger exists
+
+    # If logger already has handlers, skip adding again
+    if logger.handlers:
+        return logger
+
+    # ---------------- Console Handler ----------------
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    console_format = logging.Formatter(
+        fmt="%(asctime)s - %(name)s - [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S"
+    )
+    console_handler.setFormatter(console_format)
+    logger.addHandler(console_handler)
+
+    # ---------------- File Handler ----------------
+    if log_file:
+        log_file = Path(log_file)
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(level)
+        file_format = logging.Formatter(
+            fmt="📄 %(asctime)s - %(name)s - [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+        file_handler.setFormatter(file_format)
+        logger.addHandler(file_handler)
+
+    logger.debug(f"Logger '{name}' initialized. Level={logging.getLevelName(level)}")
+    if log_file:
+        logger.debug(f"Logging to file: {log_file}")
+
+    return logger
+
+
 UNIT_DICT: Dict[str, float] ={
     'p' : 1e-12,
     'n' : 1e-9,

@@ -1,7 +1,15 @@
-import yaml
+from symxplorer.designer_tools.domains import Project_Setup
 
-with open("/foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/spice/project_setup.yaml") as f:
-    data = yaml.safe_load(f)
+if __name__ == "__main__":
+    ws_root = "/foss/designs/eda/SymXplorer"
+    project_setup_yaml = f"{ws_root}/examples/tunable-tia/ihp-sg13g2/spice/project_setup.yaml"
 
-max_cap = data["globals"]["MAX_CAP_SIZE"]
-data["params"]["dut"][0]["range"][1] = max_cap
+    # ----------------------------
+    # Instantiation
+    # ----------------------------
+    project = Project_Setup.from_yaml(project_setup_yaml)
+
+    # ----------------------------
+    # Getter Methods
+    # ----------------------------
+    project.summary()

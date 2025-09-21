@@ -1,51 +1,84 @@
 # The universal circuit setup file
 project:
-  name: "tunable_tia"
-  description: "Tunable TIA BPF example sizing in the ihp-sg13g2 technology"
-  
-  simulator: "ngspice"
-  netlist: "./tb_ac.spice"
+  name: Tunable-TIA
+  description: Tunable TIA BPF example sizing in the ihp-sg13g2 technology
+  simulator: ngspice
+
+  ws_root : /foss/designs/eda/SymXplorer
+  # The following paths are relative to the ws_root
+  netlist : examples/tunable-tia/ihp-sg13g2/spice/tb_ac.spice
+  outdir  : examples/tunable-tia/scripts/optimizer_output
   
   tech_spec : 
-    name : "ihp-sg13g2"
+    name : ihp-sg13g2
     # PDK RULES
-    max_nfet_w : "10u"
-    max_pfet_w : "10u"
+    constraints:
+      # n-fet
+      max_nfet_w : 10u
+      min_nfet_w : 0.18u
+      max_nfet_l : 10u
+      min_nfet_l : 0.18u
 
-    min_nfet_w : "0.18u"
-    min_pfet_w : "0.18u"
+      # p-fet
+      max_pfet_w : 10u
+      min_pfet_w : 0.18u
+      max_pfet_l : 10u
+      min_pfet_l : 0.18u
 
+      # capacitor (mim)
+      max_cap_w : 10u
+      min_cap_w : 1.0u
+      max_cap_l : 10u
+      min_cap_l : 1.0u
+
+      # resistor
+      max_res_w : 10u 
+      min_res_w : 1.0u
+      max_res_l : 10u 
+      min_res_l : 1.0u
 
   pvt: 
     temp: 25
-    corner: "tt"
-    vdd: "1.8V"
+    corner: tt
+    supply: 1.8
   
   params:
     dut:
-      - name : "x_dut_nfet_w"
-        range: [max_nfet_w, max_nfet_w]
+      - name : x_dut_nfet_w
+        min_val: min_nfet_w
+        max_val: max_nfet_w
         log_scale: true
         default: 0.4u
       
-      - name : "x_dut_nfet_w"
-        range: [0.18u, 10u]
-        log_scale: true
-        default: 1u
+      - name : x_dut_nfet_l
+        min_val: min_nfet_l
+        max_val: max_nfet_l
+
     testbench:
-      name: "tb_ac"
+      name: tb_ac
       params: 
         ...
 
   probes: 
-    - name: "Vout neg"
-      node: "out"
-      type: "voltage"
-    - name: "Iin pos"
-      node: "i"
-      type: "current"
-    # - name: "Vin"
-    #   node: "in"
-    #   type: "voltage"
+    - name: Vout neg
+      node: out
+      type: voltage
+    - name: Iin pos
+      node: i
+      type: current
+    # - name: Vin
+    #   node: in
+    #   type: voltage
 
+  optimizer_config:
+    name: CMA
+    type: nevergrad
+    budget: 100
+    random_seed: 48
+
+    loss_function:
+      max_loss: inf
+      loss_norm_method: min-max
+      loss_type:        mse
+      rescale_mag:      True
   

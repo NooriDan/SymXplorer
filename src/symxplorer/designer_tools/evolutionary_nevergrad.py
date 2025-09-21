@@ -15,11 +15,11 @@ import nevergrad as ng
 
 
 # Symxplorer Specific Imports
-from   symxplorer.spice_engine.spicelib   import LTspice_Wrapper
 from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
+from   symxplorer.designer_tools.domains  import OptimizerConfig
 
 from   .symbolic_sizing import Symbolic_Sizing_Assist
-from   .utils           import  plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper
+from   .utils           import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
 
 s = sp.symbols("s")
 
@@ -31,15 +31,9 @@ torch.set_default_device(device)
 print(f'Using device: {device} and dtype: {dtype}')
 
 class Nevergrad_Base_Optimizer(ABC):
-    def __init__(self,
-                 budget: int = 10,
-                 optimizer_name: str = "CMA",
-                 random_seed: int = 42,
-                 ):
-        
-        self.budget = budget
-        self.optimizer_name = optimizer_name
-        self.random_seed    = random_seed
+    def __init__(self, optimizer_config : OptimizerConfig):
+        self.optimizer_config = optimizer_config
+        # The following Properties are instantiated by the class
         self.optimizer: ng.optimization.base.Optimizer | None = None
         self.optimizer_trace: List[Dict[str, Any]] = []
         self.loss_values : List[float] = []
@@ -51,15 +45,15 @@ class Nevergrad_Base_Optimizer(ABC):
             print("NEED TO CALL self.parameterize")
             return False
         
-        registry = ng.optimizers.registry.get(self.optimizer_name)
+        registry = ng.optimizers.registry.get(self.optimizer_config.name)
         if registry is not None:
-            self.optimizer = registry(parametrization=self.parametrization, budget=self.budget)
-            print(f"Optimizer is set to {self.optimizer.name} with budget = {self.budget}")
+            self.optimizer = registry(parametrization=self.parametrization, budget=self.optimizer_config.budget)
+            print(f"Optimizer is set to {self.optimizer.name} with budget = {self.optimizer_config.budget}")
             return True
         return False
     
     @abstractmethod
-    def parameterize(self, log_scale: bool = True) -> Tuple[Dict, Dict]:
+    def parameterize(self) -> Tuple[Dict, Dict]:
         """Returns the parametrization dictionary for nevergrad and any denormalization factors needed"""
         pass
 
@@ -91,7 +85,7 @@ class Nevergrad_Base_Optimizer(ABC):
         self.optimizer_trace = []  # Store the optimization trace
         
         # Run the optimization process
-        for trial in tqdm(range(self.budget), desc="Optimizing", unit="trial"):
+        for trial in tqdm(range(self.optimizer_config.budget), desc="Optimizing", unit="trial"):
             # Get a new candidate
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
@@ -160,7 +154,24 @@ class Nevergrad_Base_Optimizer(ABC):
         fig.show()
 
 class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
-    def __init__(self, )
+    def __init__(self,
+                 optimizer_config : OptimizerConfig,
+                 spicelib_wrapper : Spicelib_Wrapper,
+                 target_tf: sp.Expr,
+                 output_node: str = "Vout", # FIXME this needs to go into the spicelib_wrapper
+                 frequency_weight: Frequency_Weight | None = None,
+                 random_seed: int = 42):
+        super().__init__(optimizer_config = optimizer_config)
+        self.spicelib_wrapper = spicelib_wrapper
+        self.target_tf = target_tf
+        self.output_node = output_node
+
+    # --- Overwriting the Abstract Methods ---
+    def parameterize(self) -> Tuple[Dict, Dict]:
+        super().parameterize()
+
+        return 
+
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 
