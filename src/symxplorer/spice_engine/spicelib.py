@@ -3,11 +3,12 @@ import os
 import torch
 import numpy as np
 import sympy 
-import tqdm
+import logging
 import shutil
 
 from pathlib import Path
 from time    import sleep
+from enum    import Enum
 
 from spicelib import SimRunner, RawRead, SpiceEditor, AscEditor
 # Import simulation runners
@@ -23,13 +24,26 @@ from spicelib.editor.base_editor import ParameterNotFoundError, ComponentNotFoun
 
 from .utils import setup_loggers
 
-SIM_ENGINES = {
-    "ltspice" : LTspice,
-    "ngspice" : NGspiceSimulator,
-    "xyce"    : XyceSimulator
-}
+# ---------------------------------
+# Enums Definition
+# ---------------------------------
+class Sim_Engines_Type(Enum):
+    LTSPICE = "ltspice"
+    NGSPICE = "ngspice"
+    XYCE    = "xyce"
 
 
+class Sim_Execution_Type(Enum):
+    RUN_AND_WAIT        = "RUN_AND_WAIT"
+    RUN_NOW             = "RUN_NOW"
+    RUN_WITH_CALLBACK   = "RUN_WITH_CALLBACK"
+
+class Ngspice_Plot_Type(Enum):
+    AC = "AC Analysis"
+    OP = "OP"
+# ---------------------------------
+# Class Definitions
+# ---------------------------------
 class LTspice_Wrapper:
     def __init__(self, asc_filename: str, traces_of_interest: List[str] = [], dump_parent_folder: str = "runner", verbose: bool = False):
         """Reads and simulates the circuit defined in the given .asc file"""
@@ -155,26 +169,29 @@ class Spicelib_Wrapper:
                  traces_of_interest:    List[str] = [], 
                  project_name:          str = "default_project", 
                  output_folder:         Path = Path("./spicelib_runs"),
+                 sim_execution_t:       Sim_Execution_Type = Sim_Execution_Type.RUN_AND_WAIT,
                  path_to_simulator:     None | Path = None,
-                 use_callback:          bool = False,
                  verbose:               bool = False,
                  ):
-        """Reads and simulates the circuit defined in the given .spice file"""
-        self.logger = setup_loggers()
+        """Reads, modifies, and simulates the circuit defined in the given netlist_filename .spice file"""
+        self.logger = setup_loggers(parent_folder=output_folder.parent, out_logname=project_name)
 
         self.netlist_filename   = netlist_filename
         self.traces_of_interest = traces_of_interest
         self.project_name       = project_name
         self.output_folder      = output_folder
         self.path_to_simulator  = path_to_simulator
-        self.use_callback       = use_callback
+        self.sim_execution_t    = sim_execution_t
         self.verbose            = verbose
 
-        self._default_compatibility_mode = "a" # ngspice compatibility mode (refer to spicelib and ngspice docs for details)
-        self.runner: SimRunner | None = None
-        self.editor: None | SpiceEditor = None
-        self.tasks_outputs: Dict[str, Any] = {} # task name -> (raw, log) Tuple[Path, Path]
-        self.curr_raw: RawRead | None = None
+        self._default_compatibility_mode: str   = "a"   # ngspice compatibility mode (refer to spicelib and ngspice docs for details)
+        self._dut_parameter_prefix: str         = "X_DUT"
+
+        self.runner: SimRunner | None       = None
+        self.editor: None | SpiceEditor     = None
+        self.tasks_outputs: Dict[str, Any]  = {}    # task name -> (raw, log) Tuple[Path, Path]
+        self.curr_raw: RawRead | None       = None
+        self.curr_log: str | None           = None
 
         self.__post_init__()
         
@@ -197,23 +214,30 @@ class Spicelib_Wrapper:
         self.editor = SpiceEditor(netlist_file=self.netlist_filename)
 
         # (5) print circuit info
-        if self.verbose:
-            self.print_circuit_info()
-        
+        self.print_circuit_info()
+
     def _validate(self) -> bool:
+        # Check if output folder exists
         if os.path.exists(self.output_folder):
-            self.logger.warning(f"Output directory already exists, re-creating: {self.output_folder}")
+            self.logger.warning(f"⚠️ Output directory already exists, re-creating: {self.output_folder}")
             shutil.rmtree(self.output_folder)
         else:
-            self.logger.info(f"Creating output directory for the first time: {self.output_folder}")
+            self.logger.info(f"📂 Creating output directory for the first time: {self.output_folder}")
         
         os.makedirs(self.output_folder, exist_ok=False)
 
+        # Check for netlist existence
         if not self.netlist_filename.exists():
+            self.logger.critical(f"❌ Initial netlist not found: {self.netlist_filename}")
             raise FileNotFoundError(f"Initial netlist not found: {self.netlist_filename}")
-        
-        self.logger.info(f"project: {self.project_name}, schematic: {self.netlist_filename.stem}")
 
+        # Log project info
+        self.logger.info("--------------------------------------------------")
+        self.logger.info("🚀 Spicelib_Wrapper initialized successfully!")
+        self.logger.info(f"\t📝 Project: {self.project_name}")
+        self.logger.info(f"\t📜 Schematic: {self.netlist_filename.stem}")
+        self.logger.info(f"\t📂 Output Folder: {self.output_folder}")
+        self.logger.info("--------------------------------------------------")
         return True
 
     def _create_simulator(self) -> type[NGspiceSimulator]:
@@ -229,55 +253,108 @@ class Spicelib_Wrapper:
     def print_circuit_info(self) -> None:
         if self.logger is None or self.editor is None:
             raise RuntimeError("Logger or Editor not initialized")
+
         logger = self.logger
         editor = self.editor
+
+        logger.info("📊 --- Circuit Information ---")
+
         # Nodes
         nodes = editor.get_all_nodes()
-        logger.info(f"Nodes in the netlist: {nodes}")
+        if nodes:
+            logger.info(f"🔗 Nodes in the netlist: {nodes}")
+        else:
+            logger.warning("⚠️ No nodes found in the netlist!")
 
         # Parameters
-        tb_params  = self.get_tb_params()
+        tb_params = self.get_tb_params()
         dut_params = self.get_dut_params()
-        
-        logger.info(f"Testbench parameters: {tb_params}")
-        logger.info(f"DUT parameters: {dut_params}")
 
-    def run_sanity_check(self, use_editor: bool = True) -> bool:
-        # (1) Pre-body
+        if tb_params:
+            logger.info(f"Testbench parameters: {tb_params}")
+        else:
+            logger.warning("⚠️ No testbench parameters found!")
+
+        if dut_params:
+            logger.info(f"DUT parameters: {dut_params}")
+        else:
+            logger.warning("⚠️ No DUT parameters found!")
+
+        logger.info("✅ --- Circuit info printed successfully --- 🎉 ")
+
+    def run_sanity_check(
+        self,
+        use_editor: bool = True,
+        sim_execution_t: Sim_Execution_Type = Sim_Execution_Type.RUN_NOW
+    ) -> bool:
         logger = self.logger
+
+        # (1) Pre-body
         if self.runner is None or self.editor is None:
+            logger.critical("💥 Runner or Editor not initialized!")
             raise RuntimeError("Runner or Editor not initialized")
+
         # (1.1) Create a dedicated folder for sanity check
         if isinstance(self.runner.output_folder, Path):
+            logger.info("📂 Creating dedicated sanity check folder...")
             self.runner.output_folder = self.runner.output_folder / "sanity_check"
             self.runner.output_folder.mkdir(parents=True, exist_ok=True)
         else:
+            logger.critical("❌ Runner output folder is not a Path instance!")
             raise RuntimeError("Runner output folder is not a Path instance")
+        
         # (2) Run the simulation with the parameters already in the netlist
-        raw, log = self.runner.run_now(
-            netlist= self.editor if use_editor else self.netlist_filename,
-            exe_log=True,
-            run_filename=f"{self.project_name}_sanity" )
+        logger.info("🧪 Running sanity check simulation...")
+        
+        netlist_used = self.editor if use_editor else self.netlist_filename
+        run_filename = f"{self.project_name}_sanity.spice"
+        raw, log = None, None
+
+        # Allow running sanity check with different execution types
+        if sim_execution_t == Sim_Execution_Type.RUN_NOW:
+            logger.debug("⚡ Executing simulation immediately (RUN_NOW)")
+            raw, log = self.runner.run_now(
+                netlist=netlist_used,
+                exe_log=True,
+                run_filename=run_filename
+            )
+        elif sim_execution_t == Sim_Execution_Type.RUN_AND_WAIT:
+            logger.debug("⏳ Running simulation and waiting for completion...")
+            self.run_and_wait(exe_log=True)
+        elif sim_execution_t == Sim_Execution_Type.RUN_WITH_CALLBACK:
+            logger.warning("🛑 RUN_WITH_CALLBACK not implemented yet 🚧")
+            raise NotImplementedError("RUN_WITH_CALLBACK simulation execution type is not implemented yet :(")
+        else:
+            logger.critical("🚨 Invalid sim_execution_t provided!")
+            raise RuntimeError("Invalid sim_execution_t")
+        
         # (3) Check the simulation ran successfully
-        if log is None or log.suffix == ".fail": 
-            logger.error("Sanity check failed: log is .fail")
+        logger.info("🔎 Verifying simulation results...")
+        if log is None or log.suffix == ".fail":
+            logger.error("❌ Sanity check failed: log is .fail")
             return False
-        if raw is None: 
-            logger.error("Sanity check failed: RAW is None")
+        if raw is None:
+            logger.error("❌ Sanity check failed: RAW is None")
             return False
-        if not raw.exists(): 
-            logger.error("Sanity check failed: RAW returned but generation failed")
+        if not raw.exists():
+            logger.error("❌ Sanity check failed: RAW returned but generation failed")
             return False
         if not log.exists():
-            logger.error("Sanity check failed: log returned but generation failed")
+            logger.error("❌ Sanity check failed: log returned but generation failed")
             return False
-        logger.info("Sanity check passed")
+
+        logger.info("✅ Sanity check passed 🎉")
+
         # (4) Move out of the sanity check folder
         if isinstance(self.runner.output_folder, Path):
+            logger.debug("📦 Restoring output folder to parent directory")
             self.runner.output_folder = self.runner.output_folder.parent
+        
         return True
 
     def update_params(self, parameterization: Dict[str, float]) -> bool:
+        logger = self.logger
+        logger.debug(f"Updating parameters...")
         RES_UNIT = 'k' # kilo
         CAP_UNIT = 'p' # pico
         if self.editor is None:
@@ -287,6 +364,7 @@ class Spicelib_Wrapper:
             try: # Validate parameter already exists
                 self.editor.get_parameter(key)
             except ParameterNotFoundError:
+                logger.error(f"❌ Parameter {key} not found in the netlist... exiting")
                 return False
 
             if key.startswith("C"):
@@ -295,10 +373,12 @@ class Spicelib_Wrapper:
                 self.editor.set_parameter(key, f"{value}{RES_UNIT}")
             else:
                 self.editor.set_parameter(key, f"{value}")
-        
+                logger.debug(f"... Parameter {key} set to {value}")
+        logger.debug(f"✅  All parameters updated successfully")
         return True
     
     def get_dut_params(self) -> List[Tuple[str, Any]]:
+        self.logger.debug("Getting DUT parameters")
         if self.editor is None:
             raise RuntimeError("Editor not initialized")
         editor = self.editor
@@ -307,6 +387,7 @@ class Spicelib_Wrapper:
         return dut_params
 
     def get_tb_params(self) -> List[Tuple[str, Any]]:
+        self.logger.debug("Getting TB parameters")
         if self.editor is None:
             raise RuntimeError("Editor not initialized")
         editor = self.editor
@@ -314,11 +395,8 @@ class Spicelib_Wrapper:
         tb_params  = [(param, editor.get_parameter(param)) for param in params if not "X_DUT" in param]
         return tb_params
 
-    def simulate(self) -> None:
-        pass
-
     def extract_wave(self, wave_name: str, is_real: bool = False) -> torch.Tensor:
-        
+        """The endpiont to extract a waveform from the last simulation run"""
         if self.curr_raw is None:
             raise RuntimeError("Need to run the simulation at least once")
         
@@ -327,16 +405,18 @@ class Spicelib_Wrapper:
 
         if is_real:
             return torch.from_numpy(wave).real.to(dtype=torch.float64)
-        
         return torch.from_numpy(wave)
     
-    def run_and_wait(self, exe_log: bool = True) -> Tuple[RawRead | None, str]:
+    def run_and_wait(self, exe_log: bool = True) -> Tuple[RawRead | None, str | None, str]:
+        """Runs the simulation and waits for it to complete, returning the RawRead instance (or None), the log filename (or None), and task name"""
         # (1) Pre-body
         logger = self.logger
         if self.runner is None or self.editor is None:
             raise RuntimeError("Runner or Editor not initialized")
         # (2) Run the simulation with the parameters already in the editor instance
-        task = self.runner.run(self.editor, exe_log=exe_log)
+        task = self.runner.run(
+            netlist=self.editor, 
+            exe_log=exe_log)
         
         if task is None:
             raise RuntimeError("Failed to create a RunTask --- cannot proceed")
@@ -353,16 +433,23 @@ class Spicelib_Wrapper:
         if isinstance(out, tuple) and len(out) == 2:
             raw_file, log_file = out
             self.curr_raw = RawRead(raw_filename=raw_file)
-        else: self.curr_raw = None
+            self.curr_log = log_file
+        else: 
+            self.curr_raw = None
+            self.curr_log = None
 
-        return self.curr_raw, task.name
+        return self.curr_raw, self.curr_log, task.name
     
     @classmethod
     def callback(cls, raw_file: str, log_file: str, traces_to_read: str):
         raw_read = RawRead(raw_filename=raw_file, traces_to_read=traces_to_read)
         return raw_read
 
-
+    def get_logger(self) -> logging.Logger:
+        if self.logger is None:
+            raise RuntimeError("Logger not initialized")
+        return self.logger
 
 if __name__ == "__main__":
-    Spicelib_Wrapper(Path("/foss/designs/eda/SymXplorer/examples/tunable-tia/tia-bpf-1/netlist/tb_ac.spice"))
+    logger = setup_loggers()
+    logger.info("Spicelib_Wrapper module imported successfully")

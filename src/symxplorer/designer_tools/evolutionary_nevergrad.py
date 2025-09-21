@@ -2,11 +2,13 @@ import logging
 import os
 import torch
 import sympy  as sp
-from   typing import Dict, List, Tuple
+from   typing import Dict, List, Tuple, Any
 from   tqdm   import tqdm
 from   datetime import datetime
 import nevergrad as ng
 import plotly.graph_objects as go
+
+from abc import ABC, abstractmethod
 
 # Nevergrad Import
 import nevergrad as ng
@@ -14,6 +16,7 @@ import nevergrad as ng
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib   import LTspice_Wrapper
+from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
 
 from   .symbolic_sizing import Symbolic_Sizing_Assist
 from   .utils           import  plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper
@@ -26,6 +29,137 @@ dtype  = torch.double
 torch.set_default_dtype(dtype)
 torch.set_default_device(device)
 print(f'Using device: {device} and dtype: {dtype}')
+
+class Nevergrad_Base_Optimizer(ABC):
+    def __init__(self,
+                 budget: int = 10,
+                 optimizer_name: str = "CMA",
+                 random_seed: int = 42,
+                 ):
+        
+        self.budget = budget
+        self.optimizer_name = optimizer_name
+        self.random_seed    = random_seed
+        self.optimizer: ng.optimization.base.Optimizer | None = None
+        self.optimizer_trace: List[Dict[str, Any]] = []
+        self.loss_values : List[float] = []
+        self.global_best_index: int = 0 # the index of the global best solution
+        self.parametrization: ng.p.Dict | None = None
+    
+    def create_experiment(self, overwrite_optimizer:ng.optimization.base.Optimizer | None = None) -> bool:
+        if self.parametrization is None:
+            print("NEED TO CALL self.parameterize")
+            return False
+
+        elif overwrite_optimizer is not None:
+            self.optimizer = overwrite_optimizer
+            return True
+        else:
+            registry = ng.optimizers.registry.get(self.optimizer_name)
+            if registry is not None:
+                self.optimizer = registry(parametrization=self.parametrization, budget=self.budget)
+                print(f"Optimizer is set to {self.optimizer.name} with budget = {self.budget}")
+                return True
+        return False
+    
+    @abstractmethod
+    def parameterize(self, log_scale: bool = True) -> Tuple[Dict, Dict]:
+        """Returns the parametrization dictionary for nevergrad and any denormalization factors needed"""
+        pass
+
+    @abstractmethod
+    def denormalize_params(self, parameterization: Dict[str, float]) -> Dict[str, float]:
+        """Convert the normalized parameters back to the original scale"""
+        pass
+
+    @abstractmethod
+    def evaluate(self, parameterization: Dict[str, float]) -> float:
+        """Evaluate the objective function for the given parameterization"""
+        # 1 - Need to denormalize into their original scale
+        parameterization_denorm = self.denormalize_params(parameterization)
+        # TODO: The rest is to implemented in the subclass
+        pass
+
+        
+    def optimize(self, budget: int, render_optimization_trace: bool = True) -> List[Dict[str, Any]] | None:
+        """Run the optimization process for a given budget and returns the optimization trace as 
+        a list of (parameterization, loss) tuples"""
+        if self.optimizer is None:
+            print("Need to set the optimizer by calling self.create_experiment")
+            return None
+        
+        # Track the loss for plotting
+        self.loss_values : List[float] = []
+        self.optimizer_trace = []  # Store the optimization trace
+        
+        # Run the optimization process
+        for trial in tqdm(range(budget), desc="Optimizing", unit="trial"):
+            # Get a new candidate
+            candidate : ng.p.Parameter = self.optimizer.ask()
+            # Evaluate function
+            curr_loss : float = self.evaluate(parameterization=candidate.value)
+            # Provide feedback to optimizer
+            self.optimizer.tell(candidate, curr_loss)
+            
+            # Log the achieved loss
+            self.optimizer_trace.append({
+                "params" : candidate.value, 
+                "loss" : curr_loss
+                })
+
+            # Update the index of the global best solution (lowest loss)
+            if curr_loss < self.optimizer_trace[self.global_best_index]["loss"]:
+                self.global_best_index = trial
+        
+        # Plot the loss as a function of optimization step
+        if render_optimization_trace:
+            self._plot_loss()
+
+        return self.optimizer_trace
+    
+    def get_best_params(self) -> Tuple[Dict[str, float], float] | None:
+
+        if self.optimizer is None:
+            print("Need to set the optimizer by calling self.create_experiment")
+            return
+        if len(self.optimizer_trace) < 1:
+            print("need to run self.optimize")
+            return
+        
+        point = self.optimizer_trace[self.global_best_index]
+        best_solution : ng.p.Parameter = point['params']
+        loss : float = point['loss']
+
+        print("Optimized x - normalized:", best_solution.value)
+        print("Optimized x - de-normalized:", self.denormalize_params(best_solution.value))
+        print("loss:", loss)
+
+        return self.denormalize_params(best_solution.value), loss
+    
+    def _plot_loss(self):
+        """Plot the loss as a function of optimization steps with Plotly."""
+        fig = go.Figure()
+
+        if len(self.optimizer_trace) < 1:
+            print("No optimization trace to plot")
+            return
+        loss_values = [entry["loss"] for entry in self.optimizer_trace]
+        # Automatically generate x values (0, 1, 2, ..., n-1)
+        x_values = list(range(len(loss_values)))
+        # Add a line plot with trials on the x-axis and loss_values on the y-axis
+        fig.add_trace(go.Scatter(x=x_values, y=loss_values, mode='markers+lines', name='Loss', line=dict(color='blue', width=2)))
+
+        # Add title and labels
+        fig.update_layout(
+            title='Loss vs. Optimization Trial',
+            xaxis_title='Optimization Step',
+            yaxis_title='Loss',
+            template='plotly_dark',  # Optional: Use dark theme for the plot
+            showlegend=True
+        )
+        
+        # Show the interactive plot
+        fig.show()
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 
@@ -147,7 +281,7 @@ class Nevergrad_Symbolic_Bode_Fitter:
 
         return float(loss.detach())
 
-    def create_experiment(self, budget: int, overwrite_optimizer:ng.optimization.base.Optimizer = None) -> bool:
+    def create_experiment(self, budget: int, overwrite_optimizer:ng.optimization.base.Optimizer | None = None) -> bool:
         if self.parametrization is None:
             print("NEED TO CALL self.parameterize")
             return False
