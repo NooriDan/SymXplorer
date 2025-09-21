@@ -46,20 +46,16 @@ class Nevergrad_Base_Optimizer(ABC):
         self.global_best_index: int = 0 # the index of the global best solution
         self.parametrization: ng.p.Dict | None = None
     
-    def create_experiment(self, overwrite_optimizer:ng.optimization.base.Optimizer | None = None) -> bool:
+    def create_experiment(self) -> bool:
         if self.parametrization is None:
             print("NEED TO CALL self.parameterize")
             return False
-
-        elif overwrite_optimizer is not None:
-            self.optimizer = overwrite_optimizer
+        
+        registry = ng.optimizers.registry.get(self.optimizer_name)
+        if registry is not None:
+            self.optimizer = registry(parametrization=self.parametrization, budget=self.budget)
+            print(f"Optimizer is set to {self.optimizer.name} with budget = {self.budget}")
             return True
-        else:
-            registry = ng.optimizers.registry.get(self.optimizer_name)
-            if registry is not None:
-                self.optimizer = registry(parametrization=self.parametrization, budget=self.budget)
-                print(f"Optimizer is set to {self.optimizer.name} with budget = {self.budget}")
-                return True
         return False
     
     @abstractmethod
@@ -79,13 +75,15 @@ class Nevergrad_Base_Optimizer(ABC):
         parameterization_denorm = self.denormalize_params(parameterization)
         # TODO: The rest is to implemented in the subclass
         pass
-
         
-    def optimize(self, budget: int, render_optimization_trace: bool = True) -> List[Dict[str, Any]] | None:
+    def optimize(self, render_optimization_trace: bool = True) -> List[Dict[str, Any]] | None:
         """Run the optimization process for a given budget and returns the optimization trace as 
         a list of (parameterization, loss) tuples"""
+        
+        self.create_experiment()
+        
         if self.optimizer is None:
-            print("Need to set the optimizer by calling self.create_experiment")
+            print("Oops... The optimizer object was not created!")
             return None
         
         # Track the loss for plotting
@@ -93,7 +91,7 @@ class Nevergrad_Base_Optimizer(ABC):
         self.optimizer_trace = []  # Store the optimization trace
         
         # Run the optimization process
-        for trial in tqdm(range(budget), desc="Optimizing", unit="trial"):
+        for trial in tqdm(range(self.budget), desc="Optimizing", unit="trial"):
             # Get a new candidate
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
@@ -160,6 +158,9 @@ class Nevergrad_Base_Optimizer(ABC):
         
         # Show the interactive plot
         fig.show()
+
+class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
+    def __init__(self, )
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 
