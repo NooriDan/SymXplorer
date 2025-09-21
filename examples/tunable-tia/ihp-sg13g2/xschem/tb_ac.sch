@@ -329,7 +329,7 @@ C {devices/code.sym} 260 -300 0 0 {name=tb_params only_toplevel=false value="
 ****** TB Parameters ****** 
 .param icm=0.5e-6
 .param vdd=1.2
-.param vbias=0.25
+.param vbias=0.5
 .param cload=100p
 ******  End of TB Params ****** 
 "}

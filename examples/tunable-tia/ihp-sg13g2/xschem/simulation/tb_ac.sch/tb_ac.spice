@@ -143,7 +143,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-1-ideal-ind
 ****** TB Parameters ******
 .param icm=0.5e-6
 .param vdd=1.2
-.param vbias=0.25
+.param vbias=0.5
 .param cload=100p
 ******  End of TB Params ******
 

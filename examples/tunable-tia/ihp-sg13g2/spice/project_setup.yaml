@@ -1,0 +1,51 @@
+# The universal circuit setup file
+project:
+  name: "tunable_tia"
+  description: "Tunable TIA BPF example sizing in the ihp-sg13g2 technology"
+  
+  simulator: "ngspice"
+  netlist: "./tb_ac.spice"
+  
+  tech_spec : 
+    name : "ihp-sg13g2"
+    # PDK RULES
+    max_nfet_w : "10u"
+    max_pfet_w : "10u"
+
+    min_nfet_w : "0.18u"
+    min_pfet_w : "0.18u"
+
+
+  pvt: 
+    temp: 25
+    corner: "tt"
+    vdd: "1.8V"
+  
+  params:
+    dut:
+      - name : "x_dut_nfet_w"
+        range: [max_nfet_w, max_nfet_w]
+        log_scale: true
+        default: 0.4u
+      
+      - name : "x_dut_nfet_w"
+        range: [0.18u, 10u]
+        log_scale: true
+        default: 1u
+    testbench:
+      name: "tb_ac"
+      params: 
+        ...
+
+  probes: 
+    - name: "Vout neg"
+      node: "out"
+      type: "voltage"
+    - name: "Iin pos"
+      node: "i"
+      type: "current"
+    # - name: "Vin"
+    #   node: "in"
+    #   type: "voltage"
+
+  

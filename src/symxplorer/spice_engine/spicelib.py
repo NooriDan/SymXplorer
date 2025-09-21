@@ -247,6 +247,12 @@ class Spicelib_Wrapper:
         logger = self.logger
         if self.runner is None or self.editor is None:
             raise RuntimeError("Runner or Editor not initialized")
+        # (1.1) Create a dedicated folder for sanity check
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder / "sanity_check"
+            self.runner.output_folder.mkdir(parents=True, exist_ok=True)
+        else:
+            raise RuntimeError("Runner output folder is not a Path instance")
         # (2) Run the simulation with the parameters already in the netlist
         raw, log = self.runner.run_now(
             netlist= self.editor if use_editor else self.netlist_filename,
@@ -266,6 +272,9 @@ class Spicelib_Wrapper:
             logger.error("Sanity check failed: log returned but generation failed")
             return False
         logger.info("Sanity check passed")
+        # (4) Move out of the sanity check folder
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder.parent
         return True
 
     def update_params(self, parameterization: Dict[str, float]) -> bool:
