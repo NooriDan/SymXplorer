@@ -68,6 +68,16 @@ class Param:
     log_scale: bool = False
     default: Optional[np.float64] = None
 
+    def compute_lin_normalization(self, denorm_val: np.float64) -> np.float64:
+        if self.max_val is None or self.min_val is None:
+            raise ValueError("there is either no min or max value defined for this parameter")
+        return denorm_val * (self.max_val - self.min_val) + self.min_val
+    
+    def compute_log_normalization(self, denorm_val: np.float64) -> np.float64:
+        if self.max_val is None or self.min_val is None:
+            raise ValueError("there is either no min or max value defined for this parameter")
+        return denorm_val * (self.max_val - self.min_val) + self.min_val
+
 
 @dataclass
 class DutParams:
@@ -92,6 +102,13 @@ class LossFunctionConfig:
     loss_norm_method: str
     loss_type: str
     rescale_mag: bool
+    include_phase_loss : bool
+    include_mag_loss : bool
+
+@dataclass
+class VariableBoundConfig:
+    min: float
+    max: float
 
 
 @dataclass
@@ -100,8 +117,9 @@ class OptimizerConfig:
     type: str
     budget: int
     loss_function: LossFunctionConfig
+    lin_variable_bounds: VariableBoundConfig
+    log_variable_bounds: VariableBoundConfig
     random_seed: Optional[int] = None
-
 # ---------- Interface Dataclass ----------
 
 @dataclass
@@ -182,12 +200,16 @@ class Project_Setup:
                 loss_norm_method=opt_data["loss_function"]["loss_norm_method"],
                 loss_type=opt_data["loss_function"]["loss_type"],
                 rescale_mag=bool(opt_data["loss_function"]["rescale_mag"]),
+                include_mag_loss=opt_data["loss_function"]["include_mag_loss"],
+                include_phase_loss=opt_data["loss_function"]["include_phase_loss"],
             )
             optimizer_config = OptimizerConfig(
                 name=opt_data["name"],
                 type=opt_data["type"],
                 budget=int(opt_data["budget"]),
                 random_seed=opt_data["random_seed"],
+                lin_variable_bounds=VariableBoundConfig(**opt_data['lin_variable_bounds']),
+                log_variable_bounds=VariableBoundConfig(**opt_data['log_variable_bounds']),
                 loss_function=loss_fn
             )
 
@@ -221,7 +243,7 @@ class Project_Setup:
         self.logger.debug(f"Listing all constraints: {self.tech_spec.constraints}")
         return self.tech_spec.constraints
 
-    def get_param_name(self, name: str) -> Optional[Param]:
+    def get_param_by_name(self, name: str) -> Optional[Param]:
         for p in self.dut_params:
             if p.name == name:
                 self.logger.debug(f"Found DUT param: {p}")

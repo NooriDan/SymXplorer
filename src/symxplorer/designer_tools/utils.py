@@ -160,7 +160,7 @@ def weighted_mae_loss(
 
     return loss, norm_params
 
-def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_complex_response: torch.Tensor, freq_weights: torch.Tensor = None, loss_type: str = 'mae',norm_method: str = "min-max", rescale:bool = True, epsilon: float = 1e-10) -> Dict[str, torch.Tensor]:
+def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_complex_response: torch.Tensor, freq_weights: torch.Tensor | None = None, loss_type: str = 'mae',norm_method: str = "min-max", rescale:bool = True, epsilon: float = 1e-10) -> Dict[str, torch.Tensor]:
     # Ensure inputs are tensors
     if not isinstance(current_complex_response, torch.Tensor):
         current_complex_response = torch.tensor(current_complex_response, dtype=torch.cfloat)

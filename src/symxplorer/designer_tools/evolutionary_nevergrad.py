@@ -1,6 +1,7 @@
 import logging
 import os
 import torch
+import numpy as np
 import sympy  as sp
 from   typing import Dict, List, Tuple, Any
 from   tqdm   import tqdm
@@ -13,10 +14,9 @@ from abc import ABC, abstractmethod
 # Nevergrad Import
 import nevergrad as ng
 
-
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
-from   symxplorer.designer_tools.domains  import OptimizerConfig
+from   symxplorer.designer_tools.domains  import Project_Setup, OptimizerConfig, Param
 
 from   .symbolic_sizing import Symbolic_Sizing_Assist
 from   .utils           import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
@@ -30,6 +30,68 @@ torch.set_default_dtype(dtype)
 torch.set_default_device(device)
 print(f'Using device: {device} and dtype: {dtype}')
 
+
+def log_normalize(p, pmin, pmax) -> float:
+    """
+    Log-normalize parameter p to [0, 1] range.
+    p, pmin, pmax must be > 0.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_p = np.log10(p)
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    result = (log_p - log_min) / (log_max - log_min)
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def log_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter using log scaling.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    log_p = x * (log_max - log_min) + log_min
+    result = 10.0 ** log_p
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def linear_normalize(p, pmin, pmax) -> float:
+    """
+    Linearly normalize parameter p to [0, 1] range.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = (p - pmin) / (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def linear_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter linearly.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = pmin + x * (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+# ----------------------------
+# --- Class Definitions ---
+# ----------------------------
 class Nevergrad_Base_Optimizer(ABC):
     def __init__(self, optimizer_config : OptimizerConfig):
         self.optimizer_config = optimizer_config
@@ -53,7 +115,7 @@ class Nevergrad_Base_Optimizer(ABC):
         return False
     
     @abstractmethod
-    def parameterize(self) -> Tuple[Dict, Dict]:
+    def parameterize(self) ->  ng.p.Dict:
         """Returns the parametrization dictionary for nevergrad and any denormalization factors needed"""
         pass
 
@@ -63,11 +125,8 @@ class Nevergrad_Base_Optimizer(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self, parameterization: Dict[str, float]) -> float:
+    def evaluate(self, parameterization: Dict[str, float]) -> np.float64:
         """Evaluate the objective function for the given parameterization"""
-        # 1 - Need to denormalize into their original scale
-        parameterization_denorm = self.denormalize_params(parameterization)
-        # TODO: The rest is to implemented in the subclass
         pass
         
     def optimize(self, render_optimization_trace: bool = True) -> List[Dict[str, Any]] | None:
@@ -89,7 +148,8 @@ class Nevergrad_Base_Optimizer(ABC):
             # Get a new candidate
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
-            curr_loss : float = self.evaluate(parameterization=candidate.value)
+            denorm_params: Dict[str, np.float64] = self.denormalize_params(parameterization=candidate.value)
+            curr_loss : float   = self.evaluate(parameterization=denorm_params)
             # Provide feedback to optimizer
             self.optimizer.tell(candidate, curr_loss)
             
@@ -155,23 +215,158 @@ class Nevergrad_Base_Optimizer(ABC):
 
 class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
     def __init__(self,
-                 optimizer_config : OptimizerConfig,
+                 setup_obj: Project_Setup,
                  spicelib_wrapper : Spicelib_Wrapper,
                  target_tf: sp.Expr,
                  output_node: str = "Vout", # FIXME this needs to go into the spicelib_wrapper
-                 frequency_weight: Frequency_Weight | None = None,
-                 random_seed: int = 42):
-        super().__init__(optimizer_config = optimizer_config)
+                 frequency_weight: Frequency_Weight | None = None
+                 ):
+        
+        if setup_obj.optimizer_config is None:
+            raise ValueError("cannot use a Null optimizer_config instance")
+        
+        super().__init__(optimizer_config = setup_obj.optimizer_config)
+        self.setup_obj = setup_obj
         self.spicelib_wrapper = spicelib_wrapper
         self.target_tf = target_tf
         self.output_node = output_node
+        self.frequency_weight  = frequency_weight
+
+        self.helper_functions = Transfer_Func_Helper()
+        # To be calculated during the program runtime
+        self.target_complex_response: torch.Tensor  | None = None
+        self.frequency_array: torch.Tensor | None = None # is resolved the first time the LTspice is run
+        self.optimization_log : List[Dict[str, Any]] = []
 
     # --- Overwriting the Abstract Methods ---
-    def parameterize(self) -> Tuple[Dict, Dict]:
+    def parameterize(self) -> ng.p.Dict:
         super().parameterize()
+        
+        parameters: Dict[str, ng.p.Scalar] = {}
+        for param in self.setup_obj.dut_params:
+            if param.log_scale:
+                parameters[param.name] = ng.p.Log(
+                    lower=self.optimizer_config.log_variable_bounds.min, 
+                    upper=self.optimizer_config.log_variable_bounds.max)
+            else:
+                parameters[param.name] = ng.p.Scalar(
+                    lower=self.optimizer_config.lin_variable_bounds.min, 
+                    upper=self.optimizer_config.lin_variable_bounds.max)
+                
+        self.parametrization = ng.p.Dict(**parameters)
+        return self.parametrization
+    
+    def denormalize_params(self, parameterization: Dict[str, float]) -> Dict[str, float]:
+        denorm_params: Dict[str, float] = {}        
+        for param_name in parameterization:
+            val = parameterization[param_name]
+            param_obj = self.setup_obj.get_param_by_name(name=param_name)
 
-        return 
+            if param_obj is None:
+                raise KeyError(f"Could not find param name {param_name} in {self.setup_obj.list_params()}")
+            
+            if param_obj.log_scale:
+                denorm_params[param_name] = log_denormalize(x=val, pmin=param_obj.min_val, pmax=param_obj.max_val)
+            else:
+                denorm_params[param_name] = linear_denormalize(x=val, pmin=param_obj.min_val, pmax=param_obj.max_val)
 
+        return denorm_params
+
+    def evaluate(self, parameterization: Dict[str, float]) -> np.float64:
+        """
+        Evaluate the given parameterization by running a SPICE simulation,
+        computing the fitness loss, and returning it as np.float64.
+        """
+
+        # 1 - Run a SPICE simulation
+        # ---------------------------------------------------------------
+        self.spicelib_wrapper.update_params(parameterization=parameterization)
+        curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
+        
+        # 2 - Extract frequency array (first run only)
+        # ---------------------------------------------------------------
+        if self.frequency_array is None:
+            try:
+                self.frequency_array = self.spicelib_wrapper.extract_wave("frequency", is_real=True)
+            except IndexError:
+                self.spicelib_wrapper.logger.critical(
+                    "Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file"
+                )
+                raise RuntimeError("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
+            self.examine_target(f_array=self.frequency_array)
+
+        if self.frequency_weight is None:
+            raise RuntimeError("frequency_weight must be specified.")
+
+        if self.frequency_weight.weights is None:
+            self.frequency_weight.parent_frequency_array = self.frequency_array
+            self.frequency_weight.compute_weights()
+
+        # 3 - Extract circuit response
+        # ---------------------------------------------------------------
+        current_complex_response = self.spicelib_wrapper.extract_wave(self.output_node)
+
+        if self.setup_obj.optimizer_config is None:
+            raise RuntimeError("Optimizer config cannot be None.")
+        if self.target_complex_response is None:
+            raise RuntimeError("Reached the comparison between target and simulated performance but the target was not computed... make sure self.examine_target works correctly.")
+        
+        loss_fn_config = self.setup_obj.optimizer_config.loss_function
+        fit_summary = get_bode_fitness_loss(
+            current_complex_response=current_complex_response,
+            target_complex_response=self.target_complex_response,
+            freq_weights=self.frequency_weight.weights,
+            norm_method=loss_fn_config.loss_norm_method,
+            loss_type=loss_fn_config.loss_type,
+            rescale=loss_fn_config.rescale_mag
+        )
+
+        mag_loss   = fit_summary['mag_loss']
+        phase_loss = fit_summary['phase_loss']
+
+        mag, _ = self.helper_functions.get_mag_phase_from_complex_response(
+            complex_response_array=current_complex_response
+        )
+
+        # --- Compute final metric (NumPy only) ---
+        metric_value = np.float64(0.0)
+        metric_value += np.float64(mag_loss if loss_fn_config.include_mag_loss else 0.0)
+        metric_value += np.float64(phase_loss if loss_fn_config.include_phase_loss else 0.0)
+        metric_value += np.float64(
+            max(0.0, fit_summary['target_max_mag'] - fit_summary['curr_max_mag']) ** 2
+        )
+
+        # --- Log results ---
+        self.optimization_log.append({
+            "complex_response": current_complex_response,
+            "mag_loss": np.float64(mag_loss),
+            "phase_loss": np.float64(phase_loss),
+            "max_mag": np.float64(fit_summary['curr_max_mag']),
+            "bode_fitting_loss": np.float64(metric_value),
+            "params": parameterization
+        })
+
+        return np.float64(metric_value)
+
+    # --- Helper Methods (only in child class) ---
+    def examine_target(self, f_array: torch.Tensor):
+        
+        self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=f_array)
+
+        mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
+        fc_array, count = self.helper_functions.compute_cutoff(freq=f_array, 
+                                                                mag_db=mag, 
+                                                                drop_by=3)
+        if count == 1:
+            self.target_fc_low = fc_array[0]
+        elif count == 2:
+            self.target_fc_low  = fc_array[0]
+            self.target_fc_high = fc_array[1]
+
+        self._count_of_fc = count
+
+
+    
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 
@@ -205,11 +400,11 @@ class Nevergrad_Symbolic_Bode_Fitter:
         self.random_seed  = random_seed
         self.verbose_logging = verbose_logging
         
-        self.parametrization: ng.p.Dict = None
-        self.cap_denormailization: float  = None
-        self.res_denormailization: float  = None
+        self.parametrization: ng.p.Dict | None = None
+        self.cap_denormailization: float| None = None
+        self.res_denormailization: float| None  = None
         self.helper_functions = Transfer_Func_Helper()
-        self.optimizer: ng.optimization.base.Optimizer = None
+        self.optimizer: ng.optimization.base.Optimizer| None = None
         self.optimizer_trace: List[Tuple[ng.p.Dict, float]] = []
         self.global_min_index: int = 0 # the index of the global min
 
@@ -385,3 +580,4 @@ class Nevergrad_Symbolic_Bode_Fitter:
         frequencies = fit_summary['frequencies']
 
         plot_complex_response(frequencies=frequencies, complex_response_list=[target_complex_response, current_complex_response], labels=['Target', 'Optimized'])
+

@@ -73,7 +73,7 @@ project:
   optimizer_config:
     name: CMA
     type: nevergrad
-    budget: 100
+    budget: 10
     random_seed: 48
 
     loss_function:
@@ -81,4 +81,14 @@ project:
       loss_norm_method: min-max
       loss_type:        mse
       rescale_mag:      True
+      include_phase_loss: True
+      include_mag_loss: True
+
+    lin_variable_bounds:
+      min : 0
+      max : 100
+
+    log_variable_bounds:
+      min : 1
+      max : 100
   
