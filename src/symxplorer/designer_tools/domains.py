@@ -7,8 +7,7 @@ from typing import List, Optional, Union, Dict, Any
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from .utils import setup_logger
-
+logger = logging.getLogger("SymXplorer.domains")
 
 # ------------------ Helpers ------------------
 
@@ -137,19 +136,18 @@ class Project_Setup:
     testbench: TestbenchParams
     probes: List[Probes]
     optimizer_config: Optional[OptimizerConfig] = None
-    logger: logging.Logger = field(default_factory=lambda: logging.getLogger("project_logger"))
+    logger: logging.Logger = logger
 
     # ------------------ Class Methods ------------------
 
     @classmethod
-    def from_yaml(cls, yaml_path: Union[str, Path], logger: Optional[logging.Logger] = None) -> "Project_Setup":
+    def from_yaml(cls, yaml_path: Union[str, Path]) -> "Project_Setup":
         """Load a Project object from a YAML file with variable resolution."""
         yaml_path = Path(yaml_path)
         with open(yaml_path, "r") as f:
             data = yaml.safe_load(f)
 
         project_data = data["project"]
-        logger =  logger if logger is not None else setup_logger(name=project_data["name"], level=logging.DEBUG)
         logger.debug("loaded project yaml... creating the project setup hierarchy")
 
         # --- Parse tech_spec constraints ---

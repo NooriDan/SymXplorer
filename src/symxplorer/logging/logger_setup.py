@@ -4,12 +4,11 @@ import shutil
 
 from pathlib import Path
 
-
 import logging
 import os
 from datetime import datetime
 
-def setup_loggers(out_logname="default_wrapper", parent_folder:Path=Path(".")) -> logging.Logger:
+def setup_loggers(out_logname="SymXplorer", parent_folder:Path=Path(".")) -> logging.Logger:
 
     # --- Create timestamped log filename ---
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -17,7 +16,7 @@ def setup_loggers(out_logname="default_wrapper", parent_folder:Path=Path(".")) -
     os.makedirs(out_logname.parent, exist_ok=True)
 
     # --- The wrapper logger ---
-    logger = logging.getLogger("wrapper_logger")
+    logger = logging.getLogger("SymXplorer")
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
 
@@ -31,7 +30,7 @@ def setup_loggers(out_logname="default_wrapper", parent_folder:Path=Path(".")) -
 
     # --- Console Handler ---
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
@@ -46,7 +45,7 @@ def setup_loggers(out_logname="default_wrapper", parent_folder:Path=Path(".")) -
 
     # --- NEW: Enable debug logging for spicelib ---
     spicelib_logger = logging.getLogger("spicelib")
-    spicelib_logger.setLevel(logging.DEBUG)
+    spicelib_logger.setLevel(logging.CRITICAL)
     spicelib_logger.handlers.clear()  # avoid duplicates
     spicelib_logger.addHandler(console_handler)
     spicelib_logger.addHandler(file_handler)

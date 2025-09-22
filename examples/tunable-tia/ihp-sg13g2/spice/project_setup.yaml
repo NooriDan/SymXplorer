@@ -73,7 +73,7 @@ project:
   optimizer_config:
     name: CMA
     type: nevergrad
-    budget: 10
+    budget: 100
     random_seed: 48
 
     loss_function:

@@ -1,25 +1,21 @@
 import logging
-import os
 import torch
-import numpy as np
-import sympy  as sp
+import numpy        as np
+import sympy        as sp
+import nevergrad    as ng
+import plotly.graph_objects as go
 from   typing import Dict, List, Tuple, Any
 from   tqdm   import tqdm
-from   datetime import datetime
-import nevergrad as ng
-import plotly.graph_objects as go
-
 from abc import ABC, abstractmethod
-
-# Nevergrad Import
-import nevergrad as ng
+from pathlib import Path
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
 from   symxplorer.designer_tools.domains  import Project_Setup, OptimizerConfig, Param
-
 from   .symbolic_sizing import Symbolic_Sizing_Assist
 from   .utils           import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
+
+logger = logging.getLogger("SymXplorer.optimizer")
 
 s = sp.symbols("s")
 
@@ -28,7 +24,7 @@ dtype  = torch.double
 
 torch.set_default_dtype(dtype)
 torch.set_default_device(device)
-print(f'Using device: {device} and dtype: {dtype}')
+logger.info(f'Using device: {device} and dtype: {dtype}')
 
 
 def log_normalize(p, pmin, pmax) -> float:
@@ -101,16 +97,18 @@ class Nevergrad_Base_Optimizer(ABC):
         self.loss_values : List[float] = []
         self.global_best_index: int = 0 # the index of the global best solution
         self.parametrization: ng.p.Dict | None = None
+
+        self.logger = logger
     
-    def create_experiment(self) -> bool:
+    def _create_experiment(self) -> bool:
         if self.parametrization is None:
-            print("NEED TO CALL self.parameterize")
+            logger.critical("NEED TO CALL self.parameterize")
             return False
         
         registry = ng.optimizers.registry.get(self.optimizer_config.name)
         if registry is not None:
             self.optimizer = registry(parametrization=self.parametrization, budget=self.optimizer_config.budget)
-            print(f"Optimizer is set to {self.optimizer.name} with budget = {self.optimizer_config.budget}")
+            logger.info(f"Optimizer is set to {self.optimizer.name} with budget = {self.optimizer_config.budget}")
             return True
         return False
     
@@ -129,14 +127,14 @@ class Nevergrad_Base_Optimizer(ABC):
         """Evaluate the objective function for the given parameterization"""
         pass
         
-    def optimize(self, render_optimization_trace: bool = True) -> List[Dict[str, Any]] | None:
+    def optimize(self, render_optimization_trace: bool = False) -> List[Dict[str, Any]] | None:
         """Run the optimization process for a given budget and returns the optimization trace as 
         a list of (parameterization, loss) tuples"""
         
-        self.create_experiment()
+        self._create_experiment()
         
         if self.optimizer is None:
-            print("Oops... The optimizer object was not created!")
+            logger.critical("Oops... The optimizer object was not created!")
             return None
         
         # Track the loss for plotting
@@ -148,8 +146,8 @@ class Nevergrad_Base_Optimizer(ABC):
             # Get a new candidate
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
-            denorm_params: Dict[str, np.float64] = self.denormalize_params(parameterization=candidate.value)
-            curr_loss : float   = self.evaluate(parameterization=denorm_params)
+            denorm_params: Dict[str, float] = self.denormalize_params(parameterization=candidate.value)
+            curr_loss : np.float64   = self.evaluate(parameterization=denorm_params)
             # Provide feedback to optimizer
             self.optimizer.tell(candidate, curr_loss)
             
@@ -162,56 +160,71 @@ class Nevergrad_Base_Optimizer(ABC):
             # Update the index of the global best solution (lowest loss)
             if curr_loss < self.optimizer_trace[self.global_best_index]["loss"]:
                 self.global_best_index = trial
+                logger.info(f"a New fit was found... trial {trial} loss {curr_loss:.2f}")
         
         # Plot the loss as a function of optimization step
         if render_optimization_trace:
-            self._plot_loss()
+            self.plot_loss()
 
         return self.optimizer_trace
     
     def get_best_params(self) -> Tuple[Dict[str, float], float] | None:
 
         if self.optimizer is None:
-            print("Need to set the optimizer by calling self.create_experiment")
+            logger.info("Need to set the optimizer by calling self.create_experiment")
             return
         if len(self.optimizer_trace) < 1:
-            print("need to run self.optimize")
+            logger.info("need to run self.optimize")
             return
         
         point = self.optimizer_trace[self.global_best_index]
         best_solution : ng.p.Parameter = point['params']
         loss : float = point['loss']
 
-        print("Optimized x - normalized:", best_solution.value)
-        print("Optimized x - de-normalized:", self.denormalize_params(best_solution.value))
-        print("loss:", loss)
+        logger.info("Optimized x - normalized:", best_solution)
+        logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
+        logger.info("loss:", loss)
 
         return self.denormalize_params(best_solution.value), loss
     
-    def _plot_loss(self):
+    def plot_loss(self, save_path: Path | None = None, show: bool = False):
         """Plot the loss as a function of optimization steps with Plotly."""
-        fig = go.Figure()
 
         if len(self.optimizer_trace) < 1:
-            print("No optimization trace to plot")
+            logger.warning("No optimization trace to plot")
             return
-        loss_values = [entry["loss"] for entry in self.optimizer_trace]
-        # Automatically generate x values (0, 1, 2, ..., n-1)
-        x_values = list(range(len(loss_values)))
-        # Add a line plot with trials on the x-axis and loss_values on the y-axis
-        fig.add_trace(go.Scatter(x=x_values, y=loss_values, mode='markers+lines', name='Loss', line=dict(color='blue', width=2)))
 
-        # Add title and labels
+        loss_values = [entry["loss"] for entry in self.optimizer_trace]
+        x_values = list(range(len(loss_values)))
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x_values,
+            y=loss_values,
+            mode="markers+lines",
+            name="Loss",
+            line=dict(color="blue", width=2)
+        ))
+
         fig.update_layout(
-            title='Loss vs. Optimization Trial',
-            xaxis_title='Optimization Step',
-            yaxis_title='Loss',
-            template='plotly_dark',  # Optional: Use dark theme for the plot
+            title="Loss vs. Optimization Trial",
+            xaxis_title="Optimization Step",
+            yaxis_title="Loss",
+            template="plotly_dark",
             showlegend=True
         )
-        
-        # Show the interactive plot
-        fig.show()
+
+        # Save to file if requested
+        if save_path:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.write_html(str(save_path))
+            logger.info(f"📊 Plot saved to {save_path}")
+
+        # Optionally show interactively (browser popup)
+        if show:
+            logger.info("Opening interactive plot in browser...")
+            fig.show()
 
 class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
     def __init__(self,
@@ -289,15 +302,12 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             try:
                 self.frequency_array = self.spicelib_wrapper.extract_wave("frequency", is_real=True)
             except IndexError:
-                self.spicelib_wrapper.logger.critical(
-                    "Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file"
-                )
+                logger.critical("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
                 raise RuntimeError("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
             self.examine_target(f_array=self.frequency_array)
 
         if self.frequency_weight is None:
             raise RuntimeError("frequency_weight must be specified.")
-
         if self.frequency_weight.weights is None:
             self.frequency_weight.parent_frequency_array = self.frequency_array
             self.frequency_weight.compute_weights()
@@ -346,27 +356,19 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             "params": parameterization
         })
 
+        logger.debug(f"finished the trial evaluation.... summary")
+        logger.debug(f"\tmetric_value = {metric_value}")
+        logger.debug(f"\t\t- mag_loss : {mag_loss}")
+        logger.debug(f"\t\t- phase_loss : {phase_loss}")
+
         return np.float64(metric_value)
 
     # --- Helper Methods (only in child class) ---
     def examine_target(self, f_array: torch.Tensor):
-        
+        logger.info(f"computing the target complex response for {self.target_tf}")
         self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=f_array)
-
-        mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
-        fc_array, count = self.helper_functions.compute_cutoff(freq=f_array, 
-                                                                mag_db=mag, 
-                                                                drop_by=3)
-        if count == 1:
-            self.target_fc_low = fc_array[0]
-        elif count == 2:
-            self.target_fc_low  = fc_array[0]
-            self.target_fc_high = fc_array[1]
-
-        self._count_of_fc = count
-
-
-    
+        # mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
+  
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 

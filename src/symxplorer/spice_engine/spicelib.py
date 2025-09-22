@@ -22,7 +22,9 @@ from spicelib.sim.simulator  import Simulator as SpicelibSimulatorClass
 from spicelib.sim.run_task   import RunTask   as SpicelibRunTaskClass
 from spicelib.editor.base_editor import ParameterNotFoundError, ComponentNotFoundError
 
-from .utils import setup_loggers
+from symxplorer.logging import setup_loggers
+
+logger = logging.getLogger("SymXplorer.spicelib")
 
 # ---------------------------------
 # Enums Definition
@@ -162,7 +164,6 @@ class LTspice_Wrapper:
         
         return torch.from_numpy(wave)
 
-
 class Spicelib_Wrapper:
     def __init__(self,  
                  netlist_filename:      Path, 
@@ -174,7 +175,8 @@ class Spicelib_Wrapper:
                  verbose:               bool = False,
                  ):
         """Reads, modifies, and simulates the circuit defined in the given netlist_filename .spice file"""
-        self.logger = setup_loggers(parent_folder=output_folder.parent, out_logname=project_name)
+        # self.logger = setup_loggers(parent_folder=output_folder.parent, out_logname=project_name)
+        self.logger = logger
 
         self.netlist_filename   = netlist_filename
         self.traces_of_interest = traces_of_interest

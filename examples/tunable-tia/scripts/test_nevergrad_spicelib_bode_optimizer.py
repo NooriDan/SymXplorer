@@ -1,4 +1,5 @@
 import sympy as sp
+import logging
 
 from pathlib import Path
 
@@ -8,8 +9,10 @@ from symxplorer.designer_tools.utils    import Frequency_Weight
 from symxplorer.designer_tools.domains  import Project_Setup
 from symxplorer.designer_tools.tf_models import Second_Order_BP_TF, cascade_tf
 
+from symxplorer.logging import setup_loggers
 
-print ("!!! Spicelib_Wrapper imported successfully !!!")
+logger = logging.getLogger("SymXplorer")
+logger.info("!!! Spicelib_Wrapper imported successfully !!!")
 
 
 
@@ -17,7 +20,8 @@ if __name__ == "__main__":
     # ----------------------------
     # Instantiations
     # ----------------------------
-    project_setup_yaml = f"/foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/spice/project_setup.yaml"
+    project_setup_yaml = Path(f"/foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/spice/project_setup.yaml")
+    setup_loggers()
     
     # s = sp.symbols("s")
     # target_tf = (s + 1) / (s**2 + 24*s + 2)
@@ -26,7 +30,6 @@ if __name__ == "__main__":
 
     # (1) Load the project setup information
     PROJECT_SETUP = Project_Setup.from_yaml(project_setup_yaml)
-    print ("!!! Spicelib_Wrapper imported successfully !!!")
 
     # (2) Create the Spice Simulator Wrapper
     wrapper = Spicelib_Wrapper(
@@ -37,7 +40,6 @@ if __name__ == "__main__":
         verbose=False
         )
     wrapper_logger = wrapper.get_logger()
-
     
     circuit_optimizer = Nevergrad_Spice_Bode_Optimizer(
         spicelib_wrapper=wrapper,
@@ -51,7 +53,12 @@ if __name__ == "__main__":
     # Method Calls
     # ----------------------------
     circuit_optimizer.parameterize()
-    circuit_optimizer.create_experiment()
     circuit_optimizer.optimize()
+
+    circuit_optimizer.plot_loss(save_path=project_setup_yaml.parent / "loss_curve.html")
+
+    out = circuit_optimizer.get_best_params()
+    if out is not None: 
+        best_param, loss = out
 
 
