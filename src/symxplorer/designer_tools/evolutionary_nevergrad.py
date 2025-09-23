@@ -8,6 +8,7 @@ from   typing import Dict, List, Tuple, Any
 from   tqdm   import tqdm
 from abc import ABC, abstractmethod
 from pathlib import Path
+from spicelib import RawRead
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
@@ -123,7 +124,7 @@ class Nevergrad_Base_Optimizer(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self, parameterization: Dict[str, float]) -> np.float64:
+    def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
         """Evaluate the objective function for the given parameterization"""
         pass
         
@@ -147,7 +148,7 @@ class Nevergrad_Base_Optimizer(ABC):
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
             denorm_params: Dict[str, float] = self.denormalize_params(parameterization=candidate.value)
-            curr_loss : np.float64   = self.evaluate(parameterization=denorm_params)
+            curr_loss, metadata = self.evaluate(parameterization=denorm_params)
             # Provide feedback to optimizer
             self.optimizer.tell(candidate, curr_loss)
             
@@ -285,37 +286,70 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
 
         return denorm_params
 
-    def evaluate(self, parameterization: Dict[str, float]) -> np.float64:
+    def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
         """
         Evaluate the given parameterization by running a SPICE simulation,
         computing the fitness loss, and returning it as np.float64.
         """
-
         # 1 - Run a SPICE simulation
         # ---------------------------------------------------------------
-        self.spicelib_wrapper.update_params(parameterization=parameterization)
-        curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
-        
+        raw = self.simulate_circuit(parameterization=parameterization)
+
         # 2 - Extract frequency array (first run only)
         # ---------------------------------------------------------------
-        if self.frequency_array is None:
-            try:
-                self.frequency_array = self.spicelib_wrapper.extract_wave("frequency", is_real=True)
-            except IndexError:
-                logger.critical("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
-                raise RuntimeError("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
-            self.examine_target(f_array=self.frequency_array)
-
-        if self.frequency_weight is None:
-            raise RuntimeError("frequency_weight must be specified.")
-        if self.frequency_weight.weights is None:
-            self.frequency_weight.parent_frequency_array = self.frequency_array
-            self.frequency_weight.compute_weights()
+        self.prepare_frequency_array()
 
         # 3 - Extract circuit response
         # ---------------------------------------------------------------
-        current_complex_response = self.spicelib_wrapper.extract_wave(self.output_node)
+        current_complex_response = self.extract_circuit_response_from_latest_run()
 
+        # 3 - Compute the fitness
+        # ---------------------------------------------------------------
+        metric_value, fit_summary = self.compute_fitness({"current_complex_response" : current_complex_response})
+
+        # --- Log results ---
+        mag_loss   = fit_summary['mag_loss']
+        phase_loss = fit_summary['phase_loss']
+        
+        self.optimization_log.append({
+            "complex_response": current_complex_response,
+            "mag_loss": np.float64(mag_loss),
+            "phase_loss": np.float64(phase_loss),
+            "max_mag": np.float64(fit_summary['curr_max_mag']),
+            "bode_fitting_loss": np.float64(metric_value),
+            "params": parameterization
+        })
+
+        logger.debug(f"finished the trial evaluation.... summary")
+        logger.debug(f"\tmetric_value = {metric_value}")
+        logger.debug(f"\t\t- mag_loss : {mag_loss}")
+        logger.debug(f"\t\t- phase_loss : {phase_loss}")
+
+        return np.float64(metric_value), fit_summary
+
+    # --- Helper Methods (only in child class) ---
+    def simulate_circuit(self, parameterization: Dict[str, float]) -> RawRead:
+        logger.debug("Simulating the circuit with the given parameterization")
+        self.spicelib_wrapper.update_params(parameterization=parameterization)
+        curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
+        if curr_raw is None:
+            raise RuntimeError("Something went wrong during simulation as no RAW file was generated")
+        return curr_raw
+
+    def extract_circuit_response_from_latest_run(self) -> torch.Tensor:
+        logger.debug("Extracting the circuit response from the latest RAW file")
+        current_complex_response = self.spicelib_wrapper.extract_wave(self.output_node)
+        return current_complex_response
+
+    def examine_target(self, f_array: torch.Tensor):
+        logger.info(f"computing the target complex response for {self.target_tf}")
+        self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=f_array)
+        # mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
+    
+    def compute_fitness(self, performance_array: Dict[str, torch.Tensor]) -> Tuple[np.float64, Dict[str, Any]]:
+        
+        current_complex_response: torch.Tensor = performance_array["current_complex_response"]
+        
         if self.setup_obj.optimizer_config is None:
             raise RuntimeError("Optimizer config cannot be None.")
         if self.target_complex_response is None:
@@ -346,29 +380,42 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             max(0.0, fit_summary['target_max_mag'] - fit_summary['curr_max_mag']) ** 2
         )
 
-        # --- Log results ---
-        self.optimization_log.append({
-            "complex_response": current_complex_response,
-            "mag_loss": np.float64(mag_loss),
-            "phase_loss": np.float64(phase_loss),
-            "max_mag": np.float64(fit_summary['curr_max_mag']),
-            "bode_fitting_loss": np.float64(metric_value),
-            "params": parameterization
-        })
+        return metric_value, fit_summary
 
-        logger.debug(f"finished the trial evaluation.... summary")
-        logger.debug(f"\tmetric_value = {metric_value}")
-        logger.debug(f"\t\t- mag_loss : {mag_loss}")
-        logger.debug(f"\t\t- phase_loss : {phase_loss}")
+    def prepare_frequency_array(self):
+        if self.frequency_array is None:
+            try:
+                self.frequency_array = self.spicelib_wrapper.extract_wave("frequency", is_real=True)
+            except IndexError:
+                logger.critical("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
+                raise RuntimeError("Attempted to look up the 'frequency' trace but it doesnt exist in the RAW file")
+            self.examine_target(f_array=self.frequency_array)
 
-        return np.float64(metric_value)
+        if self.frequency_weight is None:
+            raise RuntimeError("frequency_weight must be specified.")
+        if self.frequency_weight.weights is None:
+            self.frequency_weight.parent_frequency_array = self.frequency_array
+            self.frequency_weight.compute_weights()
+    
+    # --- Visualization Methods ---
+    def plot_solution(self, parameterization: Dict[str, float]):
 
-    # --- Helper Methods (only in child class) ---
-    def examine_target(self, f_array: torch.Tensor):
-        logger.info(f"computing the target complex response for {self.target_tf}")
-        self.target_complex_response = self.helper_functions.eval_tf(tf=self.target_tf, f_val=f_array)
-        # mag, _ = self.helper_functions.get_mag_phase_from_complex_response(self.target_complex_response)
-  
+        raw = self.simulate_circuit(parameterization)
+        current_complex_response = self.extract_circuit_response_from_latest_run()
+        self.prepare_frequency_array()
+        
+        loss, fit_summary = self.compute_fitness({"current_complex_response" : current_complex_response})
+
+        logger.info(f"total loss: {loss}")
+        logger.info(f"mag_loss {fit_summary['mag_loss']}, phase_loss {fit_summary['phase_loss']}")
+
+        plot_complex_response(
+            frequencies=self.frequency_array, 
+            complex_response_list=[self.target_complex_response, current_complex_response], 
+            labels=['Target', 'Optimized']
+            )
+
+
 
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 

@@ -92,7 +92,8 @@ project:
       params: 
         ...
 
-  probes: 
+  probes:
+    # these values would be extracted from the simulatoin RAW
     - name: Vout neg
       node: out
       type: voltage
@@ -109,14 +110,6 @@ project:
     budget: 100
     random_seed: 48
 
-    loss_function:
-      max_loss: inf
-      loss_norm_method: min-max
-      loss_type:        mse
-      rescale_mag:      True
-      include_phase_loss: False
-      include_mag_loss: True
-
     lin_variable_bounds:
       min : 0
       max : 100
@@ -124,4 +117,29 @@ project:
     log_variable_bounds:
       min : 1
       max : 100
+      
+    loss_function:
+      max_loss: inf
+      loss_norm_method: min-max
+      loss_type:        mse #mse, mae, use_target_spec
+      rescale_mag:      True
+      include_phase_loss: False
+      include_mag_loss: True
+    
+    target_spec:
+      - name: fc
+        description: Center frequency # optional documentation field
+        target: 1e6     # 1 MHz
+        goal: exact     # options: exact, exceed, minimize
+        tolerance: 10e3 # allowed deviation in the spec
+        enable: True    # Used to exclude from the loss function
+
+      - name: q
+        description: quality factor # optional documentation field
+        target: 10    
+        goal: exact   # options: exact, exceed, minimize
+        tolerance: 1  # allowed deviation in the spec
+        enable: True  # Used to exclude from the loss function
+
+
   
