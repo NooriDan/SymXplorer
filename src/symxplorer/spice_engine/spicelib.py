@@ -320,6 +320,8 @@ class Spicelib_Wrapper:
                 exe_log=True,
                 run_filename=run_filename
             )
+            logger.info(f"simulator log: {log}")
+            logger.info(f"simulator RAW: {raw}")
         elif sim_execution_t == Sim_Execution_Type.RUN_AND_WAIT:
             logger.debug("⏳ Running simulation and waiting for completion...")
             self.run_and_wait(exe_log=True)

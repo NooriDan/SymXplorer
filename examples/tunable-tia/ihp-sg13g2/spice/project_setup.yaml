@@ -44,6 +44,9 @@ project:
   
   params:
     dut:
+      # ------------------------
+      # nfet params
+      # ------------------------
       - name : x_dut_nfet_w
         min_val: min_nfet_w
         max_val: max_nfet_w
@@ -53,6 +56,36 @@ project:
       - name : x_dut_nfet_l
         min_val: min_nfet_l
         max_val: max_nfet_l
+
+      # ------------------------
+      # Cap params
+      # ------------------------
+      - name : x_dut_cap_w
+        min_val: min_cap_w
+        max_val: max_cap_w
+
+      - name : x_dut_cap_l
+        min_val: min_cap_l
+        max_val: max_cap_l
+
+      # ------------------------
+      # Res params
+      # ------------------------
+      - name : x_dut_res_s_l
+        min_val: min_res_l
+        max_val: max_res_l
+
+      - name : x_dut_res_s_w
+        min_val: min_res_w
+        max_val: max_res_w
+
+      - name : x_dut_res_3_l
+        min_val: min_res_l
+        max_val: max_res_l
+
+      - name : x_dut_res_3_w
+        min_val: min_res_w
+        max_val: max_res_w
 
     testbench:
       name: tb_ac
@@ -81,7 +114,7 @@ project:
       loss_norm_method: min-max
       loss_type:        mse
       rescale_mag:      True
-      include_phase_loss: True
+      include_phase_loss: False
       include_mag_loss: True
 
     lin_variable_bounds:

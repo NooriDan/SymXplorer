@@ -1,6 +1,6 @@
 import os
 import logging
-import shutil
+import sys
 
 from pathlib import Path
 
@@ -43,13 +43,42 @@ def setup_loggers(out_logname="SymXplorer", parent_folder:Path=Path(".")) -> log
     logger.info("🚀 Logger initialized and ready!")
     logger.info(f"📄 Log file: {os.path.abspath(out_logname)}")
 
-    # --- NEW: Enable debug logging for spicelib ---
+
+
+    # --- Configure logging for spicelib ---
+    # spicelib_logger = setup_spicelib_logging(file_handler)
     spicelib_logger = logging.getLogger("spicelib")
     spicelib_logger.setLevel(logging.CRITICAL)
-    spicelib_logger.handlers.clear()  # avoid duplicates
-    spicelib_logger.addHandler(console_handler)
-    spicelib_logger.addHandler(file_handler)
 
     logger.info("🔧 spicelib logger set to DEBUG")
+
+    return logger
+
+def setup_spicelib_logging(file_handler: logging.FileHandler) -> logging.Logger:
+    # Get the top-level spicelib logger
+    logger = logging.getLogger("spicelib")
+    logger.setLevel(logging.INFO)  # Master level must be low enough to let handlers filter
+
+    # --- Console handler (only CRITICAL)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.CRITICAL)
+    console_formatter = logging.Formatter("[%(name)s] %(levelname)s: %(message)s")
+    console_handler.setFormatter(console_formatter)
+
+    # Clear old handlers to avoid duplicates
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Attach handlers
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    # Ensure all children inherit this setup
+    for name, temp_logger in logging.Logger.manager.loggerDict.items():
+        if name.startswith("spicelib."):
+            logging.getLogger(name).setLevel(logging.INFO)
+            if isinstance(temp_logger, logging.Logger):
+                temp_logger.addHandler(console_handler)
+                temp_logger.addHandler(file_handler)
 
     return logger

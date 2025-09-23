@@ -181,11 +181,11 @@ class Nevergrad_Base_Optimizer(ABC):
         best_solution : ng.p.Parameter = point['params']
         loss : float = point['loss']
 
-        logger.info("Optimized x - normalized:", best_solution)
-        logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
-        logger.info("loss:", loss)
+        # logger.info("Optimized x - normalized:", best_solution)
+        # logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
+        logger.info(f"best loss: {float(loss)}")
 
-        return self.denormalize_params(best_solution.value), loss
+        return self.denormalize_params(best_solution), loss
     
     def plot_loss(self, save_path: Path | None = None, show: bool = False):
         """Plot the loss as a function of optimization steps with Plotly."""
