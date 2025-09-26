@@ -49,8 +49,8 @@ def setup_loggers(out_logname="SymXplorer", parent_folder:Path=Path(".")) -> log
     # spicelib_logger = setup_spicelib_logging(file_handler)
     spicelib_logger = logging.getLogger("spicelib")
     spicelib_logger.setLevel(logging.CRITICAL)
-
-    logger.info("🔧 spicelib logger set to DEBUG")
+    
+    logger.info(f"🔧 spicelib logger set to {spicelib_logger.getEffectiveLevel()}")
 
     return logger
 

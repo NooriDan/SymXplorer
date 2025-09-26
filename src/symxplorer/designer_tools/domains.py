@@ -5,24 +5,35 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict, Any
 from pathlib import Path
-from abc import ABC, abstractmethod
+from enum import Enum
+
+from dacite import from_dict, Config
+from dacite.exceptions import DaciteError, MissingValueError, WrongTypeError, UnexpectedDataError
+
+# ------------------ Module Logger ------------------
 
 logger = logging.getLogger("SymXplorer.domains")
 
-# ------------------ Helpers ------------------
+# ------------------ Enums ------------------
 
-def parse_value(val: Union[str, float, int]) -> np.float64:
-    """
-    Parse a string like '0.18u', '10u', '1.8', or a number into np.float64.
-    Supports 'u' (micro), 'n' (nano), 'p' (pico), 'k', 'M' suffixes.
-    """
-    if isinstance(val, (float, int)):
-        return np.float64(val)
-    if val.lower() == "inf":
-        return np.float64(np.inf)
-    
-    val = val.strip()
-    multipliers = {
+class SimType(str, Enum):
+    DC = "dc"
+    AC = "ac"
+    TRAN = "tran"
+    NOISE = "noise"
+
+class GoalType(str, Enum):
+    EXACT = "exact"
+    EXCEED = "exceed"
+    MINIMIZE = "minimize"
+
+class OptimizerType(str, Enum):
+    NEVERGRAD = "nevergrad"
+
+
+# ------------------ Constants ------------------
+
+MULTIPLIERS = {
         "p": 1e-12,
         "n": 1e-9,
         "u": 1e-6,
@@ -31,207 +42,408 @@ def parse_value(val: Union[str, float, int]) -> np.float64:
         "M": 1e6,
         "G": 1e9,
     }
-    for suffix, factor in multipliers.items():
+# ------------------ Helpers ------------------
+
+def parse_value(val: Union[str, float, int]) -> np.float64:
+    """
+    Parse numeric values with optional suffix multipliers (u, n, p, k, M, G).
+    Parses a string like '0.18u', '10u', '1.8', or a number into np.float64.
+    Supports 'u' (micro), 'n' (nano), 'p' (pico), 'k', 'M' suffixes.
+    """
+    if isinstance(val, (float, int)):
+        return np.float64(val)
+    if val.lower() == "inf":
+        return np.float64(np.inf)
+    
+    val = val.strip()
+
+    for suffix, factor in MULTIPLIERS.items():
         if val.endswith(suffix):
             return np.float64(float(val[:-1]) * factor)
     return np.float64(float(val))
 
 
 def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64]) -> np.float64:
-    """If value is a reference (string key), replace it with its constraint value."""
+    """If value is a reference to a constraint key, resolve it, else parse normally."""
     if isinstance(value, str) and value in constraints:
         return constraints[value]
     return parse_value(value)
+
+def safe_from_dict(cls, data: dict, logger: logging.Logger, config: Config = Config(cast=[Enum])):
+    try:
+        return from_dict(data_class=cls, data=data, config=config)
+    except MissingValueError as e:
+        logger.critical(f"❌ Missing required field in {cls.__name__}: {e}")
+        raise
+    except WrongTypeError as e:
+        logger.critical(f"❌ Wrong type while parsing {cls.__name__}: {e}")
+        raise
+    except UnexpectedDataError as e:
+        logger.critical(f"❌ Unexpected field while parsing {cls.__name__}: {e}")
+        raise
+
+def list_target_spec_hook(data: list) -> 'ListTargetSpec':
+    return ListTargetSpec([TargetSpec(**item) for item in data])
 
 
 # ---------- Core Dataclasses ----------
 
 @dataclass
 class TechSpec:
+    """Process technology (PDK) specification with constraints on device parameters."""
     name: str
-    constraints: Dict[str, np.float64] = field(default_factory=dict)
+    constraints: Dict[str, np.float64 | str] = field(default_factory=dict)
+
+    def __post_init__(self):
+        for key, val in self.constraints.items():
+            if isinstance(val, str):
+                self.constraints[key] = parse_value(val)
+                logger.debug(f"Parsed constraint '{key}': '{val}' to {self.constraints[key]}")
 
 
 @dataclass
 class PVT:
-    temp:   np.float64
+    temp:   float
     corner: str
-    supply: np.float64
-
+    supply: float
 
 @dataclass
 class Param:
     name: str
-    min_val: Optional[np.float64] = None
-    max_val: Optional[np.float64] = None
+    min_val: Optional[Union[float, np.float64, str]]
+    max_val: Optional[Union[float, np.float64, str]]
+    val: Optional[Union[float, np.float64, str]]
+    description: Optional[str]
     log_scale: bool = False
-    default: Optional[np.float64] = None
+
+    def needs_resolution(self) -> bool:
+        return isinstance(self.min_val, str) or isinstance(self.max_val, str) or (self.val is not None and isinstance(self.val, str))
+
+    def resolve_min_max(self, constraints: Dict[str, np.float64]) -> None:
+        if self.min_val is None or self.max_val is None:
+            raise ValueError(f"Param {self.name} missing min or max value for resolution")
+        self.min_val = resolve_reference(self.min_val, constraints)
+        self.max_val = resolve_reference(self.max_val, constraints)
+        if self.val is not None:
+            self.val = resolve_reference(self.val, constraints)
+        if self.min_val >= self.max_val:
+            raise ValueError(f"Param {self.name} has min_val >= max_val ({self.min_val} >= {self.max_val})")
 
     def compute_lin_normalization(self, denorm_val: np.float64) -> np.float64:
+        if self.needs_resolution():
+            raise ValueError(f"Param {self.name} min/max not resolved before normalization")
         if self.max_val is None or self.min_val is None:
-            raise ValueError("there is either no min or max value defined for this parameter")
-        return denorm_val * (self.max_val - self.min_val) + self.min_val
-    
-    def compute_log_normalization(self, denorm_val: np.float64) -> np.float64:
-        if self.max_val is None or self.min_val is None:
-            raise ValueError("there is either no min or max value defined for this parameter")
+            raise ValueError(f"No min/max defined for parameter {self.name}")
         return denorm_val * (self.max_val - self.min_val) + self.min_val
 
+    def compute_log_normalization(self, denorm_val: np.float64) -> np.float64:
+        if self.needs_resolution():
+            raise ValueError(f"Param {self.name} min/max not resolved before normalization")
+        if self.max_val is None or self.min_val is None:
+            raise ValueError(f"No min/max defined for log-normalization of {self.name}")
+        log_min, log_max = np.log(self.min_val), np.log(self.max_val)
+        return np.exp(denorm_val * (log_max - log_min) + log_min)
 
 @dataclass
 class DutParams:
     params: List[Param]
 
-
 @dataclass
 class TestbenchParams:
     name: str
-    params: Dict[str, Any] = field(default_factory=dict)
+    params: List[Param]
 
 
 @dataclass
-class Probes:
+class TargetSpec:
     name: str
-    node: str
-    type: str
+    target: float | np.float64
+    goal: Union[GoalType, str]
+    sim_type: Union[SimType, str]
+    enable: bool = True
+    weight: Optional[float | np.float64] = 1.0
+    tolerance: Optional[float | np.float64] = None  # if not given use 5% of target
+    description: Optional[str] = None
+
+    def __post_init__(self):
+        # Prepare human-friendly lists for error messages
+        valid_goals = [g.value for g in GoalType]
+        valid_sim_types = [s.value for s in SimType]
+
+        # --- Validate / convert goal ---
+        if isinstance(self.goal, str):
+            try:
+                self.goal = GoalType(self.goal.lower())
+            except ValueError:
+                logger.critical(
+                    f"Invalid goal '{self.goal}' for target '{self.name}'. "
+                    f"Must be one of {valid_goals}."
+                )
+                raise ValueError(f"Invalid goal '{self.goal}'. Must be one of {valid_goals}.")
+        elif not isinstance(self.goal, GoalType):
+            logger.critical(
+                f"Invalid goal type '{type(self.goal)}' for target '{self.name}'. "
+                f"Must be one of {valid_goals}."
+            )
+            raise ValueError(f"Invalid goal '{self.goal}'. Must be one of {valid_goals}.")
+
+        # --- Validate / convert sim_type ---
+        if isinstance(self.sim_type, str):
+            try:
+                self.sim_type = SimType(self.sim_type.lower())
+            except ValueError:
+                logger.critical(
+                    f"Invalid sim_type '{self.sim_type}' for target '{self.name}'. "
+                    f"Must be one of {valid_sim_types}."
+                )
+                raise ValueError(f"Invalid sim_type '{self.sim_type}'. Must be one of {valid_sim_types}.")
+        elif not isinstance(self.sim_type, SimType):
+            logger.critical(
+                f"Invalid sim_type type '{type(self.sim_type)}' for target '{self.name}'. "
+                f"Must be one of {valid_sim_types}."
+            )
+            raise ValueError(f"Invalid sim_type '{self.sim_type}'. Must be one of {valid_sim_types}.")
+
+        # --- Tolerance fallback ---
+        if isinstance(self.tolerance, str):
+            self.tolerance = parse_value(self.tolerance)
+
+        if self.tolerance is None or not(self.tolerance > 0):
+            self.tolerance = abs(0.05 * self.target)
+            logger.warning(
+                f"No valid tolerance specified for target '{self.name}'. "
+                f"Using default tolerance of 5%: {self.tolerance}"
+            )
+
+        # --- Initialization log ---
+        logger.debug(
+            f"Initialized TargetSpec: {self.name}, target={self.target}, "
+            f"tolerance={self.tolerance}, goal={self.goal}, sim_type={self.sim_type}, enable={self.enable}"
+        )
+
+    def get_simple_penalty(self, value: np.float64) -> np.float64:
+        """Compute a simple penalty based on the goal and tolerance. Will allow reward in the form of negative penalty."""
+        if not self.enable:
+            return np.float64(0.0)
+        
+        if self.tolerance is None:
+            logger.error(f"Something went wrong and tolerance is None for target '{self.name}'")
+            raise RuntimeError("Tolerance should never be None here... check the log.")
+
+        if self.goal == GoalType.EXACT:
+            if np.abs(value - self.target) <= self.tolerance:
+                return np.float64(0.0)
+            else:
+                return np.abs(value - self.target) - self.tolerance
+        
+        elif self.goal == GoalType.EXCEED:
+            if value >= self.target - self.tolerance:
+                return np.float64(0.0)
+            else:
+                return np.float64(self.target - self.tolerance - value)
+        
+        elif self.goal == GoalType.MINIMIZE:
+            if value <= self.target + self.tolerance:
+                return np.float64(0.0)
+            else:
+                return np.float64(value - (self.target + self.tolerance))
+        
+        else:
+            logger.error(f"Unknown goal type '{self.goal}' for target '{self.name}'")
+            raise ValueError(f"Unknown goal type '{self.goal}'")
+        
+    def meets_spec(self, value: np.float64) -> bool:
+        """Check if the given value meets the specification."""
+        penalty = self.get_simple_penalty(value)
+        return not (penalty > np.float64(0.0))
+    
+    def __str__(self) -> str:
+        return (
+            f"TargetSpec(name={self.name}, target={self.target}, "
+            f"tolerance={self.tolerance}, goal={self.goal}, sim_type={self.sim_type}, enable={self.enable})"
+        )
+
+@dataclass
+class ListTargetSpec:
+    targets: List[TargetSpec] = field(default_factory=list)
+
+    def add_target(self, target: TargetSpec) -> None:
+        logger.info(f"Adding target '{target.name}' to ListTargetSpec")
+        self.targets.append(target)
+
+    def get_target_by_name(self, name: str) -> Optional[TargetSpec]:
+        for t in self.targets:
+            if t.name == name:
+                return t
+        return None
+    
+    def list_target_names(self) -> List[str]:
+        return [t.name for t in self.targets]
+    
+    def enabled_targets(self) -> List[TargetSpec]:
+        return [t for t in self.targets if t.enable]
 
 @dataclass
 class LossFunctionConfig:
-    max_loss: np.float64
-    loss_norm_method: str
-    loss_type: str
-    rescale_mag: bool
-    include_phase_loss : bool
-    include_mag_loss : bool
+    max_loss: Union[np.float64, str]
+    loss_norm_method: Optional[str]
+    loss_type: Optional[str]
+    rescale_mag: Optional[bool] = False
+    include_phase_loss : Optional[bool] = False
+    include_mag_loss : Optional[bool] = False
 
 @dataclass
 class VariableBoundConfig:
     min: float
     max: float
 
-
 @dataclass
 class OptimizerConfig:
-    name: str
-    type: str
+    name: str # Optimization algorithm name
+    type: str # Optimizer family type
     budget: int
-    loss_function: LossFunctionConfig
-    lin_variable_bounds: VariableBoundConfig
-    log_variable_bounds: VariableBoundConfig
-    random_seed: Optional[int] = None
+    target_spec: ListTargetSpec
+    lin_variable_bounds: Optional[VariableBoundConfig]
+    log_variable_bounds: Optional[VariableBoundConfig]
+    loss_function_config: Optional[LossFunctionConfig]
+    random_seed: Optional[int]
+
+    def __post_init__(self):
+        # Mandatory checks
+        if not self.name or not self.type or self.budget is None:
+            logger.critical("OptimizerConfig is missing a mandatory field (name, type, or budget).")
+            raise ValueError("OptimizerConfig requires name, type, and budget.")
+
+        # -------------------------
+        # General
+        # -------------------------
+        logger.info(
+            f"Initialized OptimizerConfig: {self.name}, "
+            f"type={self.type}, budget={self.budget}, random_seed={self.random_seed}"
+        )
+
+        # -------------------------
+        # Bounds
+        # -------------------------
+        if self.lin_variable_bounds is None:
+            logger.warning("No lin_variable_bounds provided; using default [0.0, 1.0].")
+            self.lin_variable_bounds = VariableBoundConfig(min=0.0, max=1.0)
+        else: 
+            logger.info(
+                f"\tLinear bounds: min={self.lin_variable_bounds.min}, max={self.lin_variable_bounds.max}"
+            )
+        if self.log_variable_bounds is None:
+            logger.warning("No log_variable_bounds provided; using default [0.0, 1.0].")
+            self.log_variable_bounds = VariableBoundConfig(min=1, max=100.0)
+        else:
+            logger.info(
+                f"\tLog bounds: min={self.log_variable_bounds.min}, max={self.log_variable_bounds.max}"
+            )
+
+        # -------------------------
+        # Loss function config
+        # -------------------------
+        if self.loss_function_config is None:
+            logger.warning("No loss_function_config provided; using default values.")
+        else: 
+            logger.info(
+                f"\tLoss function: max_loss={self.loss_function_config.max_loss}, "
+                f"norm_method={self.loss_function_config.loss_norm_method}, "
+                f"type={self.loss_function_config.loss_type}, rescale_mag={self.loss_function_config.rescale_mag}, "
+                f"include_phase_loss={self.loss_function_config.include_phase_loss}, "
+                f"include_mag_loss={self.loss_function_config.include_mag_loss}"
+            )
+
+        # -------------------------
+        # Target Specs
+        # -------------------------
+        logger.info(f"\tNumber of target specs: {len(self.target_spec.targets)}")
+        for t in self.target_spec.targets:
+            logger.info(f"\t\t- {t}")
+        
 # ---------- Interface Dataclass ----------
 
 @dataclass
 class Project_Setup:
-    project_name: str
+    # General Info
+    name: str
     description: str
     simulator:  str
-    ws_root :   Path
-    netlist:    Path
-    outdir :    Path
+    ws_root :   Path | str
+    netlist:    Path | str
+    outdir :    Path | str
+    
     # Custom Data types
     tech_spec: TechSpec
     pvt: PVT
     dut_params: List[Param]
-    testbench: TestbenchParams
-    probes: List[Probes]
-    optimizer_config: Optional[OptimizerConfig] = None
-    logger: logging.Logger = logger
+    testbench_params: TestbenchParams
+    optimizer_config: OptimizerConfig
+    
+    # Miscellaneous
+    logger: Optional[logging.Logger] = logger
+
+    def __post_init__(self):
+        # correct path types
+        if isinstance(self.ws_root, str):
+            self.ws_root = Path(self.ws_root)
+        if isinstance(self.netlist, str):
+            self.netlist = Path(self.netlist)
+        if isinstance(self.outdir, str):
+            self.outdir = Path(self.outdir)
+        # Log basic info
+        if self.logger is not None:
+            self.logger.info(f"Project '{self.name}' initialized with simulator '{self.simulator}'")
+            self.logger.info(f"\tWorkspace root: {self.ws_root}")
+            self.logger.info(f"\tNetlist path: {self.netlist}")
+            self.logger.info(f"\tOutput directory: {self.outdir}")
 
     # ------------------ Class Methods ------------------
 
     @classmethod
     def from_yaml(cls, yaml_path: Union[str, Path]) -> "Project_Setup":
         """Load a Project object from a YAML file with variable resolution."""
-        yaml_path = Path(yaml_path)
-        with open(yaml_path, "r") as f:
-            data = yaml.safe_load(f)
-
-        project_data = data["project"]
-        logger.debug("loaded project yaml... creating the project setup hierarchy")
-
-        # --- Parse tech_spec constraints ---
-        logger.debug("\tLoading the tech constraints...")
-        raw_constraints = project_data["tech_spec"]["constraints"]
-        parsed_constraints = {k: parse_value(v) for k, v in raw_constraints.items()}
-        tech_spec = TechSpec(name=project_data["tech_spec"]["name"], constraints=parsed_constraints)
-        logger.debug(f"\tThe tech constraints are loaded (count {len(tech_spec.constraints)}) for {tech_spec.name}...")
-
-        # --- Parse PVT ---
-        logger.debug("\tLoading the PVT Data...")
-        pvt_data = project_data["pvt"]
-        pvt = PVT(
-            temp=parse_value(pvt_data["temp"]),
-            corner=pvt_data["corner"],
-            supply=parse_value(pvt_data["supply"]),
-        )
-        logger.debug("\tPVT Data is loaded...")
-
-        # --- Build DUT params with reference resolution ---
-        dut_params = []
-        logger.debug("\tLoading the DUT params...")
-        for p in project_data["params"]["dut"]:
-            dut_params.append(
-                Param(
-                    name=p["name"],
-                    min_val=resolve_reference(p.get("min_val"), parsed_constraints) if "min_val" in p else None,
-                    max_val=resolve_reference(p.get("max_val"), parsed_constraints) if "max_val" in p else None,
-                    log_scale=p.get("log_scale", False),
-                    default=resolve_reference(p.get("default"), parsed_constraints) if "default" in p else None,
-                )
-            )
-        logger.debug("\tThe DUT params are loaded...")
-
-        # --- Build Testbench ---
-        tb_data = project_data["params"]["testbench"]
-        testbench = TestbenchParams(name=tb_data["name"], params=tb_data.get("params", {}))
-
-        # --- Build Probes ---
-        probes = [Probes(**p) for p in project_data.get("probes", [])]
         
-        # --- Parse Optimizer Config (optional) ---
-        optimizer_config = None
-        if "optimizer_config" in project_data:
-            opt_data = project_data["optimizer_config"]
-            loss_fn = LossFunctionConfig(
-                max_loss=parse_value(opt_data["loss_function"]["max_loss"]),
-                loss_norm_method=opt_data["loss_function"]["loss_norm_method"],
-                loss_type=opt_data["loss_function"]["loss_type"],
-                rescale_mag=bool(opt_data["loss_function"]["rescale_mag"]),
-                include_mag_loss=opt_data["loss_function"]["include_mag_loss"],
-                include_phase_loss=opt_data["loss_function"]["include_phase_loss"],
-            )
-            optimizer_config = OptimizerConfig(
-                name=opt_data["name"],
-                type=opt_data["type"],
-                budget=int(opt_data["budget"]),
-                random_seed=opt_data["random_seed"],
-                lin_variable_bounds=VariableBoundConfig(**opt_data['lin_variable_bounds']),
-                log_variable_bounds=VariableBoundConfig(**opt_data['log_variable_bounds']),
-                loss_function=loss_fn
-            )
+        logger.info(f"📂 Loading project setup from {yaml_path}")
+        try:
+            with open(yaml_path, "r") as f:
+                data = yaml.safe_load(f)
+            logger.debug(f"YAML content successfully loaded: {list(data.keys())}")
 
-        proj = cls(
-            project_name=project_data["name"],
-            ws_root = Path(project_data['ws_root']),
-            netlist = Path(project_data['netlist']),
-            outdir  = Path(project_data['outdir']),
-            description = project_data["description"],
-            simulator   = project_data["simulator"],
-            tech_spec   = tech_spec,
-            pvt         = pvt,
-            dut_params  = dut_params,
-            testbench   = testbench,
-            probes      = probes,
-            optimizer_config=optimizer_config,
-            logger      = logger
-        )
+            project = safe_from_dict(
+                cls,
+                data['project'],
+                logger,
+                config=DECITE_CONFIG
+            )
+            # Resolve constraints in tech_spec
+            project.resolve_all_parameter_ranges()
 
-        proj.logger.info(f"Loaded project '{proj.project_name}' with {len(proj.dut_params)} DUT params and {len(proj.probes)} probes.")
-        return proj
+            logger.info("✅ Project setup successfully created")
+            return project
+
+        except FileNotFoundError:
+            logger.critical(f"YAML file not found: {yaml_path}")
+            raise
+        except yaml.YAMLError as e:
+            logger.critical(f"Failed to parse YAML {yaml_path}: {e}")
+            raise
+        except DaciteError as e:
+            logger.critical(f"Failed to map YAML → Project_Setup: {e}")
+            raise
+        except Exception as e:
+            logger.critical(f"Unexpected error while loading {yaml_path}: {e}")
+            raise
 
     # ------------------ Getters & Helpers ------------------
-
+    def resolve_all_parameter_ranges(self) -> None:
+        """Resolve all parameter min/max/default values based on tech_spec constraints."""
+        for param in self.dut_params:
+            if param.needs_resolution():
+                self.logger.info(f"Resolving ranges for param '{param.name}'")
+                param.resolve_min_max(self.tech_spec.constraints)
+                self.logger.debug(f"Resolved param '{param.name}': min={param.min_val}, max={param.max_val}, default={param.val}")
+            
     def get_constraint_by_name(self, name: str) -> Optional[np.float64]:
         value = self.tech_spec.constraints.get(name)
         self.logger.debug(f"Constraint '{name}': {value}")
@@ -260,26 +472,13 @@ class Project_Setup:
         return log_params
 
     def filter_params_by_range(self, min_value: float, max_value: float) -> List[Param]:
-        filtered = [p for p in self.dut_params if p.default is not None and min_value <= p.default <= max_value]
+        filtered = [p for p in self.dut_params if p.val is not None and min_value <= p.val <= max_value]
         self.logger.debug(f"Params in range {min_value}-{max_value}: {[p.name for p in filtered]}")
         return filtered
 
-    def get_probe_by_name(self, name: str) -> Optional[Probes]:
-        for pr in self.probes:
-            if pr.name == name:
-                self.logger.debug(f"Found probe: {pr}")
-                return pr
-        self.logger.warning(f"Probe '{name}' not found")
-        return None
-
-    def get_probes_by_type(self, probe_type: str) -> List[Probes]:
-        probes_of_type = [p for p in self.probes if p.type == probe_type]
-        self.logger.debug(f"Probes of type '{probe_type}': {[p.name for p in probes_of_type]}")
-        return probes_of_type
-
     def summary(self) -> None:
         self.logger.info("========== Project Setup Summary ==========")
-        self.logger.info(f"📂 Project: {self.project_name}")
+        self.logger.info(f"📂 Project: {self.name}")
         self.logger.info(f"📝 Description: {self.description}")
         self.logger.info(f"🧠 Simulator: {self.simulator}")
         self.logger.info(f"📜 Netlist: {self.netlist}")
@@ -288,5 +487,12 @@ class Project_Setup:
         for k, v in self.tech_spec.constraints.items():
             self.logger.info(f"   • {k}: {v:.2e}")
         self.logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
-        self.logger.info(f"🔍 Probes: {[p.name for p in self.probes]}")
+        self.logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_spec.targets]}")
         self.logger.info("===========================================")
+
+# ------------------ Dacite Config ------------------
+DECITE_CONFIG = Config(
+    type_hooks={
+        ListTargetSpec: list_target_spec_hook
+    }
+)

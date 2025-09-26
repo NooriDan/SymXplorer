@@ -42,74 +42,72 @@ project:
     corner: tt
     supply: 1.8
   
-  params:
-    dut:
-      # ------------------------
-      # nfet params
-      # ------------------------
-      - name : x_dut_nfet_w
-        min_val: min_nfet_w
-        max_val: max_nfet_w
-        log_scale: true
-        default: 0.4u
-      
-      - name : x_dut_nfet_l
-        min_val: min_nfet_l
-        max_val: max_nfet_l
+  dut_params:
+    # ------------------------
+    # nfet params
+    # ------------------------
+    - name : x_dut_nfet_w
+      min_val: min_nfet_w
+      max_val: max_nfet_w
+      log_scale: true
+      default: 0.4u
+    
+    - name : x_dut_nfet_l
+      min_val: min_nfet_l
+      max_val: max_nfet_l
 
-      # ------------------------
-      # Cap params
-      # ------------------------
-      - name : x_dut_cap_w
-        min_val: min_cap_w
-        max_val: max_cap_w
+    # ------------------------
+    # Cap params
+    # ------------------------
+    - name : x_dut_cap_w
+      min_val: min_cap_w
+      max_val: max_cap_w
 
-      - name : x_dut_cap_l
-        min_val: min_cap_l
-        max_val: max_cap_l
+    - name : x_dut_cap_l
+      min_val: min_cap_l
+      max_val: max_cap_l
 
-      # ------------------------
-      # Res params
-      # ------------------------
-      - name : x_dut_res_s_l
-        min_val: min_res_l
-        max_val: max_res_l
+    # ------------------------
+    # Res params
+    # ------------------------
+    - name : x_dut_res_s_l
+      min_val: min_res_l
+      max_val: max_res_l
 
-      - name : x_dut_res_s_w
-        min_val: min_res_w
-        max_val: max_res_w
+    - name : x_dut_res_s_w
+      min_val: min_res_w
+      max_val: max_res_w
 
-      - name : x_dut_res_3_l
-        min_val: min_res_l
-        max_val: max_res_l
+    - name : x_dut_res_3_l
+      min_val: min_res_l
+      max_val: max_res_l
 
-      - name : x_dut_res_3_w
-        min_val: min_res_w
-        max_val: max_res_w
+    - name : x_dut_res_3_w
+      min_val: min_res_w
+      max_val: max_res_w
 
-    testbench:
+  testbench_params:
       name: tb_ac
-      params: 
-        ...
-
-  probes:
-    # these values would be extracted from the simulatoin RAW
-    - name: Vout neg
-      node: out
-      type: voltage
-    - name: Iin pos
-      node: i
-      type: current
-    # - name: Vin
-    #   node: in
-    #   type: voltage
-
+      params:
+        - name : icm
+          description : input common mode current
+          val : 0.5e-6
+        
+        - name : vbias
+          description : bias voltage for the TIA, controling its gm
+          val : 0.25
+        
+        - name : cload
+          description : load capacitence
+          val : 100p
+      
   optimizer_config:
     name: CMA
     type: nevergrad
     budget: 100
     random_seed: 48
 
+    # The following overwrite the optimizer bounds.
     lin_variable_bounds:
       min : 0
       max : 100
@@ -118,10 +116,10 @@ project:
       min : 1
       max : 100
       
-    loss_function:
+    loss_function_config:
       max_loss: inf
       loss_norm_method: min-max
-      loss_type:        mse #mse, mae, use_target_spec
+      loss_type:        mse # mse, mae, use_target_spec
       rescale_mag:      True
       include_phase_loss: False
       include_mag_loss: True
@@ -131,15 +129,27 @@ project:
         description: Center frequency # optional documentation field
         target: 1e6     # 1 MHz
         goal: exact     # options: exact, exceed, minimize
-        tolerance: 10e3 # allowed deviation in the spec
-        enable: True    # Used to exclude from the loss function
+        tolerance: 10e3 # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        sim_type: ac    # options: dc, ac, tran, noise
+        weight:   2.0   # [Optional] non-negative weight factor for this target, else it is 1.0
+        enable: True    # [Optional] Used to exclude from the loss function
 
       - name: q
         description: quality factor # optional documentation field
         target: 10    
         goal: exact   # options: exact, exceed, minimize
-        tolerance: 1  # allowed deviation in the spec
-        enable: True  # Used to exclude from the loss function
+        tolerance: 1  # [Optional] allowed deviation in the spec
+        sim_type: ac  # options: dc, ac, tran, noise
+        weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
+        enable: True  # [Optional] Used to exclude from the loss function
 
+      - name: gain
+        description: gain at fc 
+        target: 10    
+        goal: exceed  # options: exact, exceed, minimize
+        tolerance: 1  # [Optional] allowed deviation in the spec
+        sim_type: ac  # options: dc, ac, tran, noise
+        weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
+        enable: True  # [Optional] Used to exclude from the loss function
 
   

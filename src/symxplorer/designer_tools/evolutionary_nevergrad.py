@@ -355,7 +355,7 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
         if self.target_complex_response is None:
             raise RuntimeError("Reached the comparison between target and simulated performance but the target was not computed... make sure self.examine_target works correctly.")
         
-        loss_fn_config = self.setup_obj.optimizer_config.loss_function
+        loss_fn_config = self.setup_obj.optimizer_config.loss_function_config
         fit_summary = get_bode_fitness_loss(
             current_complex_response=current_complex_response,
             target_complex_response=self.target_complex_response,
@@ -414,6 +414,54 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             complex_response_list=[self.target_complex_response, current_complex_response], 
             labels=['Target', 'Optimized']
             )
+        
+    def plot_optimization_trace(self, metric_x: str, metric_y: str, save_path: Path | None = None, show: bool = False) -> torch.Tensor | None:
+        if len(self.optimization_log) < 1:
+            logger.warning("No optimization log to plot")
+            return None
+        
+        if metric_x not in self.optimization_log[0]:
+            logger.warning(f"metric_x '{metric_x}' not found in optimization log")
+            return None
+        
+        if metric_y not in self.optimization_log[0]:
+            logger.warning(f"metric_y '{metric_y}' not found in optimization log")
+            return None
+        
+        x_values = torch.tensor([entry[metric_x] for entry in self.optimization_log], device=device)
+        y_values = torch.tensor([entry[metric_y] for entry in self.optimization_log], device=device)
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x_values.cpu().numpy(),
+            y=y_values.cpu().numpy(),
+            mode="markers+lines",
+            name="Optimization Trace",
+            line=dict(color="blue", width=2)
+        ))
+
+        fig.update_layout(
+            title=f"Optimization Trace: {metric_y} vs. {metric_x}",
+            xaxis_title=metric_x,
+            yaxis_title=metric_y,
+            template="plotly_dark",
+            showlegend=True
+        )
+
+        # Save to file if requested
+        if save_path:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.write_html(str(save_path))
+            logger.info(f"📊 Plot saved to {save_path}")
+
+        # Optionally show interactively (browser popup)
+        if show:
+            logger.info("Opening interactive plot in browser...")
+            fig.show()
+
+        return x_values, y_values
+
 
 
 

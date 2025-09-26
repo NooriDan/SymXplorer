@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     # (2) Create the Spice Simulator Wrapper
     wrapper = Spicelib_Wrapper(
-        project_name=PROJECT_SETUP.project_name,
+        project_name=PROJECT_SETUP.name,
         netlist_filename= PROJECT_SETUP.ws_root / PROJECT_SETUP.netlist,
         output_folder=PROJECT_SETUP.ws_root / PROJECT_SETUP.outdir,
         sim_execution_t=Sim_Execution_Type.RUN_AND_WAIT,  # only RUN_AND_WAIT is supported as of now...
