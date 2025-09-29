@@ -1,0 +1,20 @@
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-bpf-1-ideal-ind.sch
+**.subckt tia-bpf-1-ideal-ind vdd vop vss von vbias inn inp
+*.iopin vdd
+*.iopin vss
+*.ipin inp
+*.ipin inn
+*.opin von
+*.opin vop
+*.ipin vbias
+XM1 vop vbias inn vss sg13_lv_nmos w=1.0u l=0.72u ng=1 m=1 rfmode=1
+XM2 von vbias inp vss sg13_lv_nmos w=1.0u l=0.72u ng=1 m=1 rfmode=1
+XC1 vdd von cap_cmim w=20.0e-6 l=10.0e-6 m=10
+XC2 vdd vop cap_cmim w=20.0e-6 l=10.0e-6 m=10
+XR1 vss inp rppd w=0.5e-6 l=0.5e-6 m=1 b=0
+XR2 vss inn rppd w=0.5e-6 l=0.5e-6 m=1 b=0
+XR3 vop von rppd w=0.5e-6 l=0.5e-6 m=1 b=0
+L2 vdd von 1n m=1
+L3 vdd vop 1n m=1
+**.ends
+.end
