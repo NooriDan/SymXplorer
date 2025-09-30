@@ -4,17 +4,19 @@ import numpy        as np
 import sympy        as sp
 import nevergrad    as ng
 import plotly.graph_objects as go
-from   typing import Dict, List, Tuple, Any
-from   tqdm   import tqdm
-from abc import ABC, abstractmethod
-from pathlib import Path
-from spicelib import RawRead
+
+from    typing      import Dict, List, Tuple, Any, Optional
+from    tqdm        import tqdm
+from    abc         import ABC, abstractmethod
+from    pathlib     import Path
+from    spicelib    import RawRead
 
 # Symxplorer Specific Imports
-from   symxplorer.spice_engine.spicelib   import Spicelib_Wrapper, Sim_Execution_Type
-from   symxplorer.designer_tools.domains  import Project_Setup, OptimizerConfig, Param
-from   .symbolic_sizing import Symbolic_Sizing_Assist
-from   .utils           import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
+from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
+from   symxplorer.designer_tools.domains    import Project_Setup, OptimizerConfig, ListTargetSpec, OptimizationGoalType, TargetSpec
+from   symxplorer.designer_tools.utils      import weighted_mse_loss, weighted_mae_loss, log_denormalize, log_normalize, linear_normalize, linear_denormalize
+from   .symbolic_sizing                     import Symbolic_Sizing_Assist
+from   .utils                               import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
 
 logger = logging.getLogger("SymXplorer.optimizer")
 
@@ -27,64 +29,10 @@ torch.set_default_dtype(dtype)
 torch.set_default_device(device)
 logger.info(f'Using device: {device} and dtype: {dtype}')
 
-
-def log_normalize(p, pmin, pmax) -> float:
-    """
-    Log-normalize parameter p to [0, 1] range.
-    p, pmin, pmax must be > 0.
-    Always returns a float.
-    """
-    p = np.asarray(p, dtype=np.float64)
-    pmin = np.asarray(pmin, dtype=np.float64)
-    pmax = np.asarray(pmax, dtype=np.float64)
-
-    log_p = np.log10(p)
-    log_min = np.log10(pmin)
-    log_max = np.log10(pmax)
-    result = (log_p - log_min) / (log_max - log_min)
-    return float(np.asarray(result, dtype=np.float64))
-
-
-def log_denormalize(x, pmin, pmax) -> float:
-    """
-    Map normalized x in [0, 1] back to physical parameter using log scaling.
-    Always returns a float.
-    """
-    x = np.asarray(x, dtype=np.float64)
-    pmin = np.asarray(pmin, dtype=np.float64)
-    pmax = np.asarray(pmax, dtype=np.float64)
-
-    log_min = np.log10(pmin)
-    log_max = np.log10(pmax)
-    log_p = x * (log_max - log_min) + log_min
-    result = 10.0 ** log_p
-    return float(np.asarray(result, dtype=np.float64))
-
-
-def linear_normalize(p, pmin, pmax) -> float:
-    """
-    Linearly normalize parameter p to [0, 1] range.
-    Always returns a float.
-    """
-    p = np.asarray(p, dtype=np.float64)
-    pmin = np.asarray(pmin, dtype=np.float64)
-    pmax = np.asarray(pmax, dtype=np.float64)
-
-    result = (p - pmin) / (pmax - pmin)
-    return float(np.asarray(result, dtype=np.float64))
-
-
-def linear_denormalize(x, pmin, pmax) -> float:
-    """
-    Map normalized x in [0, 1] back to physical parameter linearly.
-    Always returns a float.
-    """
-    x = np.asarray(x, dtype=np.float64)
-    pmin = np.asarray(pmin, dtype=np.float64)
-    pmax = np.asarray(pmax, dtype=np.float64)
-
-    result = pmin + x * (pmax - pmin)
-    return float(np.asarray(result, dtype=np.float64))
+# ----------------------------
+# --- Global Constants ---
+# ----------------------------
+MAX_LOSS = 1e6 # The maximum loss used when a trial does not have a performance metric in it.
 
 # ----------------------------
 # --- Class Definitions ---
@@ -227,31 +175,24 @@ class Nevergrad_Base_Optimizer(ABC):
             logger.info("Opening interactive plot in browser...")
             fig.show()
 
-class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
-    def __init__(self,
-                 setup_obj: Project_Setup,
-                 spicelib_wrapper : Spicelib_Wrapper,
-                 target_tf: sp.Expr,
-                 output_node: str = "Vout", # FIXME this needs to go into the spicelib_wrapper
-                 frequency_weight: Frequency_Weight | None = None
-                 ):
+# ------------------------------------------------
+# SPICE-based Optimizers
+# ------------------------------------------------
+class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
+    """ Base class for Nevergrad optimizers that use SPICE simulations. """
+    def __init__(self,  
+                setup_obj: Project_Setup,
+                spicelib_wrapper : Spicelib_Wrapper):
         
         if setup_obj.optimizer_config is None:
             raise ValueError("cannot use a Null optimizer_config instance")
-        
         super().__init__(optimizer_config = setup_obj.optimizer_config)
+
         self.setup_obj = setup_obj
         self.spicelib_wrapper = spicelib_wrapper
-        self.target_tf = target_tf
-        self.output_node = output_node
-        self.frequency_weight  = frequency_weight
 
-        self.helper_functions = Transfer_Func_Helper()
-        # To be calculated during the program runtime
-        self.target_complex_response: torch.Tensor  | None = None
-        self.frequency_array: torch.Tensor | None = None # is resolved the first time the LTspice is run
         self.optimization_log : List[Dict[str, Any]] = []
-
+    
     # --- Overwriting the Abstract Methods ---
     def parameterize(self) -> ng.p.Dict:
         super().parameterize()
@@ -286,6 +227,88 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
 
         return denorm_params
 
+    # --- Helper Methods (only in child class) ---
+    def simulate_circuit(self, parameterization: Dict[str, float]) -> RawRead:
+        logger.debug("Simulating the circuit with the given parameterization")
+        self.spicelib_wrapper.update_params(parameterization=parameterization)
+        curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
+        if curr_raw is None:
+            raise RuntimeError("Something went wrong during simulation as no RAW file was generated")
+        return curr_raw
+    
+    def plot_optimization_trace(self, metric_x: str, metric_y: str, save_path: Path | None = None, show: bool = False) -> Tuple[torch.Tensor, torch.Tensor] | None:
+        if len(self.optimization_log) < 1:
+            logger.warning("No optimization log to plot")
+            return None
+        
+        if metric_x not in self.optimization_log[0]:
+            logger.warning(f"metric_x '{metric_x}' not found in optimization log")
+            return None
+        
+        if metric_y not in self.optimization_log[0]:
+            logger.warning(f"metric_y '{metric_y}' not found in optimization log")
+            return None
+        
+        x_values = torch.tensor([entry[metric_x] for entry in self.optimization_log], device=device)
+        y_values = torch.tensor([entry[metric_y] for entry in self.optimization_log], device=device)
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x_values.cpu().numpy(),
+            y=y_values.cpu().numpy(),
+            mode="markers+lines",
+            name="Optimization Trace",
+            line=dict(color="blue", width=2)
+        ))
+
+        fig.update_layout(
+            title=f"Optimization Trace: {metric_y} vs. {metric_x}",
+            xaxis_title=metric_x,
+            yaxis_title=metric_y,
+            template="plotly_dark",
+            showlegend=True
+        )
+
+        # Save to file if requested
+        if save_path:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.write_html(str(save_path))
+            logger.info(f"📊 Plot saved to {save_path}")
+
+        # Optionally show interactively (browser popup)
+        if show:
+            logger.info("Opening interactive plot in browser...")
+            fig.show()
+
+        return x_values, y_values
+
+    @abstractmethod
+    def plot_solution(self, parameterization: Dict[str, float], **kwargs):
+        pass
+# ------------------------------------------------
+class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
+    """ Nevergrad optimizer that fits a SPICE-simulated transfer function to a target transfer function. """
+    def __init__(self,
+                 setup_obj: Project_Setup,
+                 spicelib_wrapper : Spicelib_Wrapper,
+                 target_tf: sp.Expr,
+                 output_node: str = "Vout", # FIXME this needs to go into the spicelib_wrapper
+                 frequency_weight: Frequency_Weight | None = None
+                 ):
+        
+        super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
+
+        self.target_tf = target_tf
+        self.output_node = output_node
+        self.frequency_weight  = frequency_weight
+
+        self.helper_functions = Transfer_Func_Helper()
+        # To be calculated during the program runtime
+        self.target_complex_response: torch.Tensor  | None = None
+        self.frequency_array: torch.Tensor | None = None # is resolved the first time the LTspice is run
+
+    # --- Overwriting the Abstract Methods ---
     def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
         """
         Evaluate the given parameterization by running a SPICE simulation,
@@ -303,7 +326,7 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
         # ---------------------------------------------------------------
         current_complex_response = self.extract_circuit_response_from_latest_run()
 
-        # 3 - Compute the fitness
+        # 4 - Compute the fitness
         # ---------------------------------------------------------------
         metric_value, fit_summary = self.compute_fitness({"current_complex_response" : current_complex_response})
 
@@ -328,14 +351,6 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
         return np.float64(metric_value), fit_summary
 
     # --- Helper Methods (only in child class) ---
-    def simulate_circuit(self, parameterization: Dict[str, float]) -> RawRead:
-        logger.debug("Simulating the circuit with the given parameterization")
-        self.spicelib_wrapper.update_params(parameterization=parameterization)
-        curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
-        if curr_raw is None:
-            raise RuntimeError("Something went wrong during simulation as no RAW file was generated")
-        return curr_raw
-
     def extract_circuit_response_from_latest_run(self) -> torch.Tensor:
         logger.debug("Extracting the circuit response from the latest RAW file")
         current_complex_response = self.spicelib_wrapper.extract_wave(self.output_node)
@@ -398,7 +413,7 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             self.frequency_weight.compute_weights()
     
     # --- Visualization Methods ---
-    def plot_solution(self, parameterization: Dict[str, float]):
+    def plot_solution(self, parameterization: Dict[str, float], **kwargs):
 
         raw = self.simulate_circuit(parameterization)
         current_complex_response = self.extract_circuit_response_from_latest_run()
@@ -414,57 +429,152 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Base_Optimizer):
             complex_response_list=[self.target_complex_response, current_complex_response], 
             labels=['Target', 'Optimized']
             )
+# ------------------------------------------------
+class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
+    """ Nevergrad Optimizer that uses the perfomance metrics computed in SPICE simulations to size a circuit. """
+    def __init__(self,
+                 setup_obj: Project_Setup,
+                 spicelib_wrapper : Spicelib_Wrapper):
+        super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
+        self.target_specs: ListTargetSpec = setup_obj.optimizer_config.target_specs
+    
+    # --- Overwriting the Abstract Methods ---
+    def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
+        """
+        Evaluate the given parameterization by running a SPICE simulation,
+        computing the fitness loss, and returning it as np.float64 plus a metadata dictionary.
+        """
+        # 1 - Run a SPICE simulation
+        # ---------------------------------------------------------------
+        raw = self.simulate_circuit(parameterization=parameterization)
+
+        # 2 - Extract performance metrics
+        # ---------------------------------------------------------------
+        self.spicelib_wrapper.load_raw(raw) # [Redundant but safe]
+        # have to make sure to use the correct plot type
+        performance_array = self.spicelib_wrapper.extract_scalar_variable_from_raw(self.target_specs.list_target_names())
+
+        # 3 - Compute the fitness of the performance metrics
+        # ---------------------------------------------------------------
+        metric_value, fit_summary = self.compute_fitness(performance_array=performance_array)
+
+        # --- Log results ---
         
-    def plot_optimization_trace(self, metric_x: str, metric_y: str, save_path: Path | None = None, show: bool = False) -> torch.Tensor | None:
-        if len(self.optimization_log) < 1:
-            logger.warning("No optimization log to plot")
-            return None
+        self.optimization_log.append({
+            "metric_value": metric_value,
+            "fit_summary": fit_summary,
+            "params": parameterization
+        })
+
+        logger.debug(f"finished the trial evaluation.... summary")
+        logger.debug(f"\tmetric_value = {metric_value}")
+
+        return metric_value, fit_summary
+    
+    def plot_solution(self, parameterization: Dict[str, float], **kwargs):
+
+        raw = self.simulate_circuit(parameterization)
+        self.spicelib_wrapper.load_raw(raw) # [Redundant but safe]
         
-        if metric_x not in self.optimization_log[0]:
-            logger.warning(f"metric_x '{metric_x}' not found in optimization log")
-            return None
+        performance_array = self.spicelib_wrapper.extract_scalar_variable_from_raw(self.target_specs.list_target_names())
+        loss, fit_summary = self.compute_fitness(performance_array=performance_array)
+
+        logger.info(f"total loss: {loss}")
+        for spec_name, spec_info in fit_summary.items():
+            logger.info(f"\tSpec '{spec_name}': curr_val={spec_info['curr_val']}, loss={spec_info['loss']}")
+
+        if kwargs.get("show_plot", False):
+            trace_name = kwargs.get("trace_name", None)
+            if trace_name is None:
+                logger.error("To plot the solution, trace_name must be provided in kwargs")
+                raise RuntimeError("To plot the solution, both x_trace_name and y_trace_name must be provided in kwargs")
+            
+            trace = self.spicelib_wrapper.extract_wave(trace_name, is_real=False)
+            
+            plot_complex_response(
+                frequencies=self.spicelib_wrapper.extract_wave("frequency", is_real=True),
+                complex_response_list=[trace],
+                labels = kwargs.get("labels", [trace_name]), 
+                title  = kwargs.get("title", f"Response: {trace_name}")
+                )
+    
+    # --- Helper Methods (only in child class) ---
+    def compute_fitness(self, performance_array: Dict[str, np.float64]) -> Tuple[np.float64, Dict[str, Any]]:
+        """ Compute the fitness based on the performance metrics extracted from SPICE simulations and the target specs. """
+        # Initialize variables
+        fitness : np.float64 = np.float64(0.0)
+        fit_summary : Dict[str, Any] = {}
+
+        # Iterate over each target specification
+        for spec in self.target_specs.targets:
+            if spec.enable: 
+                if spec.name in performance_array:
+                    fitness += self.compute_spec_loss(spec_curr_val=performance_array[spec.name], target_spec=spec)
+                    fit_summary[spec.name] = {
+                        "curr_val": performance_array[spec.name],
+                        "loss": fitness
+                    }
+                else:
+                    logger.critical(f"Target spec name '{spec.name}' not found in performance array keys: {list(performance_array.keys())}")
+                    logger.warning(f"assigning large loss to the {spec.name} spec")
+                    fitness += np.float64(MAX_LOSS) # assign a large loss if the spec is not found
+                    fit_summary[spec.name] = {
+                        "curr_val": None,
+                        "loss": np.float64(MAX_LOSS)
+                    }
+        logger.debug(f"Computed fitness: {fitness} for performance array: {performance_array}")
+        return fitness, fit_summary
+
+    def compute_spec_loss(self, spec_curr_val: np.float64, target_spec: TargetSpec) -> np.float64:
+        """ Compute the loss for a single performance specification. """
+        spec_loss:           np.float64 = np.float64(0.0)
+        spec_loss_weighted:  np.float64 = np.float64(0.0)
+
+        target_val: np.float64 = np.float64(target_spec.target)
+        tolerance:  np.float64 = np.float64(target_spec.tolerance)
+
+        # --------------------------
+        # Case 1: Exact Match
+        # --------------------------
+        if target_spec.goal == OptimizationGoalType.EXACT:
+            if abs(spec_curr_val - target_val) > tolerance:
+                spec_loss = (spec_curr_val - (tolerance - target_val)) ** 2
+            else:
+                spec_loss = np.float64(0.0)
+        # --------------------------
+        # Case 2: Exceed the Target
+        # --------------------------
+        elif target_spec.goal == OptimizationGoalType.EXCEED:
+            if spec_curr_val < target_val - tolerance:
+                spec_loss = (spec_curr_val  - (target_val - tolerance)) ** 2
+            elif spec_curr_val > target_val + tolerance:
+                spec_loss = np.float64(0.0) # optional... could award negative loss for exceeding the target
+        # --------------------------
+        # Case 3: Minimize the Target
+        # --------------------------
+        elif target_spec.goal == OptimizationGoalType.MINIMIZE:
+            if spec_curr_val > target_val + tolerance:
+                spec_loss = (spec_curr_val - (tolerance + target_val)) ** 2
+            else:
+                # spec_loss = np.float64(0.0) 
+                spec_loss = -1 * abs(spec_curr_val - (tolerance + target_val)) # optional... could award negative loss for going below the target
+        # --------------------------
+        # Case 4: Invalid Goal Type 
+        # --------------------------
+        else:
+            logger.error(f"Unknown optimization goal type: {target_spec.goal}")
+            raise ValueError(f"Unknown optimization goal type: {target_spec.goal}")
+        # --------------------------
         
-        if metric_y not in self.optimization_log[0]:
-            logger.warning(f"metric_y '{metric_y}' not found in optimization log")
-            return None
+        spec_loss_weighted = spec_loss * np.float64(target_spec.weight)
+        logger.debug(f"Spec '{target_spec.name}': curr_val={spec_curr_val}, target={target_spec.target}, loss={spec_loss}, weighted_loss={spec_loss_weighted}")
+        return spec_loss_weighted
         
-        x_values = torch.tensor([entry[metric_x] for entry in self.optimization_log], device=device)
-        y_values = torch.tensor([entry[metric_y] for entry in self.optimization_log], device=device)
+# ------------------------------------------------
 
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=x_values.cpu().numpy(),
-            y=y_values.cpu().numpy(),
-            mode="markers+lines",
-            name="Optimization Trace",
-            line=dict(color="blue", width=2)
-        ))
-
-        fig.update_layout(
-            title=f"Optimization Trace: {metric_y} vs. {metric_x}",
-            xaxis_title=metric_x,
-            yaxis_title=metric_y,
-            template="plotly_dark",
-            showlegend=True
-        )
-
-        # Save to file if requested
-        if save_path:
-            save_path = Path(save_path)
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.write_html(str(save_path))
-            logger.info(f"📊 Plot saved to {save_path}")
-
-        # Optionally show interactively (browser popup)
-        if show:
-            logger.info("Opening interactive plot in browser...")
-            fig.show()
-
-        return x_values, y_values
-
-
-
-
+# ------------------------------------------------
+# Symbolic Optimizers (Legacy)
+# ------------------------------------------------
 class Nevergrad_Symbolic_Bode_Fitter:
     def __init__(self, 
                  tf_to_size: sp.Expr,
@@ -472,7 +582,7 @@ class Nevergrad_Symbolic_Bode_Fitter:
                  c_range: List[float] = [1e-12, 1e-9], 
                  r_range: List[float] = [1e2, 1e5],
                  frequencies: torch.Tensor = torch.logspace(3, 8, 1000),
-                 freq_weights: torch.Tensor = None,
+                 freq_weights: Optional[torch.Tensor] = None,
                  max_loss: float = 20,
                  loss_norm_method: str = "min-max",
                  loss_type:     str = "mse",
@@ -677,4 +787,4 @@ class Nevergrad_Symbolic_Bode_Fitter:
         frequencies = fit_summary['frequencies']
 
         plot_complex_response(frequencies=frequencies, complex_response_list=[target_complex_response, current_complex_response], labels=['Target', 'Optimized'])
-
+# ------------------------------------------------

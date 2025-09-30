@@ -411,6 +411,17 @@ class Spicelib_Wrapper:
             return torch.from_numpy(wave).real.to(dtype=torch.float64)
         return torch.from_numpy(wave)
     
+    def extract_scalar_variable_from_raw(self, var_name: str | List[str], is_real: bool = True) -> Dict[str, np.float64]:
+        
+        if not isinstance(var_name, list):
+            var_name = [var_name]
+        
+        wave_form : Dict[str, np.float64] = {}
+        for var in var_name:
+            temp = self.extract_wave(var, is_real=is_real)
+            wave_form[var] = np.float64(temp[0])
+        return wave_form
+    
     def run_and_wait(self, exe_log: bool = True) -> Tuple[RawRead | None, str | None, str]:
         """Runs the simulation and waits for it to complete, returning the RawRead instance (or None), the log filename (or None), and task name"""
         # (1) Pre-body
@@ -444,6 +455,18 @@ class Spicelib_Wrapper:
 
         return self.curr_raw, self.curr_log, task.name
     
+    def load_raw(self, raw_file: Path | RawRead) -> None:
+        """Loads a RawRead instance from the given raw_file path"""
+        
+        if isinstance(raw_file, RawRead):
+            self.curr_raw = raw_file
+            return
+        
+        if not raw_file.exists():
+            raise FileNotFoundError(f"Raw file not found: {raw_file}")
+        
+        self.curr_raw = RawRead(raw_filename=raw_file)
+        
     @classmethod
     def callback(cls, raw_file: str, log_file: str, traces_to_read: str):
         raw_read = RawRead(raw_filename=raw_file, traces_to_read=traces_to_read)

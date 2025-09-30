@@ -102,7 +102,7 @@ project:
           val : 100p
       
   optimizer_config:
-    name: CMA
+    name: NGOpt
     type: nevergrad
     budget: 100
     random_seed: 48
@@ -124,32 +124,32 @@ project:
       include_phase_loss: False
       include_mag_loss: True
     
-    target_spec:
+    target_specs:
       - name: fc
         description: Center frequency # optional documentation field
         target: 1e6     # 1 MHz
         goal: exact     # options: exact, exceed, minimize
-        tolerance: 10e3 # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        tolerance: 1e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
         sim_type: ac    # options: dc, ac, tran, noise
         weight:   2.0   # [Optional] non-negative weight factor for this target, else it is 1.0
         enable: True    # [Optional] Used to exclude from the loss function
 
-      - name: q
-        description: quality factor # optional documentation field
-        target: 10    
-        goal: exact   # options: exact, exceed, minimize
-        tolerance: 1  # [Optional] allowed deviation in the spec
-        sim_type: ac  # options: dc, ac, tran, noise
-        weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
-        enable: True  # [Optional] Used to exclude from the loss function
+      # - name: q
+      #   description: quality factor # optional documentation field
+      #   target: 10    
+      #   goal: exact   # options: exact, exceed, minimize
+      #   tolerance: 1  # [Optional] allowed deviation in the spec
+      #   sim_type: ac  # options: dc, ac, tran, noise
+      #   weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
+      #   enable: True  # [Optional] Used to exclude from the loss function
 
-      - name: gain
-        description: gain at fc 
-        target: 10    
-        goal: exceed  # options: exact, exceed, minimize
-        tolerance: 1  # [Optional] allowed deviation in the spec
-        sim_type: ac  # options: dc, ac, tran, noise
-        weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
-        enable: True  # [Optional] Used to exclude from the loss function
+      # - name: gain_db
+      #   description: gain in dB at fc 
+      #   target: 10    
+      #   goal: exceed  # options: exact, exceed, minimize
+      #   tolerance: 1  # [Optional] allowed deviation in the spec
+      #   sim_type: ac  # options: dc, ac, tran, noise
+      #   weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
+      #   enable: True  # [Optional] Used to exclude from the loss function
 
   

@@ -24,6 +24,9 @@ dtype  = torch.double
 torch.set_default_dtype(dtype)
 torch.set_default_device(device)
 
+# ----------------------------
+# Loss Functions Helpers
+# ----------------------------
 def weighted_mse_loss(
     response: torch.Tensor, 
     target_response: torch.Tensor, 
@@ -155,7 +158,70 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
 
     return fit_summary
 
+# ----------------------------
+# norm/denorm function 
+# ----------------------------
+def log_normalize(p, pmin, pmax) -> float:
+    """
+    Log-normalize parameter p to [0, 1] range.
+    p, pmin, pmax must be > 0.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_p = np.log10(p)
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    result = (log_p - log_min) / (log_max - log_min)
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def log_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter using log scaling.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    log_p = x * (log_max - log_min) + log_min
+    result = 10.0 ** log_p
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def linear_normalize(p, pmin, pmax) -> float:
+    """
+    Linearly normalize parameter p to [0, 1] range.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = (p - pmin) / (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+
+def linear_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter linearly.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = pmin + x * (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+# ----------------------------
 # Plotting 
+# ----------------------------
 def plot_ac_response(frequencies: torch.Tensor, mag_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
     """(Deprecated) Plots multiple AC responses on the same plot using Plotly for interactivity.
 
@@ -248,6 +314,9 @@ def _linear_interpolate(x1, y1, x2, y2, target_y):
             return x1
         return x1 + (x2 - x1) * ((target_y - y1) / (y2 - y1))
 
+# ----------------------------
+# Classes
+# ----------------------------
 class Transfer_Func_Helper:
     def __init__(self):
         pass

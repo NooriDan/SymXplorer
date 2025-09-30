@@ -50,7 +50,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-1-ideal-ind
     echo ----------------------------------
 
     * run ac simulation
-    ac dec 200 1e5 1e12
+    ac dec 200 1e-3 1e12
 
     echo (1) post processing the AC sim
     * magnitude

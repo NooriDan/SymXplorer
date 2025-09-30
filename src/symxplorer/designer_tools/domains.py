@@ -22,14 +22,21 @@ class SimType(str, Enum):
     TRAN = "tran"
     NOISE = "noise"
 
-class GoalType(str, Enum):
-    EXACT = "exact"
-    EXCEED = "exceed"
+class OptimizationGoalType(str, Enum):
+    EXACT    = "exact"
+    EXCEED   = "exceed"
     MINIMIZE = "minimize"
 
 class OptimizerType(str, Enum):
     NEVERGRAD = "nevergrad"
 
+class SpicePlotType(str, Enum):
+    OP = "Operating Point"
+    TRANSIENT = "tran"
+    AC_MAG = "ac_mag"
+    AC_PHASE = "ac_phase"
+    DC = "dc"
+    NOISE = "noise"
 
 # ------------------ Constants ------------------
 
@@ -158,7 +165,7 @@ class TestbenchParams:
 class TargetSpec:
     name: str
     target: float | np.float64
-    goal: Union[GoalType, str]
+    goal: Union[OptimizationGoalType, str]
     sim_type: Union[SimType, str]
     enable: bool = True
     weight: Optional[float | np.float64] = 1.0
@@ -167,20 +174,20 @@ class TargetSpec:
 
     def __post_init__(self):
         # Prepare human-friendly lists for error messages
-        valid_goals = [g.value for g in GoalType]
+        valid_goals = [g.value for g in OptimizationGoalType]
         valid_sim_types = [s.value for s in SimType]
 
         # --- Validate / convert goal ---
         if isinstance(self.goal, str):
             try:
-                self.goal = GoalType(self.goal.lower())
+                self.goal = OptimizationGoalType(self.goal.lower())
             except ValueError:
                 logger.critical(
                     f"Invalid goal '{self.goal}' for target '{self.name}'. "
                     f"Must be one of {valid_goals}."
                 )
                 raise ValueError(f"Invalid goal '{self.goal}'. Must be one of {valid_goals}.")
-        elif not isinstance(self.goal, GoalType):
+        elif not isinstance(self.goal, OptimizationGoalType):
             logger.critical(
                 f"Invalid goal type '{type(self.goal)}' for target '{self.name}'. "
                 f"Must be one of {valid_goals}."
@@ -230,19 +237,19 @@ class TargetSpec:
             logger.error(f"Something went wrong and tolerance is None for target '{self.name}'")
             raise RuntimeError("Tolerance should never be None here... check the log.")
 
-        if self.goal == GoalType.EXACT:
+        if self.goal == OptimizationGoalType.EXACT:
             if np.abs(value - self.target) <= self.tolerance:
                 return np.float64(0.0)
             else:
                 return np.abs(value - self.target) - self.tolerance
         
-        elif self.goal == GoalType.EXCEED:
+        elif self.goal == OptimizationGoalType.EXCEED:
             if value >= self.target - self.tolerance:
                 return np.float64(0.0)
             else:
                 return np.float64(self.target - self.tolerance - value)
         
-        elif self.goal == GoalType.MINIMIZE:
+        elif self.goal == OptimizationGoalType.MINIMIZE:
             if value <= self.target + self.tolerance:
                 return np.float64(0.0)
             else:
@@ -302,7 +309,7 @@ class OptimizerConfig:
     name: str # Optimization algorithm name
     type: str # Optimizer family type
     budget: int
-    target_spec: ListTargetSpec
+    target_specs: ListTargetSpec
     lin_variable_bounds: Optional[VariableBoundConfig]
     log_variable_bounds: Optional[VariableBoundConfig]
     loss_function_config: Optional[LossFunctionConfig]
@@ -357,8 +364,8 @@ class OptimizerConfig:
         # -------------------------
         # Target Specs
         # -------------------------
-        logger.info(f"\tNumber of target specs: {len(self.target_spec.targets)}")
-        for t in self.target_spec.targets:
+        logger.info(f"\tNumber of target specs: {len(self.target_specs.targets)}")
+        for t in self.target_specs.targets:
             logger.info(f"\t\t- {t}")
         
 # ---------- Interface Dataclass ----------
@@ -487,7 +494,7 @@ class Project_Setup:
         for k, v in self.tech_spec.constraints.items():
             self.logger.info(f"   • {k}: {v:.2e}")
         self.logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
-        self.logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_spec.targets]}")
+        self.logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_specs.targets]}")
         self.logger.info("===========================================")
 
 # ------------------ Dacite Config ------------------
