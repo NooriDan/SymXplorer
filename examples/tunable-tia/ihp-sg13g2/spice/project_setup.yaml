@@ -102,9 +102,9 @@ project:
           val : 100p
       
   optimizer_config:
-    name: NGOpt
+    name: CMA
     type: nevergrad
-    budget: 100
+    budget: 25
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
@@ -129,7 +129,7 @@ project:
         description: Center frequency # optional documentation field
         target: 1e6     # 1 MHz
         goal: exact     # options: exact, exceed, minimize
-        tolerance: 1e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        tolerance: 10e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
         sim_type: ac    # options: dc, ac, tran, noise
         weight:   2.0   # [Optional] non-negative weight factor for this target, else it is 1.0
         enable: True    # [Optional] Used to exclude from the loss function

@@ -463,7 +463,7 @@ class Project_Setup:
     def get_param_by_name(self, name: str) -> Optional[Param]:
         for p in self.dut_params:
             if p.name == name:
-                self.logger.debug(f"Found DUT param: {p}")
+                # self.logger.debug(f"Found DUT param: {p}")
                 return p
         self.logger.warning(f"DUT param '{name}' not found")
         return None

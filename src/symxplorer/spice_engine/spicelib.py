@@ -195,6 +195,8 @@ class Spicelib_Wrapper:
         self.curr_raw: RawRead | None       = None
         self.curr_log: str | None           = None
 
+        self.counter: int = 1
+
         self.__post_init__()
         
     def __post_init__(self):
@@ -301,6 +303,7 @@ class Spicelib_Wrapper:
             logger.info("📂 Creating dedicated sanity check folder...")
             self.runner.output_folder = self.runner.output_folder / "sanity_check"
             self.runner.output_folder.mkdir(parents=True, exist_ok=True)
+            self.counter += 1
         else:
             logger.critical("❌ Runner output folder is not a Path instance!")
             raise RuntimeError("Runner output folder is not a Path instance")
@@ -377,7 +380,7 @@ class Spicelib_Wrapper:
                 self.editor.set_parameter(key, f"{value}{RES_UNIT}")
             else:
                 self.editor.set_parameter(key, f"{value}")
-                logger.debug(f"... Parameter {key} set to {value}")
+                # logger.debug(f"... Parameter {key} set to {value}")
         logger.debug(f"✅  All parameters updated successfully")
         return True
     
@@ -418,8 +421,12 @@ class Spicelib_Wrapper:
         
         wave_form : Dict[str, np.float64] = {}
         for var in var_name:
-            temp = self.extract_wave(var, is_real=is_real)
-            wave_form[var] = np.float64(temp[0])
+            try:
+                temp = self.extract_wave(var, is_real=is_real)
+                wave_form[var] = np.float64(temp[0])
+            except IndexError:
+                self.logger.error(f"❌ Variable {var} not found in the raw file")
+                wave_form[var] = np.float64(np.nan)
         return wave_form
     
     def run_and_wait(self, exe_log: bool = True) -> Tuple[RawRead | None, str | None, str]:
@@ -428,6 +435,13 @@ class Spicelib_Wrapper:
         logger = self.logger
         if self.runner is None or self.editor is None:
             raise RuntimeError("Runner or Editor not initialized")
+
+        # (1.1) Create a dedicated folder for this run
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder / f"run_{self.counter}"
+            self.runner.output_folder.mkdir(parents=True, exist_ok=True)
+            self.counter += 1
+
         # (2) Run the simulation with the parameters already in the editor instance
         task = self.runner.run(
             netlist=self.editor, 
@@ -452,6 +466,10 @@ class Spicelib_Wrapper:
         else: 
             self.curr_raw = None
             self.curr_log = None
+
+        # Move out of the run folder
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder.parent
 
         return self.curr_raw, self.curr_log, task.name
     
