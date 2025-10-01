@@ -43,3 +43,4 @@ examples/tunable-tia/docs/ECE748 Final Project.pdf
 examples/tunable-tia/scripts/sizing/runs/**
 examples/tunable-tia/scripts/optimizer_output/**/*.raw
 examples/tunable-tia/scripts/optimizer_output/**/*.spice
+examples/tunable-tia/scripts/op.raw

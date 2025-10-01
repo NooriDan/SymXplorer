@@ -156,9 +156,9 @@ project:
         goal: exceed    # options: exact, exceed, minimize
         tolerance: 1    # [Optional] allowed deviation in the spec
         sim_type: ac    # options: dc, ac, tran, noise
-        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   1.0  # [Optional] non-negative weight factor for this target, else it is 1.0
         log_scale: False # [Optional] Used to indicate the spec is on log scale
-        error_type: relative-squared # [Optional] options: absolute, squared, relative-squared, relative-absolute, relative-exponential
+        error_type: relative-exponential # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True    # [Optional] Used to exclude from the loss function
 
   
