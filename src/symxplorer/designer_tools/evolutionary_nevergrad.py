@@ -73,13 +73,15 @@ class Nevergrad_Base_Optimizer(ABC):
 
     @abstractmethod
     def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
-        """Evaluate the objective function for the given parameterization"""
+        """Evaluate the objective function for the given parameterization (de-normalized)"""
         pass
         
     def optimize(self, render_optimization_trace: bool = False) -> List[Dict[str, Any]] | None:
         """Run the optimization process for a given budget and returns the optimization trace as 
         a list of (parameterization, loss) tuples"""
-        
+
+        logger.info("Optimization process started.")
+
         self._create_experiment()
         
         if self.optimizer is None:
@@ -92,6 +94,7 @@ class Nevergrad_Base_Optimizer(ABC):
         
         # Run the optimization process
         for trial in tqdm(range(self.optimizer_config.budget), desc="Optimizing", unit="trial"):
+            logger.debug(f"STARTING trial {trial+1}/{self.optimizer_config.budget}...")
             # Get a new candidate
             candidate : ng.p.Parameter = self.optimizer.ask()
             # Evaluate function
@@ -106,6 +109,7 @@ class Nevergrad_Base_Optimizer(ABC):
                 "loss" : curr_loss,
                 "metadata": metadata
                 })
+            logger.debug(f"Trial {trial+1}/{self.optimizer_config.budget} COMPLETED with loss: {curr_loss:.4f}")
 
             # Update the index of the global best solution (lowest loss)
             if curr_loss < self.optimizer_trace[self.global_best_index]["loss"]:
@@ -115,7 +119,7 @@ class Nevergrad_Base_Optimizer(ABC):
         # Plot the loss as a function of optimization step
         if render_optimization_trace:
             self.plot_loss()
-
+        logger.info("Optimization process completed.")
         return self.optimizer_trace
     
     def get_best_params(self) -> Tuple[Dict[str, float], float, Dict[str, Any]] | None:
@@ -233,7 +237,11 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
         return self.parametrization
     
     def denormalize_params(self, parameterization: Dict[str, float]) -> Dict[str, float]:
-        denorm_params: Dict[str, float] = {}        
+        denorm_params: Dict[str, float] = {}
+
+        log_range = self.setup_obj.optimizer_config.get_log_variable_range()
+        lin_range = self.setup_obj.optimizer_config.get_lin_variable_range()
+
         for param_name in parameterization:
             val = parameterization[param_name]
             param_obj = self.setup_obj.get_param_by_name(name=param_name)
@@ -242,9 +250,9 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
                 raise KeyError(f"Could not find param name {param_name} in {self.setup_obj.list_params()}")
             
             if param_obj.log_scale:
-                denorm_params[param_name] = log_denormalize(x=val, pmin=param_obj.min_val, pmax=param_obj.max_val)
+                denorm_params[param_name] = log_denormalize(x=val/log_range, pmin=param_obj.min_val, pmax=param_obj.max_val)
             else:
-                denorm_params[param_name] = linear_denormalize(x=val, pmin=param_obj.min_val, pmax=param_obj.max_val)
+                denorm_params[param_name] = linear_denormalize(x=val/lin_range, pmin=param_obj.min_val, pmax=param_obj.max_val)
 
         return denorm_params
 
@@ -460,6 +468,7 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
                  spicelib_wrapper : Spicelib_Wrapper):
         super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
         self.target_specs: ListTargetSpec = setup_obj.optimizer_config.target_specs
+        logger.info(f"Initialized the Nevergrad_Spice_Multi_Spec_Optimizer with {len(self.target_specs.targets)} target specs")
     
     # --- Overwriting the Abstract Methods ---
     def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
@@ -558,12 +567,17 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
         target_val: np.float64 = np.float64(target_spec.target)
         tolerance:  np.float64 = np.float64(target_spec.tolerance)
 
+        if target_spec.log_scale:
+            spec_curr_val = np.exp(spec_curr_val)
+            target_val = np.exp(target_val)
+            tolerance  = np.exp(tolerance)
+
         # --------------------------
         # Case 1: Exact Match
         # --------------------------
         if target_spec.goal == OptimizationGoalType.EXACT:
             if abs(spec_curr_val - target_val) > tolerance:
-                spec_loss = ((abs(spec_curr_val - target_val))/(tolerance)) ** 2
+                spec_loss = ((spec_curr_val - target_val)/(target_val)) ** 2
             else:
                 spec_loss = np.float64(0.0)
         # --------------------------
@@ -571,7 +585,7 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
         # --------------------------
         elif target_spec.goal == OptimizationGoalType.EXCEED:
             if spec_curr_val < target_val - tolerance:
-                spec_loss = (spec_curr_val  - (target_val - tolerance)) ** 2
+                spec_loss = ((spec_curr_val  - target_val) / (target_val)) ** 2
             elif spec_curr_val > target_val + tolerance:
                 spec_loss = np.float64(0.0) # optional... could award negative loss for exceeding the target
         # --------------------------

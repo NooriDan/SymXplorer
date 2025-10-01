@@ -380,7 +380,7 @@ class Spicelib_Wrapper:
                 self.editor.set_parameter(key, f"{value}{RES_UNIT}")
             else:
                 self.editor.set_parameter(key, f"{value}")
-                # logger.debug(f"... Parameter {key} set to {value}")
+                logger.debug(f"... Parameter {key} set to {value}")
         logger.debug(f"✅  All parameters updated successfully")
         return True
     

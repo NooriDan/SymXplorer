@@ -167,6 +167,7 @@ class TargetSpec:
     target: float | np.float64
     goal: Union[OptimizationGoalType, str]
     sim_type: Union[SimType, str]
+    log_scale: bool = False
     enable: bool = True
     weight: Optional[float | np.float64] = 1.0
     tolerance: Optional[float | np.float64] = None  # if not given use 5% of target
@@ -304,6 +305,9 @@ class VariableBoundConfig:
     min: float
     max: float
 
+    def get_range(self) -> float:
+        return self.max - self.min
+
 @dataclass
 class OptimizerConfig:
     name: str # Optimization algorithm name
@@ -367,6 +371,12 @@ class OptimizerConfig:
         logger.info(f"\tNumber of target specs: {len(self.target_specs.targets)}")
         for t in self.target_specs.targets:
             logger.info(f"\t\t- {t}")
+    
+    def get_lin_variable_range(self) -> np.float64:
+        return np.float64(self.lin_variable_bounds.get_range())
+
+    def get_log_variable_range(self) -> np.float64:
+        return np.float64(self.log_variable_bounds.get_range())
         
 # ---------- Interface Dataclass ----------
 
