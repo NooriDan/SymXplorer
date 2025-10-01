@@ -26,9 +26,9 @@ project:
       min_pfet_l : 0.18u
 
       # capacitor (mim)
-      max_cap_w : 1000.0u
+      max_cap_w : 10000.0u
       min_cap_w : 1.0u
-      max_cap_l : 1000.0u
+      max_cap_l : 10000.0u
       min_cap_l : 1.0u
 
       # resistor
@@ -85,6 +85,10 @@ project:
     - name : x_dut_res_3_w
       min_val: min_res_w
       max_val: max_res_w
+    
+    - name : vbias
+      min_val: 0.0
+      max_val: 1.8
 
   testbench_params:
       name: tb_ac
@@ -102,9 +106,9 @@ project:
           val : 100p
       
   optimizer_config:
-    name: CMA
+    name: RandomSearch # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
     type: nevergrad
-    budget: 200
+    budget: 50
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
@@ -125,15 +129,15 @@ project:
       include_mag_loss: True
     
     target_specs:
-      # - name: fc
-      #   description: Center frequency # optional documentation field
-      #   target: 10e6      # 1 MHz
-      #   goal: exact       # options: exact, exceed, minimize
-      #   tolerance: 10e3   # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
-      #   sim_type: ac      # options: dc, ac, tran, noise
-      #   weight:   1.0     # [Optional] non-negative weight factor for this target, else it is 1.0
-      #   log_scale: False  # [Optional] Used to indicate the spec is on log scale
-      #   enable: True      # [Optional] Used to exclude from the loss function
+      - name: fc
+        description: Center frequency # optional documentation field
+        target: 10e6      # 1 MHz
+        goal: exact       # options: exact, exceed, minimize
+        tolerance: 100e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        sim_type: ac      # options: dc, ac, tran, noise
+        weight:   1.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        log_scale: False  # [Optional] Used to indicate the spec is on log scale
+        enable: True      # [Optional] Used to exclude from the loss function
 
       # - name: q
       #   description: quality factor # optional documentation field
@@ -151,7 +155,7 @@ project:
         goal: exceed    # options: exact, exceed, minimize
         tolerance: 1    # [Optional] allowed deviation in the spec
         sim_type: ac    # options: dc, ac, tran, noise
-        weight:   1.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
         log_scale: False # [Optional] Used to indicate the spec is on log scale
         enable: True    # [Optional] Used to exclude from the loss function
 

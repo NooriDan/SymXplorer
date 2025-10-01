@@ -18,7 +18,7 @@ _test*.ipynb
 .vscode
 
 # Python cache directories
-*/__pycache__
+**/__pycache__
 
 # Hidden files and directories
 .*

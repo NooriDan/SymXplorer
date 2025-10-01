@@ -269,25 +269,34 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
         if len(self.optimization_log) < 1:
             logger.warning("No optimization log to plot")
             return None
-        
-        if metric_x not in self.optimization_log[0]:
+
+        if metric_x not in self.optimization_log[0]['fit_summary']:
             logger.warning(f"metric_x '{metric_x}' not found in optimization log")
             return None
-        
-        if metric_y not in self.optimization_log[0]:
+
+        if metric_y not in self.optimization_log[0]['fit_summary']:
             logger.warning(f"metric_y '{metric_y}' not found in optimization log")
             return None
-        
-        x_values = torch.tensor([entry[metric_x] for entry in self.optimization_log], device=device)
-        y_values = torch.tensor([entry[metric_y] for entry in self.optimization_log], device=device)
+
+        x_values = torch.tensor([entry['fit_summary'][metric_x]['curr_val'] for entry in self.optimization_log], device=device)
+        y_values = torch.tensor([entry['fit_summary'][metric_y]['curr_val'] for entry in self.optimization_log], device=device)
+        fom      = torch.tensor([entry['metric_value'] for entry in self.optimization_log], device=device)
 
         fig = go.Figure()
+
+        # Scatter with heatmap coloring by FOM
         fig.add_trace(go.Scatter(
             x=x_values.cpu().numpy(),
             y=y_values.cpu().numpy(),
-            mode="markers+lines",
-            name="Optimization Trace",
-            line=dict(color="blue", width=2)
+            mode="markers",
+            marker=dict(
+                size=10,
+                color=fom.cpu().numpy(),   # heatmap coloring
+                colorscale="Viridis",      # you can change to "Plasma", "Cividis", etc.
+                colorbar=dict(title="FOM"),
+                showscale=True
+            ),
+            name="Optimization Trace"
         ))
 
         fig.update_layout(
@@ -295,7 +304,7 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
             xaxis_title=metric_x,
             yaxis_title=metric_y,
             template="plotly_dark",
-            showlegend=True
+            showlegend=False
         )
 
         # Save to file if requested
@@ -311,6 +320,7 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
             fig.show()
 
         return x_values, y_values
+
 
     @abstractmethod
     def plot_solution(self, parameterization: Dict[str, float], **kwargs):
@@ -540,22 +550,24 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
 
         # Iterate over each target specification
         for spec in self.target_specs.targets:
-            if spec.enable: 
-                if spec.name in performance_array and not np.isnan(performance_array[spec.name]):
-                    loss = self.compute_spec_loss(spec_curr_val=performance_array[spec.name], target_spec=spec)
-                    fitness += loss if loss < MAX_LOSS else MAX_LOSS # cap the loss to avoid overflow
-                    fit_summary[spec.name] = {
-                        "curr_val": performance_array[spec.name],
-                        "loss": fitness
-                    }
-                else:
-                    logger.critical(f"Target spec name '{spec.name}' not found in performance array keys: {list(performance_array.keys())}")
-                    logger.warning(f"assigning large loss to the {spec.name} spec")
-                    fitness += np.float64(MAX_LOSS) # assign a large loss if the spec is not found
-                    fit_summary[spec.name] = {
-                        "curr_val": None,
-                        "loss": np.float64(MAX_LOSS)
-                    }
+            spec_loss: np.float64 = np.float64(0.0)
+            # a - Compute the spec loss
+            if spec.name in performance_array and not np.isnan(performance_array[spec.name]):
+                loss = self.compute_spec_loss(spec_curr_val=performance_array[spec.name], target_spec=spec)
+                spec_loss = np.clip(loss, None, MAX_LOSS) # cap the loss to avoid overflow
+            else:
+                logger.critical(f"Target spec name '{spec.name}' not found in performance array keys: {list(performance_array.keys())}")
+                logger.warning(f"assigning large loss to the {spec.name} spec")
+                spec_loss = np.float64(MAX_LOSS) # assign a large loss if the spec is not found
+            # b - Log the spec loss
+            fit_summary[spec.name] = {
+                "curr_val": performance_array[spec.name],
+                "loss": spec_loss
+            }
+            # c - Update the overall fitness (if enabled)
+            if spec.enable:
+                fitness += spec_loss
+            
         logger.debug(f"Computed fitness: {fitness} for performance array: {performance_array}")
         return fitness, fit_summary
 
