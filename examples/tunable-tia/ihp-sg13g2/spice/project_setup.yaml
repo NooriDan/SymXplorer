@@ -3,6 +3,7 @@ project:
   name: Tunable-TIA
   description: Tunable TIA BPF example sizing in the ihp-sg13g2 technology
   simulator: ngspice
+  save_sim: False
 
   ws_root : /foss/designs/eda/SymXplorer
   # The following paths are relative to the ws_root
@@ -106,9 +107,9 @@ project:
           val : 100p
       
   optimizer_config:
-    name: RandomSearch # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
+    name: CMA # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
     type: nevergrad
-    budget: 50
+    budget: 10
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
@@ -131,7 +132,7 @@ project:
     target_specs:
       - name: fc
         description: Center frequency # optional documentation field
-        target: 10e6      # 1 MHz
+        target: 100e6     # 100 MHz
         goal: exact       # options: exact, exceed, minimize
         tolerance: 100e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
         sim_type: ac      # options: dc, ac, tran, noise
@@ -139,24 +140,25 @@ project:
         log_scale: False  # [Optional] Used to indicate the spec is on log scale
         enable: True      # [Optional] Used to exclude from the loss function
 
-      # - name: q
-      #   description: quality factor # optional documentation field
-      #   target: 10    
-      #   goal: exact   # options: exact, exceed, minimize
-      #   tolerance: 1  # [Optional] allowed deviation in the spec
-      #   sim_type: ac  # options: dc, ac, tran, noise
-      #   weight:   2.0 # [Optional] non-negative weight factor for this target, else it is 1.0
-      #   log_scale: False  # [Optional] Used to indicate the spec is on log scale
-      #   enable: True  # [Optional] Used to exclude from the loss function
+      - name: q
+        description: quality factor # optional documentation field
+        target: 10    
+        goal: exact       # options: exact, exceed, minimize
+        tolerance: 2      # [Optional] allowed deviation in the spec
+        sim_type: ac      # options: dc, ac, tran, noise
+        weight:   1.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        log_scale: False  # [Optional] Used to indicate the spec is on log scale
+        enable: False     # [Optional] Used to exclude from the loss function
 
       - name: gain_db
         description: gain in dB at fc
-        target: 10
+        target: 40      # 40 dB
         goal: exceed    # options: exact, exceed, minimize
         tolerance: 1    # [Optional] allowed deviation in the spec
         sim_type: ac    # options: dc, ac, tran, noise
         weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
         log_scale: False # [Optional] Used to indicate the spec is on log scale
+        error_type: relative-squared # [Optional] options: absolute, squared, relative-squared, relative-absolute, relative-exponential
         enable: True    # [Optional] Used to exclude from the loss function
 
   

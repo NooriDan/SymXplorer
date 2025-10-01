@@ -3,7 +3,7 @@ import numpy as np
 import logging
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union, Dict, Any
+from typing import List, Optional, Union, Dict
 from pathlib import Path
 from enum import Enum
 
@@ -38,6 +38,17 @@ class SpicePlotType(str, Enum):
     DC = "dc"
     NOISE = "noise"
 
+class Error_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    SQUARED  = "squared"
+    EXPONENTIAL = "exponential"
+    RELATIVE_ABSOLUTE = "relative-absolute"
+    RELATIVE_SQUARED  = "relative-squared"
+    RELATIVE_EXPONENTIAL = "relative-exponential"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
+
 # ------------------ Constants ------------------
 
 MULTIPLIERS = {
@@ -69,7 +80,6 @@ def parse_value(val: Union[str, float, int]) -> np.float64:
             return np.float64(float(val[:-1]) * factor)
     return np.float64(float(val))
 
-
 def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64]) -> np.float64:
     """If value is a reference to a constraint key, resolve it, else parse normally."""
     if isinstance(value, str) and value in constraints:
@@ -91,7 +101,6 @@ def safe_from_dict(cls, data: dict, logger: logging.Logger, config: Config = Con
 
 def list_target_spec_hook(data: list) -> 'ListTargetSpec':
     return ListTargetSpec([TargetSpec(**item) for item in data])
-
 
 # ---------- Core Dataclasses ----------
 
@@ -169,6 +178,7 @@ class TargetSpec:
     sim_type: Union[SimType, str]
     log_scale: bool = False
     enable: bool = True
+    error_type: Error_Types | str = Error_Types.RELATIVE_ABSOLUTE
     weight: Optional[float | np.float64] = 1.0
     tolerance: Optional[float | np.float64] = None  # if not given use 5% of target
     description: Optional[str] = None
@@ -212,6 +222,18 @@ class TargetSpec:
             )
             raise ValueError(f"Invalid sim_type '{self.sim_type}'. Must be one of {valid_sim_types}.")
 
+        # --- Validate / convert error_type ---
+        if isinstance(self.error_type, str):
+            try:
+                self.error_type = Error_Types(self.error_type.lower())
+            except ValueError:
+                valid_errors = [e.value for e in Error_Types]
+                logger.critical(
+                    f"Invalid error_type '{self.error_type}' for target '{self.name}'. "
+                    f"Must be one of {valid_errors}."
+                )
+                raise ValueError(f"Invalid error_type '{self.error_type}'. Must be one of {valid_errors}.")
+        
         # --- Tolerance fallback ---
         if isinstance(self.tolerance, str):
             self.tolerance = parse_value(self.tolerance)
@@ -268,7 +290,8 @@ class TargetSpec:
     def __str__(self) -> str:
         return (
             f"TargetSpec(name={self.name}, target={self.target}, "
-            f"tolerance={self.tolerance}, goal={self.goal}, sim_type={self.sim_type}, enable={self.enable})"
+            f"tolerance={self.tolerance}, goal={self.goal.value}, sim_type={self.sim_type.value}, enable={self.enable}, "
+            f"error_type={self.error_type.value}, weight={self.weight}, enable={self.enable}, description={self.description})"
         )
 
 @dataclass
@@ -396,6 +419,8 @@ class Project_Setup:
     dut_params: List[Param]
     testbench_params: TestbenchParams
     optimizer_config: OptimizerConfig
+    
+    save_sim:  bool = False
     
     # Miscellaneous
     logger: Optional[logging.Logger] = logger

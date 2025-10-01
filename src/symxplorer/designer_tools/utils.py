@@ -2,7 +2,9 @@ import torch
 import numpy  as np
 import control as ctrl
 import sympy  as sp
-from   typing import Dict, List, Tuple
+from   typing import Dict, Tuple
+
+from symxplorer.designer_tools.domains import OptimizationGoalType, Error_Types
 
 # Plotting Tools
 import plotly.graph_objects as go
@@ -158,6 +160,65 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
 
     return fit_summary
 
+def convert_linear_to_log(val: np.ndarray | float | np.float64) -> np.ndarray | np.float64:
+    """Converts a value from linear scale to dB (20*log10)."""
+    return 20 * np.log10(val)
+
+def convert_log_to_linear(val: np.ndarray | float | np.float64) -> np.ndarray | np.float64:
+    """Converts a value from dB (20*log10) to linear scale."""
+    return np.power(10, val/20)
+
+# ----------------------------
+# Constraints function 
+# ----------------------------
+# A - Normalized Error Functions
+def compute_relative_absolute_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(np.abs(curr_val - target_val) / normalizing_coeff)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_relative_squared_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(((curr_val - target_val) / normalizing_coeff) ** 2)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_relative_exponential_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(np.exp(np.abs(curr_val - target_val) / normalizing_coeff) - 1)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# B - Unnormalized Error Functions
+def compute_absolute_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64(np.abs(curr_val - target_val))
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_squared_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64((curr_val - target_val) ** 2)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_exponential_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64(np.exp(np.abs(curr_val - target_val)) - 1)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# Dictionary to map error types to functions
+error_compute_functions = {
+    # Unnormalized Errors
+    "absolute":     compute_absolute_error,
+    "squared":      compute_squared_error,
+    "exponential":  compute_exponential_error,
+    # Relative Errors
+    "relative-absolute":     compute_relative_absolute_error,
+    "relative-squared":      compute_relative_squared_error,
+    "relative-exponential":  compute_relative_exponential_error
+}
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# [Endpint] - Compute Error 
+def compute_error(curr_val: np.float64, target_val: np.float64, error_type: Error_Types | str, normalizing_coeff: np.float64 | None = None) -> np.float64:
+    """Computes the error between curr_val and target_val based on the specified error_type."""
+    if isinstance(error_type, str):
+        try:
+            error_type = Error_Types(error_type)
+        except ValueError:
+            raise ValueError(f"Invalid error type: {error_type}. Must be one of {[e.value for e in Error_Types]}")
+    
+    if "relative" in error_type.value:
+        if normalizing_coeff is None or normalizing_coeff <= 0:
+            raise ValueError(f"Normalizing coefficient must be provided and > 0 for relative error types. Got: {normalizing_coeff}")
+        return error_compute_functions[error_type.value](curr_val, target_val, normalizing_coeff)
+    return error_compute_functions[error_type.value](curr_val, target_val)
+
 # ----------------------------
 # norm/denorm function 
 # ----------------------------
@@ -177,7 +238,6 @@ def log_normalize(p, pmin, pmax) -> float:
     result = (log_p - log_min) / (log_max - log_min)
     return float(np.asarray(result, dtype=np.float64))
 
-
 def log_denormalize(x, pmin, pmax) -> float:
     """
     Map normalized x in [0, 1] back to physical parameter using log scaling.
@@ -193,7 +253,6 @@ def log_denormalize(x, pmin, pmax) -> float:
     result = 10.0 ** log_p
     return float(np.asarray(result, dtype=np.float64))
 
-
 def linear_normalize(p, pmin, pmax) -> float:
     """
     Linearly normalize parameter p to [0, 1] range.
@@ -205,7 +264,6 @@ def linear_normalize(p, pmin, pmax) -> float:
 
     result = (p - pmin) / (pmax - pmin)
     return float(np.asarray(result, dtype=np.float64))
-
 
 def linear_denormalize(x, pmin, pmax) -> float:
     """

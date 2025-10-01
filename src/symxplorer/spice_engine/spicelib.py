@@ -380,7 +380,7 @@ class Spicelib_Wrapper:
                 self.editor.set_parameter(key, f"{value}{RES_UNIT}")
             else:
                 self.editor.set_parameter(key, f"{value}")
-                logger.debug(f"... Parameter {key} set to {value}")
+                logger.debug(f"... Parameter {key} set to {value:.3e}")
         logger.debug(f"✅  All parameters updated successfully")
         return True
     
@@ -452,7 +452,7 @@ class Spicelib_Wrapper:
         
         # (3) Wait for the task to complete
         while task.is_alive():
-            sleep(0.05)
+            sleep(0.01)
             pass # wait so its done
 
         # (4) Get the results
@@ -484,7 +484,20 @@ class Spicelib_Wrapper:
             raise FileNotFoundError(f"Raw file not found: {raw_file}")
         
         self.curr_raw = RawRead(raw_filename=raw_file)
+    
+    def clean_up(self) -> None:
+        """Cleans up all the files generated during the simulation runs"""
+        if self.runner is None:
+            raise RuntimeError("Runner not initialized")
         
+        self.runner.cleanup_files()
+        
+        run_folder = self.output_folder / f"run_{self.counter}"
+        if run_folder.exists() and run_folder.is_dir():
+            shutil.rmtree(run_folder)
+
+        self.logger.debug(f"🧹 All simulation files cleaned up successfully {run_folder}")
+
     @classmethod
     def callback(cls, raw_file: str, log_file: str, traces_to_read: str):
         raw_read = RawRead(raw_filename=raw_file, traces_to_read=traces_to_read)

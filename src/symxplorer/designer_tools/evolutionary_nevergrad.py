@@ -13,8 +13,9 @@ from    spicelib    import RawRead
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
-from   symxplorer.designer_tools.domains    import Project_Setup, OptimizerConfig, ListTargetSpec, OptimizationGoalType, TargetSpec
-from   symxplorer.designer_tools.utils      import weighted_mse_loss, weighted_mae_loss, log_denormalize, log_normalize, linear_normalize, linear_denormalize
+from   symxplorer.designer_tools.domains    import Project_Setup, OptimizerConfig, ListTargetSpec, TargetSpec
+from   symxplorer.designer_tools.domains    import OptimizationGoalType, Error_Types
+from   symxplorer.designer_tools.utils      import compute_error, convert_log_to_linear, log_denormalize, linear_denormalize
 from   .symbolic_sizing                     import Symbolic_Sizing_Assist
 from   .utils                               import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
 
@@ -200,6 +201,72 @@ class Nevergrad_Base_Optimizer(ABC):
             logger.info("Opening interactive plot in browser...")
             fig.show()
 
+    def plot_design_space_exploration(self, param_x: str, param_y: str, save_path: Path | None = None, show: bool = False, denorm: bool = True) -> Tuple[torch.Tensor, torch.Tensor] | None:
+        """Plot the exploration of the design space in terms of two parameters with Plotly."""
+
+        if len(self.optimizer_trace) < 1:
+            logger.warning("No optimization trace to plot")
+            return None
+
+        if param_x not in self.optimizer_trace[0]['params']:
+            logger.warning(f"param_x '{param_x}' not found in optimization trace")
+            return None
+
+        if param_y not in self.optimizer_trace[0]['params']:
+            logger.warning(f"param_y '{param_y}' not found in optimization trace")
+            return None
+
+        # De-normalize
+        if denorm:
+            denormalized_params = [self.denormalize_params(entry['params']) for entry in self.optimizer_trace]
+            x_values = torch.tensor([entry[param_x] for entry in denormalized_params], device=device)
+            y_values = torch.tensor([entry[param_y] for entry in denormalized_params], device=device)
+        else:
+            x_values = torch.tensor([entry['params'][param_x] for entry in self.optimizer_trace], device=device)
+            y_values = torch.tensor([entry['params'][param_y] for entry in self.optimizer_trace], device=device)
+        
+        loss      = torch.tensor([entry['loss'] for entry in self.optimizer_trace], device=device)
+
+        
+        fig = go.Figure()
+
+        # Scatter with heatmap coloring by FOM
+        fig.add_trace(go.Scatter(
+            x=x_values.cpu().numpy(),
+            y=y_values.cpu().numpy(),
+            mode="markers",
+            marker=dict(
+                size=10,
+                color=loss.cpu().numpy(),   # heatmap coloring
+                colorscale="Viridis",      # you can change to "Plasma", "Cividis", etc.
+                colorbar=dict(title="Loss"),
+                showscale=True
+            ),
+            name="Design Space Exploration"
+        ))
+
+        fig.update_layout(
+            title=f"Design Space Exploration: {param_y} vs. {param_x}",
+            xaxis_title=param_x,
+            yaxis_title=param_y,
+            template="plotly_dark",
+            showlegend=False
+        )
+
+        # Save to file if requested
+        if save_path:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.write_html(str(save_path))
+            logger.info(f"📊 Plot saved to {save_path}")
+
+        # Optionally show interactively (browser popup)
+        if show:
+            logger.info("Opening interactive plot in browser...")
+            fig.show()
+
+        return x_values, y_values
+
 # ------------------------------------------------
 # SPICE-based Optimizers
 # ------------------------------------------------
@@ -257,12 +324,16 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
         return denorm_params
 
     # --- Helper Methods (only in child class) ---
-    def simulate_circuit(self, parameterization: Dict[str, float]) -> RawRead:
+    def simulate_circuit(self, parameterization: Dict[str, float], save_sim_override: bool = False) -> RawRead:
         logger.debug("Simulating the circuit with the given parameterization")
         self.spicelib_wrapper.update_params(parameterization=parameterization)
         curr_raw, curr_log, task_name = self.spicelib_wrapper.run_and_wait(exe_log=True)
         if curr_raw is None:
+            logger.critical("Something went wrong during simulation as no RAW file was generated")
             raise RuntimeError("Something went wrong during simulation as no RAW file was generated")
+        
+        if not self.setup_obj.save_sim and not save_sim_override:
+            self.spicelib_wrapper.clean_up()
         return curr_raw
     
     def plot_optimization_trace(self, metric_x: str, metric_y: str, save_path: Path | None = None, show: bool = False) -> Tuple[torch.Tensor, torch.Tensor] | None:
@@ -320,7 +391,6 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
             fig.show()
 
         return x_values, y_values
-
 
     @abstractmethod
     def plot_solution(self, parameterization: Dict[str, float], **kwargs):
@@ -471,7 +541,7 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
             )
 
 # ------------------------------------------------
-class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
+class Nevergrad_Spice_Multi_Spec_Constraint_Satisfaction(Nevergrad_Spice_Base_Optimizer):
     """ Nevergrad Optimizer that uses the perfomance metrics computed in SPICE simulations to size a circuit. """
     def __init__(self,
                  setup_obj: Project_Setup,
@@ -516,7 +586,7 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
     
     def plot_solution(self, parameterization: Dict[str, float], **kwargs):
 
-        raw = self.simulate_circuit(parameterization)
+        raw = self.simulate_circuit(parameterization, save_sim_override=True)
         self.spicelib_wrapper.load_raw(raw) # [Redundant but safe]
         
         performance_array = self.spicelib_wrapper.extract_scalar_variable_from_raw(self.target_specs.list_target_names())
@@ -580,16 +650,16 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
         tolerance:  np.float64 = np.float64(target_spec.tolerance)
 
         if target_spec.log_scale:
-            spec_curr_val = np.exp(spec_curr_val)
-            target_val = np.exp(target_val)
-            tolerance  = np.exp(tolerance)
+            spec_curr_val = np.float64(convert_log_to_linear(spec_curr_val))
+            target_val    = np.float64(convert_log_to_linear(target_val))
+            tolerance     = np.float64(convert_log_to_linear(tolerance))
 
         # --------------------------
         # Case 1: Exact Match
         # --------------------------
         if target_spec.goal == OptimizationGoalType.EXACT:
             if abs(spec_curr_val - target_val) > tolerance:
-                spec_loss = ((spec_curr_val - target_val)/(target_val)) ** 2
+                spec_loss = compute_error(curr_val=spec_curr_val, target_val=target_val, error_type=target_spec.error_type, normalizing_coeff=target_val)
             else:
                 spec_loss = np.float64(0.0)
         # --------------------------
@@ -597,7 +667,7 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
         # --------------------------
         elif target_spec.goal == OptimizationGoalType.EXCEED:
             if spec_curr_val < target_val - tolerance:
-                spec_loss = ((spec_curr_val  - target_val) / (target_val)) ** 2
+                spec_loss = compute_error(curr_val=spec_curr_val, target_val=target_val, error_type=target_spec.error_type, normalizing_coeff=target_val)
             elif spec_curr_val > target_val + tolerance:
                 spec_loss = np.float64(0.0) # optional... could award negative loss for exceeding the target
         # --------------------------
@@ -605,10 +675,10 @@ class Nevergrad_Spice_Multi_Spec_Optimizer(Nevergrad_Spice_Base_Optimizer):
         # --------------------------
         elif target_spec.goal == OptimizationGoalType.MINIMIZE:
             if spec_curr_val > target_val + tolerance:
-                spec_loss = (spec_curr_val - (tolerance + target_val)) ** 2
+                spec_loss = compute_error(curr_val=spec_curr_val, target_val=target_val, error_type=target_spec.error_type, normalizing_coeff=target_val)
             else:
-                # spec_loss = np.float64(0.0) 
-                spec_loss = -1 * abs(spec_curr_val - (tolerance + target_val)) # optional... could award negative loss for going below the target
+                spec_loss = np.float64(0.0) 
+
         # --------------------------
         # Case 4: Invalid Goal Type 
         # --------------------------
