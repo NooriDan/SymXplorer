@@ -38,6 +38,10 @@ project:
       max_res_l : 1000.0u
       min_res_l : 1.0u
 
+      # inductor (ideal model in schematic, but the layout model exists)
+      max_ind_size : 10n
+      min_ind_size : 1n
+
   pvt: 
     temp: 25
     corner: tt
@@ -86,7 +90,18 @@ project:
     - name : x_dut_res_3_w
       min_val: min_res_w
       max_val: max_res_w
+
+    # ------------------------
+    # Ind params
+    # ------------------------
+    - name : x_dut_ind_size
+      min_val: min_ind_size
+      max_val: max_ind_size
+
     
+    # ------------------------
+    # Voltage Bias params
+    # ------------------------
     - name : vbias
       min_val: 0.0
       max_val: 1.8
@@ -109,7 +124,7 @@ project:
   optimizer_config:
     name: CMA # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
     type: nevergrad
-    budget: 10
+    budget: 250
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
@@ -133,32 +148,45 @@ project:
       - name: fc
         description: Center frequency # optional documentation field
         target: 100e6     # 100 MHz
+        range: 1e8      # The expected variation range. used in normalizing the metric values
         goal: exact       # options: exact, exceed, minimize
-        tolerance: 100e3  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        tolerance: 10e6  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
         sim_type: ac      # options: dc, ac, tran, noise
-        weight:   1.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
         log_scale: False  # [Optional] Used to indicate the spec is on log scale
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True      # [Optional] Used to exclude from the loss function
 
       - name: q
         description: quality factor # optional documentation field
         target: 10    
         goal: exact       # options: exact, exceed, minimize
+        range: 10        # The expected variation range. used in normalizing the metric values
         tolerance: 2      # [Optional] allowed deviation in the spec
         sim_type: ac      # options: dc, ac, tran, noise
-        weight:   1.0     # [Optional] non-negative weight factor for this target, else it is 1.0
-        log_scale: False  # [Optional] Used to indicate the spec is on log scale
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
         enable: False     # [Optional] Used to exclude from the loss function
 
       - name: gain_db
         description: gain in dB at fc
         target: 40      # 40 dB
+        range: 100     # The expected variation range. used in normalizing the metric values
         goal: exceed    # options: exact, exceed, minimize
-        tolerance: 1    # [Optional] allowed deviation in the spec
+        tolerance: 5    # [Optional] allowed deviation in the spec
         sim_type: ac    # options: dc, ac, tran, noise
-        weight:   1.0  # [Optional] non-negative weight factor for this target, else it is 1.0
-        log_scale: False # [Optional] Used to indicate the spec is on log scale
-        error_type: relative-exponential # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
+        enable: True    # [Optional] Used to exclude from the loss function
+
+      - name: pm
+        description: phase margin
+        target: 70     # in degrees
+        range: 45      # The expected variation range. used in normalizing the metric values
+        goal: exact    # options: exact, exceed, minimize
+        tolerance: 10  # [Optional] allowed deviation in the spec
+        sim_type: ac   # options: dc, ac, tran, noise
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True    # [Optional] Used to exclude from the loss function
 
   

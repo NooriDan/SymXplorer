@@ -77,9 +77,10 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-1-ideal-ind
     let gain_db = 20 * log(GMAX) / log(10)
     print BW Q gain_db
     *meas ac A0 find vout_mag at=1k
-    meas ac PM find vout_phase when vout_mag=1
+    meas ac unity_gain_f find vout_phase when vout_mag=1
     meas ac UGF when vout_mag=1 fall=1
-
+    let PM = (180-unity_gain_f) % 180
+    print PM
     echo (3) plotting...
     plot vout_mag
 

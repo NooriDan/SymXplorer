@@ -3,7 +3,7 @@ import numpy as np
 import logging
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Any
 from pathlib import Path
 from enum import Enum
 
@@ -45,6 +45,7 @@ class Error_Types(str, Enum):
     RELATIVE_ABSOLUTE = "relative-absolute"
     RELATIVE_SQUARED  = "relative-squared"
     RELATIVE_EXPONENTIAL = "relative-exponential"
+    RELATIVE_SIGMOID = "relative-sigmoid"
 
     def is_relative(self) -> bool:
         return "relative" in self.value
@@ -116,7 +117,6 @@ class TechSpec:
                 self.constraints[key] = parse_value(val)
                 logger.debug(f"Parsed constraint '{key}': '{val}' to {self.constraints[key]}")
 
-
 @dataclass
 class PVT:
     temp:   float
@@ -169,7 +169,6 @@ class TestbenchParams:
     name: str
     params: List[Param]
 
-
 @dataclass
 class TargetSpec:
     name: str
@@ -178,7 +177,8 @@ class TargetSpec:
     sim_type: Union[SimType, str]
     log_scale: bool = False
     enable: bool = True
-    error_type: Error_Types | str = Error_Types.RELATIVE_ABSOLUTE
+    range: Union[np.float64, float, str | None] = None
+    error_type: Union[Error_Types, str] = Error_Types.RELATIVE_ABSOLUTE
     weight: Optional[float | np.float64] = 1.0
     tolerance: Optional[float | np.float64] = None  # if not given use 5% of target
     description: Optional[str] = None
@@ -234,6 +234,9 @@ class TargetSpec:
                 )
                 raise ValueError(f"Invalid error_type '{self.error_type}'. Must be one of {valid_errors}.")
         
+        # --- Validate / convert range ---
+        self.range = np.float64(self.range)
+
         # --- Tolerance fallback ---
         if isinstance(self.tolerance, str):
             self.tolerance = parse_value(self.tolerance)
@@ -289,7 +292,7 @@ class TargetSpec:
     
     def __str__(self) -> str:
         return (
-            f"TargetSpec(name={self.name}, target={self.target}, "
+            f"TargetSpec(name={self.name}, target={self.target}, range={self.range:.2e} "
             f"tolerance={self.tolerance}, goal={self.goal.value}, sim_type={self.sim_type.value}, enable={self.enable}, "
             f"error_type={self.error_type.value}, weight={self.weight}, enable={self.enable}, description={self.description})"
         )
@@ -538,3 +541,12 @@ DECITE_CONFIG = Config(
         ListTargetSpec: list_target_spec_hook
     }
 )
+
+# ------------------ Optimizer Objects ------------------
+@dataclass
+class OptimizationLogEntry:
+    """Represents a single entry in the optimization log."""
+    metric_value: Optional[float | np.float64]       # Can be None or a numeric metric
+    fit_summary: Dict[str, Any]         # Depends on your optimizer output (could refine type)
+    params: Optional[Dict[str, np.float64]]    # Parameter set used in this run
+    log: Optional[str | Path]                  # Any log/debug info
