@@ -1,0 +1,1 @@
+this is the repo containing the xschem design for 5 transistor OTA design.
