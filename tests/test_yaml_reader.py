@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # ----------------------------
     # Instantiation
     # ----------------------------
-    project = Project_Setup.from_yaml(project_setup_yaml)
+    project = Project_Setup.load(project_setup_yaml)
 
     # ----------------------------
     # Getter Methods

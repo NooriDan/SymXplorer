@@ -1,4 +1,5 @@
 import logging
+import json
 import torch
 import numpy        as np
 import sympy        as sp
@@ -10,11 +11,15 @@ from    tqdm        import tqdm
 from    abc         import ABC, abstractmethod
 from    pathlib     import Path
 from    spicelib    import RawRead
+from    dacite      import from_dict, Config
+from    dataclasses import asdict, is_dataclass
+from    datetime    import datetime
+
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
 from   symxplorer.designer_tools.domains    import Project_Setup, OptimizerConfig, ListTargetSpec, TargetSpec
-from   symxplorer.designer_tools.domains    import OptimizationGoalType, Error_Types
+from   symxplorer.designer_tools.domains    import OptimizationGoalType, OptimizationPoint, OptimizationLogEntry, Error_Types
 from   symxplorer.designer_tools.utils      import compute_error, convert_linear_to_log, log_denormalize, linear_denormalize
 from   .symbolic_sizing                     import Symbolic_Sizing_Assist
 from   .utils                               import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
@@ -34,6 +39,8 @@ logger.info(f'Using device: {device} and dtype: {dtype}')
 # --- Global Constants ---
 # ----------------------------
 MAX_LOSS = np.float64(1e12) # The maximum loss used when a trial does not have a performance metric in it.
+CHECKPOINT_SCHEMA_VERSION = "1.0.0"
+
 
 # ----------------------------
 # --- Class Definitions ---
@@ -47,7 +54,7 @@ class Nevergrad_Base_Optimizer(ABC):
         self.optimizer_config = optimizer_config
         # The following Properties are instantiated by the class
         self.optimizer: ng.optimization.base.Optimizer | None = None
-        self.optimizer_trace: List[Dict[str, Any]] = []
+        self.optimizer_trace: List[OptimizationPoint] = []
         self.loss_values : List[float] = []
         self.global_best_index: int = 0 # the index of the global best solution
         self.parametrization: ng.p.Dict | None = None
@@ -60,6 +67,9 @@ class Nevergrad_Base_Optimizer(ABC):
             logger.critical("NEED TO CALL self.parameterize")
             return False
         
+        if self.optimizer_config.random_seed is not None:
+            self.parametrization.random_state = np.random.RandomState(self.optimizer_config.random_seed)
+
         registry = ng.optimizers.registry.get(self.optimizer_config.name)
         if registry is not None:
             self.optimizer = registry(parametrization=self.parametrization, budget=self.optimizer_config.budget)
@@ -86,7 +96,7 @@ class Nevergrad_Base_Optimizer(ABC):
     def compute_fitness(self, performance_array: Dict[str, np.float64 | torch.Tensor]) -> Tuple[np.float64, Dict[str, Any]]:
         pass
 
-    def optimize(self, render_optimization_trace: bool = False) -> List[Dict[str, Any]] | None:
+    def optimize(self, render_optimization_trace: bool = False) -> List[OptimizationPoint] | None:
         """Run the optimization process for a given budget and returns the optimization trace as 
         a list of (parameterization, loss) tuples"""
 
@@ -114,15 +124,12 @@ class Nevergrad_Base_Optimizer(ABC):
             self.optimizer.tell(candidate, curr_loss)
             
             # Log the achieved loss
-            self.optimizer_trace.append({
-                "params" : candidate.value, 
-                "loss" : curr_loss,
-                "metadata": metadata
-                })
+            self.optimizer_trace.append(OptimizationPoint(params=candidate.value, loss=curr_loss, metadata=metadata))
+
             logger.debug(f"Trial {trial+1}/{self.optimizer_config.budget} COMPLETED with loss: {curr_loss:.4f}")
 
             # Update the index of the global best solution (lowest loss)
-            if curr_loss < self.optimizer_trace[self.global_best_index]["loss"]:
+            if curr_loss < self.optimizer_trace[self.global_best_index].loss:
                 self.global_best_index = trial
                 logger.info(f"a New fit was found... trial {trial} loss {curr_loss:.2f}")
         
@@ -132,7 +139,7 @@ class Nevergrad_Base_Optimizer(ABC):
         logger.info("Optimization process completed.")
         return self.optimizer_trace
     
-    def get_best_params(self) -> Tuple[Dict[str, float], float, Dict[str, Any]] | None:
+    def get_best_params(self, verbose: bool = False) -> Tuple[Dict[str, float], float, Dict[str, Any]] | None:
         """Retrieve the best parameters and corresponding loss from the optimization trace."""
         
         if self.optimizer is None:
@@ -143,14 +150,15 @@ class Nevergrad_Base_Optimizer(ABC):
             return
         
         point = self.optimizer_trace[self.global_best_index]
-        best_solution : ng.p.Parameter = point['params']
-        loss : float = point['loss']
+        best_solution : ng.p.Parameter = point.params
+        loss : float = point.loss
 
-        # logger.info("Optimized x - normalized:", best_solution)
-        # logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
+        if verbose:
+            logger.info("Optimized x - normalized:", best_solution)
+            logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
         logger.info(f"best loss: {float(loss)}")
 
-        return self.denormalize_params(best_solution), loss, point['metadata']
+        return self.denormalize_params(best_solution), loss, point.metadata
     
     def plot_loss(self, save_path: Path | None = None, show: bool = False):
         """Plot the loss as a function of optimization steps with Plotly."""
@@ -160,7 +168,7 @@ class Nevergrad_Base_Optimizer(ABC):
             logger.warning("No optimization trace to plot")
             return
 
-        loss_values = [entry["loss"] for entry in self.optimizer_trace]
+        loss_values = [entry.loss for entry in self.optimizer_trace]
         x_values = list(range(len(loss_values)))
 
         # Compute running best (cumulative minimum)
@@ -219,24 +227,24 @@ class Nevergrad_Base_Optimizer(ABC):
             logger.warning("No optimization trace to plot")
             return None
 
-        if param_x not in self.optimizer_trace[0]['params']:
+        if param_x not in self.optimizer_trace[0].params:
             logger.warning(f"param_x '{param_x}' not found in optimization trace")
             return None
 
-        if param_y not in self.optimizer_trace[0]['params']:
+        if param_y not in self.optimizer_trace[0].params:
             logger.warning(f"param_y '{param_y}' not found in optimization trace")
             return None
 
         # De-normalize
         if denorm:
-            denormalized_params = [self.denormalize_params(entry['params']) for entry in self.optimizer_trace]
+            denormalized_params = [self.denormalize_params(entry.params) for entry in self.optimizer_trace]
             x_values = torch.tensor([entry[param_x] for entry in denormalized_params], device=device)
             y_values = torch.tensor([entry[param_y] for entry in denormalized_params], device=device)
         else:
-            x_values = torch.tensor([entry['params'][param_x] for entry in self.optimizer_trace], device=device)
-            y_values = torch.tensor([entry['params'][param_y] for entry in self.optimizer_trace], device=device)
+            x_values = torch.tensor([entry.params[param_x] for entry in self.optimizer_trace], device=device)
+            y_values = torch.tensor([entry.params[param_y] for entry in self.optimizer_trace], device=device)
         
-        loss      = torch.tensor([entry['loss'] for entry in self.optimizer_trace], device=device)
+        loss      = torch.tensor([entry.loss for entry in self.optimizer_trace], device=device)
 
         
         fig = go.Figure()
@@ -298,7 +306,7 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
         self.setup_obj = setup_obj
         self.spicelib_wrapper = spicelib_wrapper
 
-        self.optimization_log : List[Dict[str, Any]] = []
+        self.optimization_log : List[OptimizationLogEntry] = []
     
     # --- Overwriting Some Abstract Methods ---
     def parameterize(self) -> ng.p.Dict:
@@ -338,6 +346,53 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
 
         return denorm_params
 
+    def save_checkpoint(self, name: str | Path) -> None:
+        """Save optimizer state to JSON with schema versioning."""
+        
+        # Clean up optimization log
+        cleaned_optimization_log = []
+        for e in self.optimization_log:
+            if not isinstance(e.log, str):
+                e.log = str(e.log)
+            cleaned_optimization_log.append(asdict(e))
+
+        checkpoint = {
+            "schema_version": CHECKPOINT_SCHEMA_VERSION,
+            "timestamp": datetime.now().isoformat(),
+            "optimization_log": cleaned_optimization_log,
+        }
+
+        path = Path(name).with_suffix(".json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, "w") as f:
+            json.dump(checkpoint, f, indent=2)
+        logger.info(f"✅ Checkpoint saved to {path}")
+
+    @classmethod
+    def load_checkpoint(cls, setup_obj: Project_Setup, spicelib_wrapper: Spicelib_Wrapper, path_to_checkpoint: str | Path) -> "Nevergrad_Spice_Base_Optimizer":
+        """Load optimizer and project setup from JSON checkpoint with version validation."""
+        path = Path(path_to_checkpoint)
+        with open(path, "r") as f:
+            data = json.load(f)
+
+        # Validate schema version
+        version = data.get("schema_version")
+        if version != CHECKPOINT_SCHEMA_VERSION:
+            logger.warning(f"⚠️ Checkpoint version mismatch: {version} != {CHECKPOINT_SCHEMA_VERSION}")
+
+        # Recreate optimizer instance
+        obj = cls(setup_obj=setup_obj, spicelib_wrapper=spicelib_wrapper)
+
+        # Rebuild optimization log
+        obj.optimization_log = [
+            from_dict(OptimizationLogEntry, entry, Config(strict=False))
+            for entry in data.get("optimization_log", [])
+        ]
+
+        logger.info(f"✅ Checkpoint loaded successfully from {path}")
+        return obj
+    
     # --- Helper Methods (only in child class) ---
     def simulate_circuit(self, parameterization: Dict[str, float], save_sim_override: bool = False) -> RawRead:
         logger.debug("Simulating the circuit with the given parameterization")
@@ -357,17 +412,17 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
             logger.warning("No optimization log to plot")
             return None
 
-        if metric_x not in self.optimization_log[0]['fit_summary']:
+        if metric_x not in self.optimization_log[0].fit_summary:
             logger.warning(f"metric_x '{metric_x}' not found in optimization log")
             return None
 
-        if metric_y not in self.optimization_log[0]['fit_summary']:
+        if metric_y not in self.optimization_log[0].fit_summary:
             logger.warning(f"metric_y '{metric_y}' not found in optimization log")
             return None
 
-        x_values = torch.tensor([entry['fit_summary'][metric_x]['curr_val'] for entry in self.optimization_log], device=device)
-        y_values = torch.tensor([entry['fit_summary'][metric_y]['curr_val'] for entry in self.optimization_log], device=device)
-        fom      = torch.tensor([entry['metric_value'] for entry in self.optimization_log], device=device)
+        x_values = torch.tensor([entry.fit_summary[metric_x]['curr_val'] for entry in self.optimization_log], device=device)
+        y_values = torch.tensor([entry.fit_summary[metric_y]['curr_val'] for entry in self.optimization_log], device=device)
+        fom      = torch.tensor([entry.metric_value for entry in self.optimization_log], device=device)
 
         fig = go.Figure()
 
@@ -418,13 +473,13 @@ class Nevergrad_Spice_Base_Optimizer(Nevergrad_Base_Optimizer):
             logger.warning("No optimization log to plot")
             return
 
-        if spec_name not in self.optimization_log[0]['fit_summary']:
+        if spec_name not in self.optimization_log[0].fit_summary:
             logger.warning(f"spec_name '{spec_name}' not found in optimization log")
             return
 
         # Extract values from optimization log
-        spec_values = [entry['fit_summary'][spec_name]['curr_val'] for entry in self.optimization_log]
-        loss_values = [entry['fit_summary'][spec_name]['loss'] for entry in self.optimization_log]
+        spec_values = [entry.fit_summary[spec_name]['curr_val'] for entry in self.optimization_log]
+        loss_values = [entry.fit_summary[spec_name]['loss'] for entry in self.optimization_log]
         
         logger.info(f"\tmin loss {min(loss_values)}; max loss {max(loss_values)}")
         
@@ -552,14 +607,20 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
         mag_loss   = fit_summary['mag_loss']
         phase_loss = fit_summary['phase_loss']
         
-        self.optimization_log.append({
-            "complex_response": current_complex_response,
-            "mag_loss": np.float64(mag_loss),
-            "phase_loss": np.float64(phase_loss),
-            "max_mag": np.float64(fit_summary['curr_max_mag']),
-            "bode_fitting_loss": np.float64(metric_value),
-            "params": parameterization
-        })
+        self.optimization_log.append(
+            OptimizationLogEntry(
+                params=parameterization, 
+                metric_value=np.float64(metric_value),
+                fit_summary={
+                    "mag_loss": np.float64(mag_loss),
+                    "phase_loss": np.float64(phase_loss),
+                    "max_mag": np.float64(fit_summary['curr_max_mag'])
+                }, 
+                metadata={"complex_response": current_complex_response},
+                log=None
+                )
+            )
+
 
         logger.debug(f"finished the trial evaluation.... summary")
         logger.debug(f"\tmetric_value = {metric_value}")
@@ -682,12 +743,12 @@ class Nevergrad_Spice_Multi_Spec_Constraint_Satisfaction(Nevergrad_Spice_Base_Op
 
         # --- Log results ---
         
-        self.optimization_log.append({
-            "metric_value": metric_value,
-            "fit_summary": fit_summary,
-            "params": parameterization,
-            "log": self.spicelib_wrapper.curr_log
-        })
+        self.optimization_log.append(OptimizationLogEntry(
+            metric_value=metric_value, 
+            fit_summary=fit_summary, 
+            params=parameterization, 
+            log=self.spicelib_wrapper.curr_log
+            ))
 
         logger.debug(f"finished the trial evaluation.... summary")
         logger.debug(f"\tmetric_value = {metric_value}")
@@ -751,7 +812,6 @@ class Nevergrad_Spice_Multi_Spec_Constraint_Satisfaction(Nevergrad_Spice_Base_Op
         logger.debug(f"Computed fitness: {fitness} for performance array: {performance_array}")
         return fitness, fit_summary
 
-    
     # --- Helper Methods (only in child class) ---
     def compute_spec_loss(self, curr_val: np.float64 | float, target_spec: TargetSpec) -> np.float64:
         """ Compute the loss for a single performance specification. """

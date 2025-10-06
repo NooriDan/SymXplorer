@@ -1,6 +1,7 @@
 import yaml
 import numpy as np
 import logging
+from datetime import datetime
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict, Any
@@ -81,10 +82,10 @@ def parse_value(val: Union[str, float, int]) -> np.float64:
             return np.float64(float(val[:-1]) * factor)
     return np.float64(float(val))
 
-def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64]) -> np.float64:
+def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64 | float]) -> np.float64:
     """If value is a reference to a constraint key, resolve it, else parse normally."""
     if isinstance(value, str) and value in constraints:
-        return constraints[value]
+        return np.float64(constraints[value])
     return parse_value(value)
 
 def safe_from_dict(cls, data: dict, logger: logging.Logger, config: Config = Config(cast=[Enum])):
@@ -109,7 +110,7 @@ def list_target_spec_hook(data: list) -> 'ListTargetSpec':
 class TechSpec:
     """Process technology (PDK) specification with constraints on device parameters."""
     name: str
-    constraints: Dict[str, np.float64 | str] = field(default_factory=dict)
+    constraints: Dict[str, np.float64 | float | str] = field(default_factory=dict)
 
     def __post_init__(self):
         for key, val in self.constraints.items():
@@ -424,9 +425,6 @@ class Project_Setup:
     optimizer_config: OptimizerConfig
     
     save_sim:  bool = False
-    
-    # Miscellaneous
-    logger: Optional[logging.Logger] = logger
 
     def __post_init__(self):
         # correct path types
@@ -437,11 +435,10 @@ class Project_Setup:
         if isinstance(self.outdir, str):
             self.outdir = Path(self.outdir)
         # Log basic info
-        if self.logger is not None:
-            self.logger.info(f"Project '{self.name}' initialized with simulator '{self.simulator}'")
-            self.logger.info(f"\tWorkspace root: {self.ws_root}")
-            self.logger.info(f"\tNetlist path: {self.netlist}")
-            self.logger.info(f"\tOutput directory: {self.outdir}")
+        logger.info(f"Project '{self.name}' initialized with simulator '{self.simulator}'")
+        logger.info(f"\tWorkspace root: {self.ws_root}")
+        logger.info(f"\tNetlist path: {self.netlist}")
+        logger.info(f"\tOutput directory: {self.outdir}")
 
     # ------------------ Class Methods ------------------
 
@@ -449,18 +446,13 @@ class Project_Setup:
     def from_yaml(cls, yaml_path: Union[str, Path]) -> "Project_Setup":
         """Load a Project object from a YAML file with variable resolution."""
         
-        logger.info(f"📂 Loading project setup from {yaml_path}")
         try:
             with open(yaml_path, "r") as f:
                 data = yaml.safe_load(f)
             logger.debug(f"YAML content successfully loaded: {list(data.keys())}")
 
-            project = safe_from_dict(
-                cls,
-                data['project'],
-                logger,
-                config=DECITE_CONFIG
-            )
+            project = safe_from_dict(cls, data['project'], logger, config=DECITE_CONFIG)
+            
             # Resolve constraints in tech_spec
             project.resolve_all_parameter_ranges()
 
@@ -485,55 +477,55 @@ class Project_Setup:
         """Resolve all parameter min/max/default values based on tech_spec constraints."""
         for param in self.dut_params:
             if param.needs_resolution():
-                self.logger.info(f"Resolving ranges for param '{param.name}'")
+                logger.info(f"Resolving ranges for param '{param.name}'")
                 param.resolve_min_max(self.tech_spec.constraints)
-                self.logger.debug(f"Resolved param '{param.name}': min={param.min_val}, max={param.max_val}, default={param.val}")
+                logger.debug(f"Resolved param '{param.name}': min={param.min_val}, max={param.max_val}, default={param.val}")
             
     def get_constraint_by_name(self, name: str) -> Optional[np.float64]:
         value = self.tech_spec.constraints.get(name)
-        self.logger.debug(f"Constraint '{name}': {value}")
+        logger.debug(f"Constraint '{name}': {value}")
         return value
 
     def list_constraints(self) -> Dict[str, np.float64]:
-        self.logger.debug(f"Listing all constraints: {self.tech_spec.constraints}")
+        logger.debug(f"Listing all constraints: {self.tech_spec.constraints}")
         return self.tech_spec.constraints
 
     def get_param_by_name(self, name: str) -> Optional[Param]:
         for p in self.dut_params:
             if p.name == name:
-                # self.logger.debug(f"Found DUT param: {p}")
+                # logger.debug(f"Found DUT param: {p}")
                 return p
-        self.logger.warning(f"DUT param '{name}' not found")
+        logger.warning(f"DUT param '{name}' not found")
         return None
 
     def list_params(self) -> List[str]:
         param_names = [p.name for p in self.dut_params]
-        self.logger.debug(f"DUT param names: {param_names}")
+        logger.debug(f"DUT param names: {param_names}")
         return param_names
 
     def get_log_scaled_params(self) -> List[Param]:
         log_params = [p for p in self.dut_params if p.log_scale]
-        self.logger.debug(f"Log-scaled params: {[p.name for p in log_params]}")
+        logger.debug(f"Log-scaled params: {[p.name for p in log_params]}")
         return log_params
 
     def filter_params_by_range(self, min_value: float, max_value: float) -> List[Param]:
         filtered = [p for p in self.dut_params if p.val is not None and min_value <= p.val <= max_value]
-        self.logger.debug(f"Params in range {min_value}-{max_value}: {[p.name for p in filtered]}")
+        logger.debug(f"Params in range {min_value}-{max_value}: {[p.name for p in filtered]}")
         return filtered
 
     def summary(self) -> None:
-        self.logger.info("========== Project Setup Summary ==========")
-        self.logger.info(f"📂 Project: {self.name}")
-        self.logger.info(f"📝 Description: {self.description}")
-        self.logger.info(f"🧠 Simulator: {self.simulator}")
-        self.logger.info(f"📜 Netlist: {self.netlist}")
-        self.logger.info(f"⚙️  PVT: temp={self.pvt.temp}, corner={self.pvt.corner}, supply={self.pvt.supply}")
-        self.logger.info(f"🔧 Tech Spec: {len(self.tech_spec.constraints)} constraints")
+        logger.info("========== Project Setup Summary ==========")
+        logger.info(f"📂 Project: {self.name}")
+        logger.info(f"📝 Description: {self.description}")
+        logger.info(f"🧠 Simulator: {self.simulator}")
+        logger.info(f"📜 Netlist: {self.netlist}")
+        logger.info(f"⚙️  PVT: temp={self.pvt.temp}, corner={self.pvt.corner}, supply={self.pvt.supply}")
+        logger.info(f"🔧 Tech Spec: {len(self.tech_spec.constraints)} constraints")
         for k, v in self.tech_spec.constraints.items():
-            self.logger.info(f"   • {k}: {v:.2e}")
-        self.logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
-        self.logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_specs.targets]}")
-        self.logger.info("===========================================")
+            logger.info(f"   • {k}: {v:.2e}")
+        logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
+        logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_specs.targets]}")
+        logger.info("===========================================")
 
 # ------------------ Dacite Config ------------------
 DECITE_CONFIG = Config(
@@ -546,7 +538,14 @@ DECITE_CONFIG = Config(
 @dataclass
 class OptimizationLogEntry:
     """Represents a single entry in the optimization log."""
-    metric_value: Optional[float | np.float64]       # Can be None or a numeric metric
-    fit_summary: Dict[str, Any]         # Depends on your optimizer output (could refine type)
-    params: Optional[Dict[str, np.float64]]    # Parameter set used in this run
-    log: Optional[str | Path]                  # Any log/debug info
+    fit_summary: Dict[str, Any] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
+    metric_value: Optional[float | np.float64] = None           # Can be None or a numeric metric
+    params: Optional[Dict[str, np.float64 | float]] = None      # Parameter set used in this run
+    log: Optional[str | Path] = None                                   # Any log/debug info
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict) # to add any other information
+
+@dataclass
+class OptimizationPoint:
+    params: Dict[str, float | np.float64]
+    loss: float | np.float64
+    metadata: Dict[str, Any]

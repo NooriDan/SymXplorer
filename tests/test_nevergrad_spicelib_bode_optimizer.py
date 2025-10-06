@@ -29,7 +29,7 @@ if __name__ == "__main__":
     target_tf   = filter_inst.get_tf()
 
     # (1) Load the project setup information
-    PROJECT_SETUP = Project_Setup.from_yaml(project_setup_yaml)
+    PROJECT_SETUP = Project_Setup.load(project_setup_yaml)
 
     # (2) Create the Spice Simulator Wrapper
     wrapper = Spicelib_Wrapper(

@@ -40,5 +40,5 @@ examples/tunable-tia/docs/ECE748 Final Project.pdf
 .DS_Store
 
 # Simulation outputs
-examples/tunable-tia/**/*.raw
-examples/5t-ota/**/*.raw
+examples/**/sizing/**/*.raw
+examples/**/sizing/**/*.spice

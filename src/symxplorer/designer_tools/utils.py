@@ -223,6 +223,7 @@ def compute_error(curr_val: np.float64, target_val: np.float64, error_type: Erro
 
     if "relative" in error_type.value:
         if normalizing_coeff is None or normalizing_coeff <= 0:
+            logger.error(f"Normalizing coefficient must be provided and > 0 for relative error types. Got: {normalizing_coeff}")
             raise ValueError(f"Normalizing coefficient must be provided and > 0 for relative error types. Got: {normalizing_coeff}")
         return error_compute_functions[error_type](curr_val, target_val, normalizing_coeff)
     return error_compute_functions[error_type](curr_val, target_val)

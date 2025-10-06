@@ -3,7 +3,7 @@ project:
   name: 5T-OTA
   description: 5 Transistor OTA example sizing in the ihp-sg13g2 technology
   simulator: ngspice
-  save_sim: True
+  save_sim: False
 
   ws_root : /foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/
   # The following paths are relative to the ws_root
@@ -68,19 +68,11 @@ project:
         - name : icm
           description : input common mode current
           val : 0.5e-6
-        
-        - name : vbias
-          description : bias voltage for the TIA, controling its gm
-          val : 0.25
-        
-        - name : cload
-          description : load capacitence
-          val : 100p
       
   optimizer_config:
     name: TwoPointsDE # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
     type: nevergrad
-    budget: 100
+    budget: 10
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
