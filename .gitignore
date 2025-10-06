@@ -41,6 +41,4 @@ examples/tunable-tia/docs/ECE748 Final Project.pdf
 
 # Simulation outputs
 examples/tunable-tia/**/*.raw
-
 examples/5t-ota/**/*.raw
-
