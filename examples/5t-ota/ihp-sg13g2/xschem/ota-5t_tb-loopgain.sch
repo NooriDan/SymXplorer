@@ -1,4 +1,4 @@
-v {xschem version=3.4.6 file_version=1.2}
+v {xschem version=3.4.7 file_version=1.2}
 G {}
 K {}
 V {}
@@ -120,56 +120,115 @@ C {devices/code_shown.sym} 20 -150 0 0 {name=MODEL only_toplevel=true
 format="tcleval( @value )"
 value=".lib cornerMOSlv.lib mos_tt
 "}
-C {devices/code_shown.sym} 20 -1170 0 0 {name=NGSPICE
+C {devices/code.sym} 30 -550 0 0 {name=NGSPICE
 only_toplevel=true
 value="
+
 .param temp=27
-.options savecurrents reltol=1e-3 abstol=1e-12 gmin=1e-15
+.options savecurrents
+.options reltol=1e-3 abstol=1e-12 gmin=1e-15
+
 .control
-save all
 
-* Operating Point Analysis
-op
-remzerovec
-write ota-5t_tb-loopgain.raw
-set appendwrite
+    echo ==================================
+    echo start of Control
+    echo ==================================
+    
+    save all
 
-* AC Analysis
-ac dec 101 1 100G
-remzerovec
-write ota-5t_tb-loopgain.raw
-set appendwrite
+    echo
+    echo (A) start of OP
+    echo ----------------------------------
 
-* Middlebrook's Method
-let tv=-v(vr1)/v(vf1)
-let ti=-i(vir1)/i(vif1)
-let tmb=(tv*ti - 1)/(tv + ti + 2)
+    * Operating Point Analysis (not needed in the optimization... could be turned on but it is turned off to save sim time)
+    op
+    remzerovec
+    write
+    set appendwrite
 
-plot db(tmb) ylabel 'Magnitude - Middlebrook'
-plot 180/pi*cphase(tmb) ylabel 'Phase - Middlebrook'
+    echo
+    echo (B) start of AC Sim
+    echo ----------------------------------
 
-* Tian's Method
-* vtest=0, itest=1:
-let A=i(Vimeas2)
-let C=v(vmeas2)
+    * save the vectors needed in the post-processing (optional - to improve speed... should not use 'save all')
+    save vr1 vf1 vir1 vif1 vmeas2 Vimeas2 vmeas1 Vimeas1
 
-* vtest=1, itest=0:
-let B=i(Vimeas1)
-let D=v(vmeas1)
-let ttian=(A*D-B*C-A)/(2*(B*C-A*D)+A-D+1)
+    * AC Analysis
+    ac dec 101 1 100G
 
-plot db(ttian) ylabel 'Magnitude - Tian'
-plot 180/pi*cphase(ttian) ylabel 'Phase - Tian'
+    echo (1) performing Middlebrook's Method
 
-* Middlebrook vs. Tian
-plot db(tmb) db(ttian) ylabel 'Magnitude'
-plot 180/pi*cphase(tmb) 180/pi*cphase(ttian) ylabel 'Phase'
+    * Middlebrook's Method
+    let tv=-v(vr1)/v(vf1)
+    let ti=-i(vir1)/i(vif1)
+    let tmb=(tv*ti - 1)/(tv + ti + 2)
 
-write ota-5t_tb-loopgain.raw
+    *plot db(tmb) ylabel 'Magnitude - Middlebrook'
+    *plot 180/pi*cphase(tmb) ylabel 'Phase - Middlebrook'
 
-*quit
+    echo (2) performing Tian's Method
+
+    * Tian's Method
+    * vtest=0, itest=1:
+    let A=i(Vimeas2)
+    let C=v(vmeas2)
+
+    * vtest=1, itest=0:
+    let B=i(Vimeas1)
+    let D=v(vmeas1)
+    let ttian=(A*D-B*C-A)/(2*(B*C-A*D)+A-D+1)
+
+    *plot db(ttian) ylabel 'Magnitude - Tian'
+    *plot 180/pi*cphase(ttian) ylabel 'Phase - Tian'
+
+
+    echo (3) measuring performance metrics
+
+    * magnitude
+    let out = tmb
+    let out_mag = db(out)
+    let out_phase = cphase(tmb) * 180/pi
+
+    meas ac GMAX max out_mag
+
+    meas ac DCGAIN MAX out_mag FROM=10 TO=10k
+
+    let f3db = DCGAIN-3
+    meas ac FBW WHEN out_mag=f3db FALL=1
+
+    meas ac unity_gain_phase find out_phase when out_mag=0
+    meas ac UGF when out_mag=0 fall=1
+
+    let PM = (180-unity_gain_phase) % 180
+    print DCGAIN FBW PM UGF 
+
+    * Output measured metrics to a file (optional)
+    * print DCGAIN FBW PM UGF > meas_results.txt
+
+    echo (4) plotting...
+
+    * Middlebrook vs. Tian
+    plot db(tmb) db(ttian) ylabel 'Magnitude'
+    plot 180/pi*cphase(tmb) 180/pi*cphase(ttian) ylabel 'Phase'
+
+    echo ----------------------------------
+    echo END of AC sim
+    echo  ----------------------------------
+
+    echo SAVING SIMULATION RESULTS IN THE RAW FILE
+    * save out DCGAIN PM FBW UGF
+    write
+
+    echo ==================================
+    echo END of Control
+    echo ==================================
+
+    * quit
+
 .endc
-"}
+
+"
+}
 C {devices/title.sym} 160 -30 0 0 {name=l5 author="(c) 2024 H. Pretl, S. Dorrer, Apache-2.0 license"}
 C {devices/launcher.sym} 750 -480 0 0 {name=h2
 descr="Annotate OP" 
@@ -237,3 +296,17 @@ C {devices/isource.sym} 1860 -750 2 1 {name=Itest2 value="dc 0 ac 1"}
 C {devices/vsource.sym} 1930 -840 3 0 {name=Vtest3 value="dc 0 ac 0"}
 C {devices/lab_wire.sym} 1900 -800 2 0 {name=p25 sig_type=std_logic lab=vmeas2}
 C {devices/ammeter.sym} 2030 -840 1 0 {name=Vimeas2 savecurrent=true spice_ignore=0}
+C {devices/code.sym} 30 -360 0 0 {name=PARAMETERS
+only_toplevel=true
+value="
+
+.param x_dut_nfet_input_w=0.5u
+.param x_dut_nfet_input_l=5.0u
+
+.param x_dut_nfet_mirror_w=2.0u
+.param x_dut_nfet_mirror_l=5.0u
+
+.param x_dut_pfet_load_w=1.5u
+.param x_dut_pfet_load_l=5.0u
+
+"}

@@ -40,7 +40,9 @@ examples/tunable-tia/docs/ECE748 Final Project.pdf
 .DS_Store
 
 # Simulation outputs
-examples/tunable-tia/scripts/sizing/runs/**
-examples/tunable-tia/scripts/optimizer_output/**/*.raw
-examples/tunable-tia/scripts/optimizer_output/**/*.spice
-examples/tunable-tia/scripts/op.raw
+examples/tunable-tia/**/*.raw
+examples/tunable-tia/**/*.spice
+
+examples/5t-ota/**/*.raw
+examples/5t-ota/**/*.spice
+
