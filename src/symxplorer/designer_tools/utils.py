@@ -2,7 +2,9 @@ import torch
 import numpy  as np
 import control as ctrl
 import sympy  as sp
-from   typing import Dict, List, Tuple
+from   typing import Dict, Tuple, Callable
+
+from symxplorer.designer_tools.domains import OptimizationGoalType, Error_Types
 
 # Plotting Tools
 import plotly.graph_objects as go
@@ -24,6 +26,9 @@ dtype  = torch.double
 torch.set_default_dtype(dtype)
 torch.set_default_device(device)
 
+# ----------------------------
+# Loss Functions Helpers
+# ----------------------------
 def weighted_mse_loss(
     response: torch.Tensor, 
     target_response: torch.Tensor, 
@@ -155,7 +160,135 @@ def get_bode_fitness_loss( current_complex_response: torch.Tensor, target_comple
 
     return fit_summary
 
+def convert_linear_to_log(val: np.ndarray | float | np.float64) -> np.ndarray | np.float64:
+    """Converts a value from linear scale to (log10)."""
+    return np.log10(val)
+
+def convert_log_to_linear(val: np.ndarray | float | np.float64) -> np.ndarray | np.float64:
+    """Converts a value from (log10) to linear scale."""
+    return np.power(10, val)
+
+# ----------------------------
+# Constraints function 
+# ----------------------------
+# A - Normalized Error Functions
+def compute_relative_absolute_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(np.abs(curr_val - target_val) / normalizing_coeff)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_relative_squared_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(((curr_val - target_val) / normalizing_coeff) ** 2)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_relative_exponential_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    return np.float64(np.exp(np.abs(curr_val - target_val) / normalizing_coeff) - 1)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_relative_sigmoid_error(curr_val: np.float64, target_val: np.float64, normalizing_coeff: np.float64) -> np.float64:
+    diff = abs(curr_val - target_val) / normalizing_coeff
+    return 2.0 / (1.0 + np.exp(-diff)) - 1.0
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_log_cosh_error(curr, target, normalizing_coeff=1.0):
+    """Log-Cosh loss, smooth and robust"""
+    diff = (curr - target) / normalizing_coeff
+    return np.log(np.cosh(diff))
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# B - Unnormalized Error Functions
+def compute_absolute_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64(np.abs(curr_val - target_val))
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_squared_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64((curr_val - target_val) ** 2)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+def compute_exponential_error(curr_val: np.float64, target_val: np.float64) -> np.float64:
+    return np.float64(np.exp(np.abs(curr_val - target_val)) - 1)
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# Dictionary to map error types to functions
+error_compute_functions : Dict[Error_Types, Callable]= {
+    # Unnormalized Errors
+    Error_Types.ABSOLUTE:     compute_absolute_error,
+    Error_Types.SQUARED:      compute_squared_error,
+    Error_Types.EXPONENTIAL:  compute_exponential_error,
+    # Relative Errors
+    Error_Types.RELATIVE_ABSOLUTE:      compute_relative_absolute_error,
+    Error_Types.RELATIVE_SQUARED:       compute_relative_squared_error,
+    Error_Types.RELATIVE_EXPONENTIAL:   compute_relative_exponential_error,
+    Error_Types.RELATIVE_SIGMOID :      compute_relative_sigmoid_error
+}
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+# [Endpint] - Compute Error 
+def compute_error(curr_val: np.float64, target_val: np.float64, error_type: Error_Types | str, normalizing_coeff: np.float64 | None = None) -> np.float64:
+    """Computes the error between curr_val and target_val based on the specified error_type."""
+    if isinstance(error_type, str):
+        error_type = Error_Types(error_type)
+
+    if "relative" in error_type.value:
+        if normalizing_coeff is None or normalizing_coeff <= 0:
+            logger.error(f"Normalizing coefficient must be provided and > 0 for relative error types. Got: {normalizing_coeff}")
+            raise ValueError(f"Normalizing coefficient must be provided and > 0 for relative error types. Got: {normalizing_coeff}")
+        return error_compute_functions[error_type](curr_val, target_val, normalizing_coeff)
+    return error_compute_functions[error_type](curr_val, target_val)
+
+# ----------------------------
+# norm/denorm function 
+# ----------------------------
+def log_normalize(p, pmin, pmax) -> float:
+    """
+    Log-normalize parameter p to [0, 1] range.
+    p, pmin, pmax must be > 0.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_p = np.log10(p)
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    result = (log_p - log_min) / (log_max - log_min)
+    return float(np.asarray(result, dtype=np.float64))
+
+def log_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter using log scaling.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    log_min = np.log10(pmin)
+    log_max = np.log10(pmax)
+    log_p = x * (log_max - log_min) + log_min
+    result = 10.0 ** log_p
+    return float(np.asarray(result, dtype=np.float64))
+
+def linear_normalize(p, pmin, pmax) -> float:
+    """
+    Linearly normalize parameter p to [0, 1] range.
+    Always returns a float.
+    """
+    p = np.asarray(p, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = (p - pmin) / (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+def linear_denormalize(x, pmin, pmax) -> float:
+    """
+    Map normalized x in [0, 1] back to physical parameter linearly.
+    Always returns a float.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    pmin = np.asarray(pmin, dtype=np.float64)
+    pmax = np.asarray(pmax, dtype=np.float64)
+
+    result = pmin + x * (pmax - pmin)
+    return float(np.asarray(result, dtype=np.float64))
+
+# ----------------------------
 # Plotting 
+# ----------------------------
 def plot_ac_response(frequencies: torch.Tensor, mag_list: list, phase_list: list, labels: list = None, title: str = "Frequency Response"):
     """(Deprecated) Plots multiple AC responses on the same plot using Plotly for interactivity.
 
@@ -248,6 +381,9 @@ def _linear_interpolate(x1, y1, x2, y2, target_y):
             return x1
         return x1 + (x2 - x1) * ((target_y - y1) / (y2 - y1))
 
+# ----------------------------
+# Classes
+# ----------------------------
 class Transfer_Func_Helper:
     def __init__(self):
         pass

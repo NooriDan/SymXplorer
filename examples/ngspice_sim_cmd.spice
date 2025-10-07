@@ -1,0 +1,50 @@
+* ---------------------------------------------------------
+* The following is the example simulation commands taken from Harald Pretl Analog Design Course
+* ---------------------------------------------------------
+.param temp=27
+.options savecurrents reltol=1e-3 abstol=1e-12 gmin=1e-15
+
+.control
+save all
+
+* Operating Point Analysis
+op
+remzerovec
+write <raw_file_name>.raw
+set appendwrite
+
+* AC Analysis
+ac dec 101 1 100G
+remzerovec
+write <raw_file_name>.raw
+set appendwrite
+
+* Middlebrook's Method
+let tv=-v(vr1)/v(vf1)
+let ti=-i(vir1)/i(vif1)
+let tmb=(tv*ti - 1)/(tv + ti + 2)
+
+plot db(tmb) ylabel 'Magnitude - Middlebrook'
+plot 180/pi*cphase(tmb) ylabel 'Phase - Middlebrook'
+
+* Tian's Method
+* vtest=0, itest=1:
+let A=i(Vimeas2)
+let C=v(vmeas2)
+
+* vtest=1, itest=0:
+let B=i(Vimeas1)
+let D=v(vmeas1)
+let ttian=(A*D-B*C-A)/(2*(B*C-A*D)+A-D+1)
+
+plot db(ttian) ylabel 'Magnitude - Tian'
+plot 180/pi*cphase(ttian) ylabel 'Phase - Tian'
+
+* Middlebrook vs. Tian
+plot db(tmb) db(ttian) ylabel 'Magnitude'
+plot 180/pi*cphase(tmb) 180/pi*cphase(ttian) ylabel 'Phase'
+
+write ota-improved_tb-loopgain.raw
+
+*quit
+.endc

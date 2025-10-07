@@ -1,0 +1,192 @@
+# The universal circuit setup file
+project:
+  name: Tunable-TIA-1
+  description: Tunable TIA BPF example sizing in the ihp-sg13g2 technology (first topology)
+  simulator: ngspice
+  save_sim: False
+
+  ws_root : /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/
+  # The following paths are relative to the ws_root
+  netlist : spice/tia-topo-1/tb_ac.spice
+  outdir  : sizing/optimizer_output
+  
+  tech_spec : 
+    name : ihp-sg13g2
+    # PDK RULES
+    constraints:
+      # n-fet
+      max_nfet_w : 10u
+      min_nfet_w : 0.18u
+      max_nfet_l : 10u
+      min_nfet_l : 0.18u
+
+      # p-fet
+      max_pfet_w : 10u
+      min_pfet_w : 0.18u
+      max_pfet_l : 10u
+      min_pfet_l : 0.18u
+
+      # capacitor (mim)
+      max_cap_w : 10000.0u
+      min_cap_w : 1.0u
+      max_cap_l : 10000.0u
+      min_cap_l : 1.0u
+
+      # resistor
+      max_res_w : 1000.0u 
+      min_res_w : 1.0u
+      max_res_l : 1000.0u
+      min_res_l : 1.0u
+
+      # inductor (ideal model in schematic, but the layout model exists)
+      max_ind_size : 10n
+      min_ind_size : 1n
+
+  pvt: 
+    temp: 25
+    corner: tt
+    supply: 1.8
+  
+  dut_params:
+    # ------------------------
+    # nfet params
+    # ------------------------
+    - name : x_dut_nfet_w
+      min_val: min_nfet_w
+      max_val: max_nfet_w
+      log_scale: False
+      default: 0.4u
+    
+    - name : x_dut_nfet_l
+      min_val: min_nfet_l
+      max_val: max_nfet_l
+
+    # ------------------------
+    # Cap params
+    # ------------------------
+    - name : x_dut_cap_w
+      min_val: min_cap_w
+      max_val: max_cap_w
+
+    - name : x_dut_cap_l
+      min_val: min_cap_l
+      max_val: max_cap_l
+
+    # ------------------------
+    # Res params
+    # ------------------------
+    - name : x_dut_res_s_l
+      min_val: min_res_l
+      max_val: max_res_l
+
+    - name : x_dut_res_s_w
+      min_val: min_res_w
+      max_val: max_res_w
+
+    - name : x_dut_res_3_l
+      min_val: min_res_l
+      max_val: max_res_l
+
+    - name : x_dut_res_3_w
+      min_val: min_res_w
+      max_val: max_res_w
+
+    # ------------------------
+    # Ind params
+    # ------------------------
+    - name : x_dut_ind_size
+      min_val: min_ind_size
+      max_val: max_ind_size
+
+    
+    # ------------------------
+    # Voltage Bias params
+    # ------------------------
+    - name : vbias
+      min_val: 0.0
+      max_val: 1.8
+
+  testbench_params:
+      name: tb_ac
+      params:
+        - name : icm
+          description : input common mode current
+          val : 0.5e-6
+        
+        - name : vbias
+          description : bias voltage for the TIA, controling its gm
+          val : 0.25
+        
+        - name : cload
+          description : load capacitence
+          val : 100p
+      
+  optimizer_config:
+    name: CMA # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
+    type: nevergrad
+    budget: 250
+    random_seed: 48
+
+    # The following overwrite the optimizer bounds.
+    lin_variable_bounds:
+      min : 0
+      max : 100
+
+    log_variable_bounds:
+      min : 1
+      max : 100
+      
+    loss_function_config:
+      max_loss: inf
+      loss_norm_method: min-max
+      loss_type:        mse # mse, mae, use_target_spec
+      rescale_mag:      True
+      include_phase_loss: False
+      include_mag_loss: True
+    
+    target_specs:
+      - name: fc
+        description: Center frequency # optional documentation field
+        target: 100e6     # 100 MHz
+        range: 1e8      # The expected variation range. used in normalizing the metric values
+        goal: exact       # options: exact, exceed, minimize
+        tolerance: 10e6  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
+        sim_type: ac      # options: dc, ac, tran, noise
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        log_scale: False  # [Optional] Used to indicate the spec is on log scale
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
+        enable: True      # [Optional] Used to exclude from the loss function
+
+      - name: q
+        description: quality factor # optional documentation field
+        target: 10    
+        goal: exact       # options: exact, exceed, minimize
+        range: 10        # The expected variation range. used in normalizing the metric values
+        tolerance: 2      # [Optional] allowed deviation in the spec
+        sim_type: ac      # options: dc, ac, tran, noise
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        enable: False     # [Optional] Used to exclude from the loss function
+
+      - name: gain_db
+        description: gain in dB at fc
+        target: 40      # 40 dB
+        range: 100     # The expected variation range. used in normalizing the metric values
+        goal: exceed    # options: exact, exceed, minimize
+        tolerance: 5    # [Optional] allowed deviation in the spec
+        sim_type: ac    # options: dc, ac, tran, noise
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
+        enable: True    # [Optional] Used to exclude from the loss function
+
+      - name: pm
+        description: phase margin
+        target: 70     # in degrees
+        range: 45      # The expected variation range. used in normalizing the metric values
+        goal: exact    # options: exact, exceed, minimize
+        tolerance: 10  # [Optional] allowed deviation in the spec
+        sim_type: ac   # options: dc, ac, tran, noise
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
+        enable: True    # [Optional] Used to exclude from the loss function
+
+  

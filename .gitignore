@@ -18,7 +18,7 @@ _test*.ipynb
 .vscode
 
 # Python cache directories
-*/__pycache__
+**/__pycache__
 
 # Hidden files and directories
 .*
@@ -39,6 +39,6 @@ examples.zip
 examples/tunable-tia/docs/ECE748 Final Project.pdf
 .DS_Store
 
-examples/tunable-tia/scripts/sizing/runs/*
-examples/tunable-tia/scripts/optimizer_output/*.raw
-examples/tunable-tia/scripts/optimizer_output/*.spice
+# Simulation outputs
+examples/**/sizing/**/*.raw
+examples/**/sizing/**/*.spice

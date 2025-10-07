@@ -1,6 +1,7 @@
 import yaml
 import numpy as np
 import logging
+from datetime import datetime
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict, Any
@@ -22,14 +23,33 @@ class SimType(str, Enum):
     TRAN = "tran"
     NOISE = "noise"
 
-class GoalType(str, Enum):
-    EXACT = "exact"
-    EXCEED = "exceed"
+class OptimizationGoalType(str, Enum):
+    EXACT    = "exact"
+    EXCEED   = "exceed"
     MINIMIZE = "minimize"
 
 class OptimizerType(str, Enum):
     NEVERGRAD = "nevergrad"
 
+class SpicePlotType(str, Enum):
+    OP = "Operating Point"
+    TRANSIENT = "tran"
+    AC_MAG = "ac_mag"
+    AC_PHASE = "ac_phase"
+    DC = "dc"
+    NOISE = "noise"
+
+class Error_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    SQUARED  = "squared"
+    EXPONENTIAL = "exponential"
+    RELATIVE_ABSOLUTE = "relative-absolute"
+    RELATIVE_SQUARED  = "relative-squared"
+    RELATIVE_EXPONENTIAL = "relative-exponential"
+    RELATIVE_SIGMOID = "relative-sigmoid"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
 
 # ------------------ Constants ------------------
 
@@ -62,11 +82,10 @@ def parse_value(val: Union[str, float, int]) -> np.float64:
             return np.float64(float(val[:-1]) * factor)
     return np.float64(float(val))
 
-
-def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64]) -> np.float64:
+def resolve_reference(value: Union[str, float, int], constraints: Dict[str, np.float64 | float]) -> np.float64:
     """If value is a reference to a constraint key, resolve it, else parse normally."""
     if isinstance(value, str) and value in constraints:
-        return constraints[value]
+        return np.float64(constraints[value])
     return parse_value(value)
 
 def safe_from_dict(cls, data: dict, logger: logging.Logger, config: Config = Config(cast=[Enum])):
@@ -85,21 +104,19 @@ def safe_from_dict(cls, data: dict, logger: logging.Logger, config: Config = Con
 def list_target_spec_hook(data: list) -> 'ListTargetSpec':
     return ListTargetSpec([TargetSpec(**item) for item in data])
 
-
 # ---------- Core Dataclasses ----------
 
 @dataclass
 class TechSpec:
     """Process technology (PDK) specification with constraints on device parameters."""
     name: str
-    constraints: Dict[str, np.float64 | str] = field(default_factory=dict)
+    constraints: Dict[str, np.float64 | float | str] = field(default_factory=dict)
 
     def __post_init__(self):
         for key, val in self.constraints.items():
             if isinstance(val, str):
                 self.constraints[key] = parse_value(val)
                 logger.debug(f"Parsed constraint '{key}': '{val}' to {self.constraints[key]}")
-
 
 @dataclass
 class PVT:
@@ -153,34 +170,36 @@ class TestbenchParams:
     name: str
     params: List[Param]
 
-
 @dataclass
 class TargetSpec:
     name: str
     target: float | np.float64
-    goal: Union[GoalType, str]
+    goal: Union[OptimizationGoalType, str]
     sim_type: Union[SimType, str]
+    log_scale: bool = False
     enable: bool = True
+    range: Union[np.float64, float, str | None] = None
+    error_type: Union[Error_Types, str] = Error_Types.RELATIVE_ABSOLUTE
     weight: Optional[float | np.float64] = 1.0
     tolerance: Optional[float | np.float64] = None  # if not given use 5% of target
     description: Optional[str] = None
 
     def __post_init__(self):
         # Prepare human-friendly lists for error messages
-        valid_goals = [g.value for g in GoalType]
+        valid_goals = [g.value for g in OptimizationGoalType]
         valid_sim_types = [s.value for s in SimType]
 
         # --- Validate / convert goal ---
         if isinstance(self.goal, str):
             try:
-                self.goal = GoalType(self.goal.lower())
+                self.goal = OptimizationGoalType(self.goal.lower())
             except ValueError:
                 logger.critical(
                     f"Invalid goal '{self.goal}' for target '{self.name}'. "
                     f"Must be one of {valid_goals}."
                 )
                 raise ValueError(f"Invalid goal '{self.goal}'. Must be one of {valid_goals}.")
-        elif not isinstance(self.goal, GoalType):
+        elif not isinstance(self.goal, OptimizationGoalType):
             logger.critical(
                 f"Invalid goal type '{type(self.goal)}' for target '{self.name}'. "
                 f"Must be one of {valid_goals}."
@@ -203,6 +222,21 @@ class TargetSpec:
                 f"Must be one of {valid_sim_types}."
             )
             raise ValueError(f"Invalid sim_type '{self.sim_type}'. Must be one of {valid_sim_types}.")
+
+        # --- Validate / convert error_type ---
+        if isinstance(self.error_type, str):
+            try:
+                self.error_type = Error_Types(self.error_type.lower())
+            except ValueError:
+                valid_errors = [e.value for e in Error_Types]
+                logger.critical(
+                    f"Invalid error_type '{self.error_type}' for target '{self.name}'. "
+                    f"Must be one of {valid_errors}."
+                )
+                raise ValueError(f"Invalid error_type '{self.error_type}'. Must be one of {valid_errors}.")
+        
+        # --- Validate / convert range ---
+        self.range = np.float64(self.range)
 
         # --- Tolerance fallback ---
         if isinstance(self.tolerance, str):
@@ -230,19 +264,19 @@ class TargetSpec:
             logger.error(f"Something went wrong and tolerance is None for target '{self.name}'")
             raise RuntimeError("Tolerance should never be None here... check the log.")
 
-        if self.goal == GoalType.EXACT:
+        if self.goal == OptimizationGoalType.EXACT:
             if np.abs(value - self.target) <= self.tolerance:
                 return np.float64(0.0)
             else:
                 return np.abs(value - self.target) - self.tolerance
         
-        elif self.goal == GoalType.EXCEED:
+        elif self.goal == OptimizationGoalType.EXCEED:
             if value >= self.target - self.tolerance:
                 return np.float64(0.0)
             else:
                 return np.float64(self.target - self.tolerance - value)
         
-        elif self.goal == GoalType.MINIMIZE:
+        elif self.goal == OptimizationGoalType.MINIMIZE:
             if value <= self.target + self.tolerance:
                 return np.float64(0.0)
             else:
@@ -259,8 +293,9 @@ class TargetSpec:
     
     def __str__(self) -> str:
         return (
-            f"TargetSpec(name={self.name}, target={self.target}, "
-            f"tolerance={self.tolerance}, goal={self.goal}, sim_type={self.sim_type}, enable={self.enable})"
+            f"TargetSpec(name={self.name}, target={self.target}, range={self.range:.2e} "
+            f"tolerance={self.tolerance}, goal={self.goal.value}, sim_type={self.sim_type.value}, enable={self.enable}, "
+            f"error_type={self.error_type.value}, weight={self.weight}, enable={self.enable}, description={self.description})"
         )
 
 @dataclass
@@ -297,12 +332,15 @@ class VariableBoundConfig:
     min: float
     max: float
 
+    def get_range(self) -> float:
+        return self.max - self.min
+
 @dataclass
 class OptimizerConfig:
     name: str # Optimization algorithm name
     type: str # Optimizer family type
     budget: int
-    target_spec: ListTargetSpec
+    target_specs: ListTargetSpec
     lin_variable_bounds: Optional[VariableBoundConfig]
     log_variable_bounds: Optional[VariableBoundConfig]
     loss_function_config: Optional[LossFunctionConfig]
@@ -357,9 +395,15 @@ class OptimizerConfig:
         # -------------------------
         # Target Specs
         # -------------------------
-        logger.info(f"\tNumber of target specs: {len(self.target_spec.targets)}")
-        for t in self.target_spec.targets:
+        logger.info(f"\tNumber of target specs: {len(self.target_specs.targets)}")
+        for t in self.target_specs.targets:
             logger.info(f"\t\t- {t}")
+    
+    def get_lin_variable_range(self) -> np.float64:
+        return np.float64(self.lin_variable_bounds.get_range())
+
+    def get_log_variable_range(self) -> np.float64:
+        return np.float64(self.log_variable_bounds.get_range())
         
 # ---------- Interface Dataclass ----------
 
@@ -380,8 +424,7 @@ class Project_Setup:
     testbench_params: TestbenchParams
     optimizer_config: OptimizerConfig
     
-    # Miscellaneous
-    logger: Optional[logging.Logger] = logger
+    save_sim:  bool = False
 
     def __post_init__(self):
         # correct path types
@@ -392,11 +435,10 @@ class Project_Setup:
         if isinstance(self.outdir, str):
             self.outdir = Path(self.outdir)
         # Log basic info
-        if self.logger is not None:
-            self.logger.info(f"Project '{self.name}' initialized with simulator '{self.simulator}'")
-            self.logger.info(f"\tWorkspace root: {self.ws_root}")
-            self.logger.info(f"\tNetlist path: {self.netlist}")
-            self.logger.info(f"\tOutput directory: {self.outdir}")
+        logger.info(f"Project '{self.name}' initialized with simulator '{self.simulator}'")
+        logger.info(f"\tWorkspace root: {self.ws_root}")
+        logger.info(f"\tNetlist path: {self.netlist}")
+        logger.info(f"\tOutput directory: {self.outdir}")
 
     # ------------------ Class Methods ------------------
 
@@ -404,18 +446,13 @@ class Project_Setup:
     def from_yaml(cls, yaml_path: Union[str, Path]) -> "Project_Setup":
         """Load a Project object from a YAML file with variable resolution."""
         
-        logger.info(f"📂 Loading project setup from {yaml_path}")
         try:
             with open(yaml_path, "r") as f:
                 data = yaml.safe_load(f)
             logger.debug(f"YAML content successfully loaded: {list(data.keys())}")
 
-            project = safe_from_dict(
-                cls,
-                data['project'],
-                logger,
-                config=DECITE_CONFIG
-            )
+            project = safe_from_dict(cls, data['project'], logger, config=DECITE_CONFIG)
+            
             # Resolve constraints in tech_spec
             project.resolve_all_parameter_ranges()
 
@@ -440,55 +477,55 @@ class Project_Setup:
         """Resolve all parameter min/max/default values based on tech_spec constraints."""
         for param in self.dut_params:
             if param.needs_resolution():
-                self.logger.info(f"Resolving ranges for param '{param.name}'")
+                logger.info(f"Resolving ranges for param '{param.name}'")
                 param.resolve_min_max(self.tech_spec.constraints)
-                self.logger.debug(f"Resolved param '{param.name}': min={param.min_val}, max={param.max_val}, default={param.val}")
+                logger.debug(f"Resolved param '{param.name}': min={param.min_val}, max={param.max_val}, default={param.val}")
             
     def get_constraint_by_name(self, name: str) -> Optional[np.float64]:
         value = self.tech_spec.constraints.get(name)
-        self.logger.debug(f"Constraint '{name}': {value}")
+        logger.debug(f"Constraint '{name}': {value}")
         return value
 
     def list_constraints(self) -> Dict[str, np.float64]:
-        self.logger.debug(f"Listing all constraints: {self.tech_spec.constraints}")
+        logger.debug(f"Listing all constraints: {self.tech_spec.constraints}")
         return self.tech_spec.constraints
 
     def get_param_by_name(self, name: str) -> Optional[Param]:
         for p in self.dut_params:
             if p.name == name:
-                self.logger.debug(f"Found DUT param: {p}")
+                # logger.debug(f"Found DUT param: {p}")
                 return p
-        self.logger.warning(f"DUT param '{name}' not found")
+        logger.warning(f"DUT param '{name}' not found")
         return None
 
     def list_params(self) -> List[str]:
         param_names = [p.name for p in self.dut_params]
-        self.logger.debug(f"DUT param names: {param_names}")
+        logger.debug(f"DUT param names: {param_names}")
         return param_names
 
     def get_log_scaled_params(self) -> List[Param]:
         log_params = [p for p in self.dut_params if p.log_scale]
-        self.logger.debug(f"Log-scaled params: {[p.name for p in log_params]}")
+        logger.debug(f"Log-scaled params: {[p.name for p in log_params]}")
         return log_params
 
     def filter_params_by_range(self, min_value: float, max_value: float) -> List[Param]:
         filtered = [p for p in self.dut_params if p.val is not None and min_value <= p.val <= max_value]
-        self.logger.debug(f"Params in range {min_value}-{max_value}: {[p.name for p in filtered]}")
+        logger.debug(f"Params in range {min_value}-{max_value}: {[p.name for p in filtered]}")
         return filtered
 
     def summary(self) -> None:
-        self.logger.info("========== Project Setup Summary ==========")
-        self.logger.info(f"📂 Project: {self.name}")
-        self.logger.info(f"📝 Description: {self.description}")
-        self.logger.info(f"🧠 Simulator: {self.simulator}")
-        self.logger.info(f"📜 Netlist: {self.netlist}")
-        self.logger.info(f"⚙️  PVT: temp={self.pvt.temp}, corner={self.pvt.corner}, supply={self.pvt.supply}")
-        self.logger.info(f"🔧 Tech Spec: {len(self.tech_spec.constraints)} constraints")
+        logger.info("========== Project Setup Summary ==========")
+        logger.info(f"📂 Project: {self.name}")
+        logger.info(f"📝 Description: {self.description}")
+        logger.info(f"🧠 Simulator: {self.simulator}")
+        logger.info(f"📜 Netlist: {self.netlist}")
+        logger.info(f"⚙️  PVT: temp={self.pvt.temp}, corner={self.pvt.corner}, supply={self.pvt.supply}")
+        logger.info(f"🔧 Tech Spec: {len(self.tech_spec.constraints)} constraints")
         for k, v in self.tech_spec.constraints.items():
-            self.logger.info(f"   • {k}: {v:.2e}")
-        self.logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
-        self.logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_spec.targets]}")
-        self.logger.info("===========================================")
+            logger.info(f"   • {k}: {v:.2e}")
+        logger.info(f"🎛 DUT Params: {len(self.dut_params)} params -> {[p.name for p in self.dut_params]}")
+        logger.info(f"🔍 target specs: {[p.name for p in self.optimizer_config.target_specs.targets]}")
+        logger.info("===========================================")
 
 # ------------------ Dacite Config ------------------
 DECITE_CONFIG = Config(
@@ -496,3 +533,19 @@ DECITE_CONFIG = Config(
         ListTargetSpec: list_target_spec_hook
     }
 )
+
+# ------------------ Optimizer Objects ------------------
+@dataclass
+class OptimizationLogEntry:
+    """Represents a single entry in the optimization log."""
+    fit_summary: Dict[str, Any] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
+    metric_value: Optional[float | np.float64] = None           # Can be None or a numeric metric
+    params: Optional[Dict[str, np.float64 | float]] = None      # Parameter set used in this run
+    log: Optional[str | Path] = None                                   # Any log/debug info
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict) # to add any other information
+
+@dataclass
+class OptimizationPoint:
+    params: Dict[str, float | np.float64]
+    loss: float | np.float64
+    metadata: Dict[str, Any]

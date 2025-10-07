@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import os
 
 import torch
 import numpy as np
-import sympy 
 import logging
 import shutil
 
@@ -195,6 +196,8 @@ class Spicelib_Wrapper:
         self.curr_raw: RawRead | None       = None
         self.curr_log: str | None           = None
 
+        self.counter: int = 1
+
         self.__post_init__()
         
     def __post_init__(self):
@@ -301,6 +304,7 @@ class Spicelib_Wrapper:
             logger.info("📂 Creating dedicated sanity check folder...")
             self.runner.output_folder = self.runner.output_folder / "sanity_check"
             self.runner.output_folder.mkdir(parents=True, exist_ok=True)
+            self.counter += 1
         else:
             logger.critical("❌ Runner output folder is not a Path instance!")
             raise RuntimeError("Runner output folder is not a Path instance")
@@ -377,7 +381,7 @@ class Spicelib_Wrapper:
                 self.editor.set_parameter(key, f"{value}{RES_UNIT}")
             else:
                 self.editor.set_parameter(key, f"{value}")
-                logger.debug(f"... Parameter {key} set to {value}")
+                logger.debug(f"... Parameter {key} set to {value:.3e}")
         logger.debug(f"✅  All parameters updated successfully")
         return True
     
@@ -411,12 +415,34 @@ class Spicelib_Wrapper:
             return torch.from_numpy(wave).real.to(dtype=torch.float64)
         return torch.from_numpy(wave)
     
+    def extract_scalar_variable_from_raw(self, var_name: str | List[str], is_real: bool = True) -> Dict[str, np.float64]:
+        
+        if not isinstance(var_name, list):
+            var_name = [var_name]
+        
+        wave_form : Dict[str, np.float64] = {}
+        for var in var_name:
+            try:
+                temp = self.extract_wave(var, is_real=is_real)
+                wave_form[var] = np.float64(temp[0])
+            except IndexError:
+                self.logger.error(f"❌ Variable {var} not found in the raw file")
+                wave_form[var] = np.float64(np.nan)
+        return wave_form
+    
     def run_and_wait(self, exe_log: bool = True) -> Tuple[RawRead | None, str | None, str]:
         """Runs the simulation and waits for it to complete, returning the RawRead instance (or None), the log filename (or None), and task name"""
         # (1) Pre-body
         logger = self.logger
         if self.runner is None or self.editor is None:
             raise RuntimeError("Runner or Editor not initialized")
+
+        # (1.1) Create a dedicated folder for this run
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder / f"run_{self.counter}"
+            self.runner.output_folder.mkdir(parents=True, exist_ok=True)
+            self.counter += 1
+
         # (2) Run the simulation with the parameters already in the editor instance
         task = self.runner.run(
             netlist=self.editor, 
@@ -427,7 +453,7 @@ class Spicelib_Wrapper:
         
         # (3) Wait for the task to complete
         while task.is_alive():
-            sleep(0.05)
+            sleep(0.01)
             pass # wait so its done
 
         # (4) Get the results
@@ -442,8 +468,37 @@ class Spicelib_Wrapper:
             self.curr_raw = None
             self.curr_log = None
 
+        # Move out of the run folder
+        if isinstance(self.runner.output_folder, Path):
+            self.runner.output_folder = self.runner.output_folder.parent
+
         return self.curr_raw, self.curr_log, task.name
     
+    def load_raw(self, raw_file: Path | RawRead) -> None:
+        """Loads a RawRead instance from the given raw_file path"""
+        
+        if isinstance(raw_file, RawRead):
+            self.curr_raw = raw_file
+            return
+        
+        if not raw_file.exists():
+            raise FileNotFoundError(f"Raw file not found: {raw_file}")
+        
+        self.curr_raw = RawRead(raw_filename=raw_file)
+    
+    def clean_up(self) -> None:
+        """Cleans up all the files generated during the simulation runs"""
+        if self.runner is None:
+            raise RuntimeError("Runner not initialized")
+        
+        self.runner.cleanup_files()
+        
+        run_folder = self.output_folder / f"run_{self.counter}"
+        if run_folder.exists() and run_folder.is_dir():
+            shutil.rmtree(run_folder)
+
+        self.logger.debug(f"🧹 All simulation files cleaned up successfully {run_folder}")
+
     @classmethod
     def callback(cls, raw_file: str, log_file: str, traces_to_read: str):
         raw_read = RawRead(raw_filename=raw_file, traces_to_read=traces_to_read)
