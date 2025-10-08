@@ -50,6 +50,13 @@ class Error_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
+class Reward_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    RELATIVE_ABSOLUTE = "relative-absolute"
+    RELATIVE_SIGMOID = "relative-sigmoid"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
 
 # ------------------ Constants ------------------
 
@@ -539,7 +546,7 @@ DECITE_CONFIG = Config(
 class OptimizationLogEntry:
     """Represents a single entry in the optimization log."""
     fit_summary: Dict[str, Any] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
-    metric_value: Optional[float | np.float64] = None           # Can be None or a numeric metric
+    score: Optional[float | np.float64] = None           # Can be None or a numeric metric
     params: Optional[Dict[str, np.float64 | float]] = None      # Parameter set used in this run
     log: Optional[str | Path] = None                                   # Any log/debug info
     metadata: Optional[Dict[str, Any]] = field(default_factory=dict) # to add any other information
@@ -547,5 +554,5 @@ class OptimizationLogEntry:
 @dataclass
 class OptimizationPoint:
     params: Dict[str, float | np.float64]
-    loss: float | np.float64
+    score: float | np.float64
     metadata: Dict[str, Any]
