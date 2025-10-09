@@ -2,9 +2,9 @@ from   pprint         import pprint
 import argparse
 
 # Custom Imports
-from   symxplorer.symbolic_solver.utils          import clear_terminal, print_specs
-from   symxplorer.symbolic_solver.domains        import Circuit
-from   symxplorer.symbolic_solver.solver         import run_experiment
+from   symxplorer.symbolic_exploration.utils          import clear_terminal, print_specs
+from   symxplorer.symbolic_exploration.domains        import Circuit
+from   symxplorer.symbolic_exploration.solver         import run_experiment
 from   symxplorer.demo.examples                  import select_circuit  
 
 def get_parser():

@@ -1,6 +1,6 @@
 import pytest
 from sympy import symbols, simplify
-from symxplorer.symbolic_solver.filter import Filter_Classifier  # Replace `your_module` with the actual module name
+from symxplorer.symbolic_exploration.filter import Filter_Classifier  # Replace `your_module` with the actual module name
 
 import logging
 

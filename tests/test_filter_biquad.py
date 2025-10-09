@@ -1,7 +1,7 @@
 import pytest
 from sympy import symbols, simplify
 
-from symxplorer.symbolic_solver.filter import Filter_Classifier
+from symxplorer.symbolic_exploration.filter import Filter_Classifier
 
 s = symbols('s')
 

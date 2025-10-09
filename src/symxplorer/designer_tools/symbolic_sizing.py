@@ -5,8 +5,8 @@ from   typing import Dict, List, Tuple
 from   copy   import deepcopy
 
 # Symxplorer Specific Imports
-from   symxplorer.symbolic_solver.domains import Filter_Classification
-from   symxplorer.symbolic_solver.filter  import Filter_Classifier
+from   symxplorer.symbolic_exploration.domains import Filter_Classification
+from   symxplorer.symbolic_exploration.filter  import Filter_Classifier
 
 from   .visualizer import Symbolic_Visualizer 
 
