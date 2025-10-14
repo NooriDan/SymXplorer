@@ -1,0 +1,2 @@
+,impedance_key,transferFunc,transferFunc_latex
+0,Z1_Z4_ZL,Z_1*Z_4*Z_L*g_m/(Z_1*Z_4*g_m + 2*Z_1*Z_L*g_m + Z_4 + 2*Z_L),\frac{Z_{1} Z_{4} Z_{L} g_{m}}{Z_{1} Z_{4} g_{m} + 2 Z_{1} Z_{L} g_{m} + Z_{4} + 2 Z_{L}}
