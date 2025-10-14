@@ -1,1 +1,1 @@
-this is the repo containing the xschem design for Tunable Band-pass transimpedance filter.
+This is the repo containing the xschem design for Tunable Band-pass transimpedance filter. The symbolic exploration result are available in the corresponding directory.
