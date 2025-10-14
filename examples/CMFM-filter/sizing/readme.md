@@ -1,0 +1,1 @@
+This is legacy code used for the development of the new optimizer classes. Refer to the latest classes in SymXplorer.optimization submodule.

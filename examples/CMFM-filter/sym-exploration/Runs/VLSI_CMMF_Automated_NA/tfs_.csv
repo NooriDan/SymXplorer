@@ -1,0 +1,9 @@
+,impedance_key,transferFunc,transferFunc_latex
+0,Z1_Z2_Z3_Z4_Z5_Z6,Z_1*Z_2*Z_4*Z_6/(Z_1*Z_4*Z_5 - Z_2*Z_3*Z_4 + Z_2*Z_3*Z_5 + Z_2*Z_4*Z_5 + Z_3*Z_4*Z_5),\frac{Z_{1} Z_{2} Z_{4} Z_{6}}{Z_{1} Z_{4} Z_{5} - Z_{2} Z_{3} Z_{4} + Z_{2} Z_{3} Z_{5} + Z_{2} Z_{4} Z_{5} + Z_{3} Z_{4} Z_{5}}
+1,Z2_Z3_Z4_Z5_Z6,Z_2*Z_6/Z_5,\frac{Z_{2} Z_{6}}{Z_{5}}
+2,Z1_Z3_Z4_Z5_Z6,Z_1*Z_4*Z_6/(-Z_3*Z_4 + Z_3*Z_5 + Z_4*Z_5),\frac{Z_{1} Z_{4} Z_{6}}{- Z_{3} Z_{4} + Z_{3} Z_{5} + Z_{4} Z_{5}}
+3,Z1_Z2_Z3_Z5_Z6,Z_1*Z_2*Z_6/(Z_1*Z_5 - Z_2*Z_3 + Z_2*Z_5 + Z_3*Z_5),\frac{Z_{1} Z_{2} Z_{6}}{Z_{1} Z_{5} - Z_{2} Z_{3} + Z_{2} Z_{5} + Z_{3} Z_{5}}
+4,Z3_Z4_Z5_Z6,oo*sign(Z_6/Z_5),\infty \operatorname{sign}{\left(\frac{Z_{6}}{Z_{5}} \right)}
+5,Z2_Z3_Z5_Z6,Z_2*Z_6/Z_5,\frac{Z_{2} Z_{6}}{Z_{5}}
+6,Z1_Z3_Z5_Z6,Z_1*Z_6/(-Z_3 + Z_5),\frac{Z_{1} Z_{6}}{- Z_{3} + Z_{5}}
+7,Z3_Z5_Z6,oo*sign(Z_6/Z_5),\infty \operatorname{sign}{\left(\frac{Z_{6}}{Z_{5}} \right)}

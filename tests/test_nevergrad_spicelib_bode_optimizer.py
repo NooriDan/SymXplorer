@@ -55,7 +55,7 @@ if __name__ == "__main__":
     circuit_optimizer.parameterize()
     circuit_optimizer.optimize()
 
-    circuit_optimizer.plot_loss(save_path=project_setup_yaml.parent / "loss_curve.html")
+    circuit_optimizer.plot_score(save_path=project_setup_yaml.parent / "loss_curve.html")
 
     out = circuit_optimizer.get_best_params()
     if out is not None: 

@@ -1,3 +1,3 @@
-# from .main import main
+from .examples import select_circuit
 
-# __all__ = ['main']
+__all__ = ['select_circuit']

@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple
 from copy   import deepcopy
 
 # Custom Imports
-from symxplorer.symbolic_solver.domains import Filter_Classification
+from symxplorer.symbolic_exploration.domains import Filter_Classification
 
 # Suppress info logging for matplotlib
 logging.getLogger('matplotlib').setLevel(logging.ERROR)

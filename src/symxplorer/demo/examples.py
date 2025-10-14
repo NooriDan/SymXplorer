@@ -1,9 +1,10 @@
+"""The endpoint for retrieving example circuits."""
 import symxplorer.demo.differential            as differential_examples
 import symxplorer.demo.multiple_feedback       as multiple_feedback_examples
 import symxplorer.demo.sallen_key              as sallen_key_examples
 import symxplorer.demo.dual_amplifier          as dual_amplifier_examples
 
-from symxplorer.symbolic_solver.domains   import Circuit # for type-checking
+from symxplorer.symbolic_exploration.domains   import Circuit # for type-checking
 
 
 

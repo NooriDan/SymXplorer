@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union, Dict, Any
+from typing import List, Optional, Union, Dict, Any, Iterator, Tuple
 from pathlib import Path
 from enum import Enum
 
@@ -50,6 +50,17 @@ class Error_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
+<<<<<<< HEAD
+
+class Reward_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    RELATIVE_ABSOLUTE = "relative-absolute"
+    RELATIVE_SIGMOID = "relative-sigmoid"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
+=======
+>>>>>>> origin/main
 
 # ------------------ Constants ------------------
 
@@ -335,6 +346,12 @@ class VariableBoundConfig:
     def get_range(self) -> float:
         return self.max - self.min
 
+<<<<<<< HEAD
+    def get_min_max(self) -> Tuple[float, float]:
+        return (self.min, self.max)
+
+=======
+>>>>>>> origin/main
 @dataclass
 class OptimizerConfig:
     name: str # Optimization algorithm name
@@ -400,10 +417,31 @@ class OptimizerConfig:
             logger.info(f"\t\t- {t}")
     
     def get_lin_variable_range(self) -> np.float64:
+<<<<<<< HEAD
+        if self.lin_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
+        return np.float64(self.lin_variable_bounds.get_range())
+
+    def get_log_variable_range(self) -> np.float64:
+        if self.log_variable_bounds is None:
+            raise ValueError("Log variable bounds are not set")
+        return np.float64(self.log_variable_bounds.get_range())
+    
+    def get_lin_min_max(self) -> Tuple[float, float]:
+        if self.lin_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
+        return self.lin_variable_bounds.get_min_max()
+
+    def get_log_min_max(self) -> Tuple[float, float]:
+        if self.log_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
+        return self.log_variable_bounds.get_min_max()
+=======
         return np.float64(self.lin_variable_bounds.get_range())
 
     def get_log_variable_range(self) -> np.float64:
         return np.float64(self.log_variable_bounds.get_range())
+>>>>>>> origin/main
         
 # ---------- Interface Dataclass ----------
 
@@ -536,6 +574,99 @@ DECITE_CONFIG = Config(
 
 # ------------------ Optimizer Objects ------------------
 @dataclass
+<<<<<<< HEAD
+class OptimizationPoint:
+    """Represents the simplest point in the optimization trace."""
+    params: Dict[str, float | np.float64]
+    score: float | np.float64
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict) # to add any other information
+
+@dataclass
+class OptimizationLogEntry:
+    """Represents a single entry in the optimization log."""
+    point: 'OptimizationPoint'           
+    fit_summary: Optional[Dict[str, Any]] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
+    log_file: Optional[str | Path] = None                                  # Any log/debug info
+
+    def get_score(self) -> float | np.floating:
+        return self.point.score
+    
+    def get_params(self) -> Dict[str, float | np.floating]:
+        return self.point.params
+    
+    def get_metadata(self) -> Dict[str, Any] | None:
+        return self.point.metadata
+    
+    def get_param_val(self, param_name: str) -> float | np.floating | None:
+        if not param_name in self.point.params.keys():
+            logger.debug(f"{param_name} was not found in the OptimizationLogEntry object - should be one of {self.point.params.keys()}")
+            return None
+        return self.point.params[param_name]
+    
+    def get_fit_summary(self) -> Dict[str, Any]:
+        if self.fit_summary is None:
+            logger.error(f"tried accessing the fit_summary but this was never created")
+            raise ValueError(f"tried accessing the fit_summary but this was never created")
+        return self.fit_summary
+
+
+class OptimizationLog:
+    """Acts like a list of OptimizationLogEntry objects."""
+    def __init__(self, initial_logs: List[OptimizationLogEntry] = []):
+        self.log: List[OptimizationLogEntry] = initial_logs
+
+    def __iter__(self) -> Iterator[OptimizationLogEntry]:
+        """Allow iteration over log entries."""
+        return iter(self.log)
+
+    def __len__(self) -> int:
+        """Return the number of log entries."""
+        return len(self.log)
+
+    def __getitem__(self, index: int) -> OptimizationLogEntry:
+        """Support indexing like a list."""
+        return self.log[index]
+
+    def __setitem__(self, index: int, value: OptimizationLogEntry) -> None:
+        """Support assignment by index."""
+        self.log[index] = value
+
+    def __delitem__(self, index: int) -> None:
+        """Support deletion by index."""
+        del self.log[index]
+
+    def append(self, entry: OptimizationLogEntry) -> None:
+        """Append a new entry to the log."""
+        self.log.append(entry)
+
+    def extend(self, entries: List[OptimizationLogEntry]) -> None:
+        """Extend log with multiple entries."""
+        self.log.extend(entries)
+
+    def __repr__(self) -> str:
+        """Readable representation."""
+        return f"OptimizationLog({self.log!r})"
+    
+    def get_score(self, index: int) -> float | np.floating:
+        return self.log[index].get_score()
+
+    def get_params(self, index: int) -> Dict[str, float | np.floating]:
+        return self.log[index].get_params()
+
+    def get_metadata(self, index: int) -> Dict[str, Any]:
+        return self.log[index].get_metadata()
+    
+    def has_param(self, param_name: str) -> bool:
+        if len(self.log) == 0:
+            logger.debug("no log file in the object")
+            return False
+        if not param_name in self.log[0].get_params():
+            logger.debug(f"param '{param_name}' not found in optimization trace")
+            return False
+        return True
+        
+        
+=======
 class OptimizationLogEntry:
     """Represents a single entry in the optimization log."""
     fit_summary: Dict[str, Any] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
@@ -549,3 +680,4 @@ class OptimizationPoint:
     params: Dict[str, float | np.float64]
     loss: float | np.float64
     metadata: Dict[str, Any]
+>>>>>>> origin/main

@@ -42,3 +42,7 @@ examples/tunable-tia/docs/ECE748 Final Project.pdf
 # Simulation outputs
 examples/**/sizing/**/*.raw
 examples/**/sizing/**/*.spice
+<<<<<<< HEAD
+.DS_Store
+=======
+>>>>>>> origin/main
