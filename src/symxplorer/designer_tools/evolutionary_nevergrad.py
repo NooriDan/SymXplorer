@@ -110,8 +110,6 @@ class Nevergrad_Base_Optimizer(ABC):
         
         # Track the score for plotting
         self.score_values : List[float] = []
-        # Track the score for plotting
-        self.score_values : List[float] = []
         self.optimizer_trace = []  # Store the optimization trace
         
         # Run the optimization process
@@ -134,9 +132,7 @@ class Nevergrad_Base_Optimizer(ABC):
             if curr_score > self.optimizer_trace[self.global_best_index].score:
                 self.global_best_index = trial
                 logger.info(f"a New fit was found... trial {trial} score {curr_score:.2f}")
-                logger.info(f"a New fit was found... trial {trial} score {curr_score:.2f}")
         
-        # Plot the score as a function of optimization step
         # Plot the score as a function of optimization step
         if render_optimization_trace:
             self.plot_score()
@@ -184,7 +180,6 @@ class Nevergrad_Base_Optimizer(ABC):
         fig.add_trace(go.Scatter(
             x=x_values,
             y=score_values,
-            y=score_values,
             mode="markers+lines",
             name="Score",
             line=dict(color="blue", width=2),
@@ -202,9 +197,7 @@ class Nevergrad_Base_Optimizer(ABC):
 
         fig.update_layout(
             title="Score vs. Optimization Trial",
-            title="Score vs. Optimization Trial",
             xaxis_title="Optimization Step",
-            yaxis_title="Score",
             yaxis_title="Score",
             template="plotly_dark",
             showlegend=True
@@ -591,7 +584,6 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
         """
         Evaluate the given parameterization by running a SPICE simulation,
         computing the fitness score, and returning it as np.float64.
-        computing the fitness score, and returning it as np.float64.
         """
         # 1 - Run a SPICE simulation
         # ---------------------------------------------------------------
@@ -607,7 +599,6 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
 
         # 4 - Compute the fitness
         # ---------------------------------------------------------------
-        fitness_score, fit_summary = self.compute_fitness({"current_complex_response" : current_complex_response})
         fitness_score, fit_summary = self.compute_fitness({"current_complex_response" : current_complex_response})
 
         # --- Log results ---
@@ -631,11 +622,9 @@ class Nevergrad_Spice_Bode_Optimizer(Nevergrad_Spice_Base_Optimizer):
 
         logger.debug(f"finished the trial evaluation.... summary")
         logger.debug(f"\tmetric_value = {fitness_score}")
-        logger.debug(f"\tmetric_value = {fitness_score}")
         logger.debug(f"\t\t- mag_loss : {mag_loss}")
         logger.debug(f"\t\t- phase_loss : {phase_loss}")
 
-        return np.float64(fitness_score), fit_summary
         return np.float64(fitness_score), fit_summary
 
     # --- Helper Methods (only in child class) ---
@@ -729,8 +718,6 @@ class Nevergrad_Spice_Multi_Spec_Constraint_Satisfaction(Nevergrad_Spice_Base_Op
         super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
         self.target_specs: ListTargetSpec = setup_obj.optimizer_config.target_specs
         logger.info(f"Initialized the Nevergrad_Spice_Multi_Spec_Optimizer with {len(self.target_specs.targets)} target specs")
-<<<<<<< HEAD
-=======
     
     # --- Overwriting the Abstract Methods ---
     def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
