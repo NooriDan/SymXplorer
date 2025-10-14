@@ -50,7 +50,6 @@ class Error_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
-<<<<<<< HEAD
 
 class Reward_Types(str, Enum):
     ABSOLUTE = "absolute"
@@ -59,8 +58,6 @@ class Reward_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
-=======
->>>>>>> origin/main
 
 # ------------------ Constants ------------------
 
@@ -346,12 +343,9 @@ class VariableBoundConfig:
     def get_range(self) -> float:
         return self.max - self.min
 
-<<<<<<< HEAD
     def get_min_max(self) -> Tuple[float, float]:
         return (self.min, self.max)
 
-=======
->>>>>>> origin/main
 @dataclass
 class OptimizerConfig:
     name: str # Optimization algorithm name
@@ -417,7 +411,6 @@ class OptimizerConfig:
             logger.info(f"\t\t- {t}")
     
     def get_lin_variable_range(self) -> np.float64:
-<<<<<<< HEAD
         if self.lin_variable_bounds is None:
             raise ValueError("Linear variable bounds are not set")
         return np.float64(self.lin_variable_bounds.get_range())
@@ -436,12 +429,6 @@ class OptimizerConfig:
         if self.log_variable_bounds is None:
             raise ValueError("Linear variable bounds are not set")
         return self.log_variable_bounds.get_min_max()
-=======
-        return np.float64(self.lin_variable_bounds.get_range())
-
-    def get_log_variable_range(self) -> np.float64:
-        return np.float64(self.log_variable_bounds.get_range())
->>>>>>> origin/main
         
 # ---------- Interface Dataclass ----------
 
@@ -574,7 +561,6 @@ DECITE_CONFIG = Config(
 
 # ------------------ Optimizer Objects ------------------
 @dataclass
-<<<<<<< HEAD
 class OptimizationPoint:
     """Represents the simplest point in the optimization trace."""
     params: Dict[str, float | np.float64]
@@ -666,18 +652,3 @@ class OptimizationLog:
         return True
         
         
-=======
-class OptimizationLogEntry:
-    """Represents a single entry in the optimization log."""
-    fit_summary: Dict[str, Any] = field(default_factory=dict)   # Depends on your optimizer output (could refine type)
-    metric_value: Optional[float | np.float64] = None           # Can be None or a numeric metric
-    params: Optional[Dict[str, np.float64 | float]] = None      # Parameter set used in this run
-    log: Optional[str | Path] = None                                   # Any log/debug info
-    metadata: Optional[Dict[str, Any]] = field(default_factory=dict) # to add any other information
-
-@dataclass
-class OptimizationPoint:
-    params: Dict[str, float | np.float64]
-    loss: float | np.float64
-    metadata: Dict[str, Any]
->>>>>>> origin/main

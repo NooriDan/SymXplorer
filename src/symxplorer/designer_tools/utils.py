@@ -4,11 +4,7 @@ import control as ctrl
 import sympy  as sp
 from   typing import Dict, Tuple, Callable
 
-<<<<<<< HEAD
 from symxplorer.designer_tools.domains import OptimizationGoalType, Error_Types, Reward_Types
-=======
-from symxplorer.designer_tools.domains import OptimizationGoalType, Error_Types
->>>>>>> origin/main
 
 # Plotting Tools
 import plotly.graph_objects as go
@@ -232,7 +228,6 @@ def compute_error(curr_val: np.float64, target_val: np.float64, error_type: Erro
         return error_compute_functions[error_type](curr_val, target_val, normalizing_coeff)
     return error_compute_functions[error_type](curr_val, target_val)
 
-<<<<<<< HEAD
 # [Endpint] - Compute Reward 
 def compute_reward(curr_val: np.float64, target_val: np.float64, reward_type: Reward_Types | str, normalizing_coeff: np.float64 | None = None, goal: OptimizationGoalType = OptimizationGoalType.EXCEED) -> np.float64:
     """Computes the reward for the spec"""
@@ -241,8 +236,6 @@ def compute_reward(curr_val: np.float64, target_val: np.float64, reward_type: Re
 
 
     
-=======
->>>>>>> origin/main
 # ----------------------------
 # norm/denorm function 
 # ----------------------------
