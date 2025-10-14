@@ -8,7 +8,11 @@ project:
   ws_root : /foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/
   # The following paths are relative to the ws_root
   netlist : spice/ota-5t_tb-loopgain.spice
+<<<<<<< HEAD
   outdir  : sizing/spice_out
+=======
+  outdir  : sizing/optimizer_output
+>>>>>>> origin/main
   
   tech_spec : 
     name : ihp-sg13g2
