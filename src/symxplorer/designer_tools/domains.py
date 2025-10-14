@@ -51,7 +51,6 @@ class Error_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
-<<<<<<< HEAD
 
 class Reward_Types(str, Enum):
     ABSOLUTE = "absolute"
@@ -60,8 +59,6 @@ class Reward_Types(str, Enum):
 
     def is_relative(self) -> bool:
         return "relative" in self.value
-=======
->>>>>>> origin/main
 
 class Reward_Types(str, Enum):
     ABSOLUTE = "absolute"

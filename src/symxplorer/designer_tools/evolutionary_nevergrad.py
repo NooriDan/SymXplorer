@@ -729,8 +729,6 @@ class Nevergrad_Spice_Multi_Spec_Constraint_Satisfaction(Nevergrad_Spice_Base_Op
         super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
         self.target_specs: ListTargetSpec = setup_obj.optimizer_config.target_specs
         logger.info(f"Initialized the Nevergrad_Spice_Multi_Spec_Optimizer with {len(self.target_specs.targets)} target specs")
-<<<<<<< HEAD
-=======
     
     # --- Overwriting the Abstract Methods ---
     def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
