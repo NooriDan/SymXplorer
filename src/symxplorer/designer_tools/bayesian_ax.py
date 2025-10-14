@@ -1,3 +1,4 @@
+"""LEGACY - use the classes in symxplorer.optimization module instead"""
 import logging
 import os
 import torch
