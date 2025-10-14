@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union, Dict, Any, Iterator
+from typing import List, Optional, Union, Dict, Any, Iterator, Tuple
 from pathlib import Path
 from enum import Enum
 
@@ -343,6 +343,9 @@ class VariableBoundConfig:
     def get_range(self) -> float:
         return self.max - self.min
 
+    def get_min_max(self) -> Tuple[float, float]:
+        return (self.min, self.max)
+
 @dataclass
 class OptimizerConfig:
     name: str # Optimization algorithm name
@@ -408,10 +411,24 @@ class OptimizerConfig:
             logger.info(f"\t\t- {t}")
     
     def get_lin_variable_range(self) -> np.float64:
+        if self.lin_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
         return np.float64(self.lin_variable_bounds.get_range())
 
     def get_log_variable_range(self) -> np.float64:
+        if self.log_variable_bounds is None:
+            raise ValueError("Log variable bounds are not set")
         return np.float64(self.log_variable_bounds.get_range())
+    
+    def get_lin_min_max(self) -> Tuple[float, float]:
+        if self.lin_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
+        return self.lin_variable_bounds.get_min_max()
+
+    def get_log_min_max(self) -> Tuple[float, float]:
+        if self.log_variable_bounds is None:
+            raise ValueError("Linear variable bounds are not set")
+        return self.log_variable_bounds.get_min_max()
         
 # ---------- Interface Dataclass ----------
 
@@ -567,7 +584,7 @@ class OptimizationLogEntry:
         return self.point.metadata
     
     def get_param_val(self, param_name: str) -> float | np.floating | None:
-        if param_name not in self.point.params.keys():
+        if not param_name in self.point.params.keys():
             logger.debug(f"{param_name} was not found in the OptimizationLogEntry object - should be one of {self.point.params.keys()}")
             return None
         return self.point.params[param_name]
@@ -629,7 +646,7 @@ class OptimizationLog:
         if len(self.log) == 0:
             logger.debug("no log file in the object")
             return False
-        if param_name not in self.log[0].get_params():
+        if not param_name in self.log[0].get_params():
             logger.debug(f"param '{param_name}' not found in optimization trace")
             return False
         return True

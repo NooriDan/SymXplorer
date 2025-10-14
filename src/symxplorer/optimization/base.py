@@ -3,8 +3,6 @@ import logging
 import json
 import torch
 import numpy        as np
-import sympy        as sp
-import nevergrad    as ng
 import plotly.graph_objects as go
 
 from    typing      import Dict, List, Tuple, Any, Mapping
@@ -15,18 +13,17 @@ from    spicelib    import RawRead
 from    dacite      import from_dict, Config
 from    dataclasses import asdict
 from    datetime    import datetime
+from    sympy       import Expr
 
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
 from   symxplorer.designer_tools.domains    import Project_Setup, ListTargetSpec, TargetSpec
-from   symxplorer.designer_tools.domains    import OptimizationGoalType, OptimizationPoint, OptimizationLogEntry, Error_Types, OptimizationLog
+from   symxplorer.designer_tools.domains    import OptimizationGoalType, OptimizationPoint, OptimizationLogEntry, OptimizationLog
 from   symxplorer.designer_tools.utils      import compute_error, compute_reward, convert_linear_to_log, log_denormalize, linear_denormalize
 from   symxplorer.designer_tools.utils      import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
 
 logger = logging.getLogger("SymXplorer.base_optimizer")
-
-s = sp.symbols("s")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dtype  = torch.double
@@ -85,7 +82,7 @@ class Base_Optimizer(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self, parameterization: Dict[str, float]) -> Tuple[np.float64, Dict[str, Any]]:
+    def evaluate(self, parameterization: Dict[str, float | np.floating]) -> Tuple[np.floating, Dict[str, Any]]:
         """Evaluate the objective function for the given parameterization (de-normalized)"""
         pass
 
@@ -242,10 +239,10 @@ class Base_Optimizer(ABC):
             logger.warning("No optimization trace to plot")
             return None
 
-        if self.optimization_log.has_param(param_name=param_x):
+        if not self.optimization_log.has_param(param_name=param_x):
             logger.warning(f"param_x '{param_x}' not found in optimization trace")
             return None
-        if self.optimization_log.has_param(param_name=param_y):
+        if not self.optimization_log.has_param(param_name=param_y):
             logger.warning(f"param_y '{param_y}' not found in optimization trace")
             return None
 
@@ -528,14 +525,14 @@ class Spice_Base_Optimizer(Base_Optimizer):
             fig.show()
 
 # ------------------------------------------------
-# A.1 [CONCRETE] Bode Fitter
+# A.1 [ABSTRACT] Bode Fitter
 # ------------------------------------------------
 class Spice_Bode_Optimizer(Spice_Base_Optimizer):
     """ Nevergrad optimizer that fits a SPICE-simulated transfer function to a target transfer function. """
     def __init__(self,
                  setup_obj: Project_Setup,
                  spicelib_wrapper : Spicelib_Wrapper,
-                 target_tf: sp.Expr,
+                 target_tf: Expr,
                  output_node: str = "Vout", # FIXME this needs to go into the spicelib_wrapper
                  frequency_weight: Frequency_Weight | None = None
                  ):
@@ -683,7 +680,7 @@ class Spice_Bode_Optimizer(Spice_Base_Optimizer):
             )
         
 # ------------------------------------------------
-# A.2 [CONCRETE] Constraint Satisfaction
+# A.2 [ABSTRACT] Constraint Satisfaction
 # ------------------------------------------------
 class Spice_Constraint_Satisfaction(Spice_Base_Optimizer):
     """ Nevergrad Optimizer that uses the perfomance metrics computed in SPICE simulations to size a circuit. """
@@ -858,7 +855,7 @@ class Spice_Constraint_Satisfaction(Spice_Base_Optimizer):
         return spec_penalty_weighted
 
 # ------------------------------------------------
-# A.3 [CONCRETE] Single-objective
+# A.3 [ABSTRACT] Single-objective
 # ------------------------------------------------
 class Spice_Single_Objective(Spice_Constraint_Satisfaction):
     def __init__(self,

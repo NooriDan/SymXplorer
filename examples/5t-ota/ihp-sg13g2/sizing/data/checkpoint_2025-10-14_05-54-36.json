@@ -1,0 +1,296 @@
+{
+  "schema_version": "1.0.0",
+  "timestamp": "2025-10-14_05-54-36",
+  "optimization_log": [
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 5.0899999999999995e-06,
+          "x_dut_nfet_input_l": 5.0899999999999995e-06,
+          "x_dut_nfet_mirror_w": 5.0899999999999995e-06,
+          "x_dut_nfet_mirror_l": 5.0899999999999995e-06,
+          "x_dut_pfet_load_w": 5.0899999999999995e-06,
+          "x_dut_pfet_load_l": 5.0899999999999995e-06
+        },
+        "score": -73.22063460376306,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 54847350.0,
+          "score": -58.87581604356855
+        },
+        "dcgain": {
+          "curr_val": 31.264699999999998,
+          "score": 0.0
+        },
+        "pm": {
+          "curr_val": 113.0,
+          "score": -14.344818560194517
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_2/ota-5t_tb-loopgain_2.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 9.061329109296202e-06,
+          "x_dut_nfet_input_l": 7.0985129306279114e-06,
+          "x_dut_nfet_mirror_w": 8.916923745963721e-06,
+          "x_dut_nfet_mirror_l": 9.904485174175351e-06,
+          "x_dut_pfet_load_w": 6.925495340153574e-06,
+          "x_dut_pfet_load_l": 2.2342517522908743e-06
+        },
+        "score": -87.71647206417235,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 46085550.0,
+          "score": -61.66442748062209
+        },
+        "dcgain": {
+          "curr_val": 31.851059999999997,
+          "score": 0.0
+        },
+        "pm": {
+          "curr_val": 124.0,
+          "score": -26.05204458355026
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_3/ota-5t_tb-loopgain_3.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 4.297518877387046e-06,
+          "x_dut_nfet_input_l": 4.071705540083348e-07,
+          "x_dut_nfet_mirror_w": 2.706255102753639e-06,
+          "x_dut_nfet_mirror_l": 1.72209367480129e-06,
+          "x_dut_pfet_load_w": 1.964880319777876e-06,
+          "x_dut_pfet_load_l": 8.461565511412918e-06
+        },
+        "score": -48.78816878284365,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 309871200.0,
+          "score": -46.1610534217253
+        },
+        "dcgain": {
+          "curr_val": 24.74456,
+          "score": -2.6271153611183484
+        },
+        "pm": {
+          "curr_val": 84.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_4/ota-5t_tb-loopgain_4.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 7.037620265781879e-07,
+          "x_dut_nfet_input_l": 9.638609395623207e-06,
+          "x_dut_nfet_mirror_w": 6.617880727332085e-06,
+          "x_dut_nfet_mirror_l": 7.506889604479073e-06,
+          "x_dut_pfet_load_w": 3.7662519998475906e-06,
+          "x_dut_pfet_load_l": 6.758561833593994e-06
+        },
+        "score": -70.90377912985761,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 17350480.0,
+          "score": -69.79271374122568
+        },
+        "dcgain": {
+          "curr_val": 33.67162,
+          "score": 0.0
+        },
+        "pm": {
+          "curr_val": 101.0,
+          "score": -1.1110653886319266
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_5/ota-5t_tb-loopgain_5.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 5.146313663497567e-06,
+          "x_dut_nfet_input_l": 2.9089818330109116e-06,
+          "x_dut_nfet_mirror_w": 4.025102643296122e-07,
+          "x_dut_nfet_mirror_l": 4.2725624983198935e-06,
+          "x_dut_pfet_load_w": 8.624456357266754e-06,
+          "x_dut_pfet_load_l": 2.9836697321012613e-06
+        },
+        "score": -86.10659364888112,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 27805650.0,
+          "score": -67.01259756767004
+        },
+        "dcgain": {
+          "curr_val": 29.14681,
+          "score": -0.42659241224671796
+        },
+        "pm": {
+          "curr_val": 117.0,
+          "score": -18.667403668964354
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_6/ota-5t_tb-loopgain_6.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 9.166012253692705e-06,
+          "x_dut_nfet_input_l": 1.8e-07,
+          "x_dut_nfet_mirror_w": 2.7645869569503124e-06,
+          "x_dut_nfet_mirror_l": 1.8e-07,
+          "x_dut_pfet_load_w": 1.8e-07,
+          "x_dut_pfet_load_l": 9.999999999999999e-06
+        },
+        "score": -51.823540430497374,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 84814830.00000001,
+          "score": -48.22606356900785
+        },
+        "dcgain": {
+          "curr_val": 22.80194,
+          "score": -3.5974768614895236
+        },
+        "pm": {
+          "curr_val": 86.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_7/ota-5t_tb-loopgain_7.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 1.8e-07,
+          "x_dut_nfet_input_l": 1.8e-07,
+          "x_dut_nfet_mirror_w": 1.8e-07,
+          "x_dut_nfet_mirror_l": 1.8e-07,
+          "x_dut_pfet_load_w": 1.8e-07,
+          "x_dut_pfet_load_l": 7.77422652632073e-06
+        },
+        "score": -62.99072958422447,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 49289260.0,
+          "score": -60.66186075205353
+        },
+        "dcgain": {
+          "curr_val": 25.34142,
+          "score": -2.3288688321709383
+        },
+        "pm": {
+          "curr_val": 87.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_8/ota-5t_tb-loopgain_8.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 5.8741162758445334e-06,
+          "x_dut_nfet_input_l": 1.8e-07,
+          "x_dut_nfet_mirror_w": 5.461897320319411e-06,
+          "x_dut_nfet_mirror_l": 2.529846907831145e-06,
+          "x_dut_pfet_load_w": 3.838593304920757e-06,
+          "x_dut_pfet_load_l": 9.884207690122544e-06
+        },
+        "score": -94.74270815355433,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 516181100.0,
+          "score": -91.05794217714067
+        },
+        "dcgain": {
+          "curr_val": 22.62713,
+          "score": -3.684765976413651
+        },
+        "pm": {
+          "curr_val": 83.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_9/ota-5t_tb-loopgain_9.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 2.0785352759063247e-06,
+          "x_dut_nfet_input_l": 1.8e-07,
+          "x_dut_nfet_mirror_w": 2.0451261663277026e-06,
+          "x_dut_nfet_mirror_l": 8.184286327733103e-07,
+          "x_dut_pfet_load_w": 1.8e-07,
+          "x_dut_pfet_load_l": 8.954797597570124e-06
+        },
+        "score": -49.97119687143898,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 89356330.0,
+          "score": -46.46444538617986
+        },
+        "dcgain": {
+          "curr_val": 22.983620000000002,
+          "score": -3.5067514852591186
+        },
+        "pm": {
+          "curr_val": 86.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_10/ota-5t_tb-loopgain_10.log"
+    },
+    {
+      "point": {
+        "params": {
+          "x_dut_nfet_input_w": 9.999999999999999e-06,
+          "x_dut_nfet_input_l": 1.301301372954203e-06,
+          "x_dut_nfet_mirror_w": 2.357926234255558e-06,
+          "x_dut_nfet_mirror_l": 1.8049981824815495e-06,
+          "x_dut_pfet_load_w": 1.8e-07,
+          "x_dut_pfet_load_l": 6.577364685194736e-06
+        },
+        "score": -56.81624015592956,
+        "metadata": {}
+      },
+      "fit_summary": {
+        "ugf": {
+          "curr_val": 63911840.0,
+          "score": -55.835566595543625
+        },
+        "dcgain": {
+          "curr_val": 28.03859,
+          "score": -0.9806735603859362
+        },
+        "pm": {
+          "curr_val": 91.0,
+          "score": 0.0
+        }
+      },
+      "log_file": "/foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/sizing/spice_out/run_11/ota-5t_tb-loopgain_11.log"
+    }
+  ]
+}

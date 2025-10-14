@@ -1,34 +1,19 @@
-"""This Module includes base """
+"""This Module implements the nevergrad-based (evolutionary algorithms) optimizers """
 import logging
-import json
 import torch
 import numpy        as np
-import sympy        as sp
 import nevergrad    as ng
-import plotly.graph_objects as go
 
-from    typing      import Dict, List, Tuple, Any, Mapping
-
-
+from    typing      import Dict, Tuple, Any, Mapping
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
-from   symxplorer.designer_tools.domains    import Project_Setup, ListTargetSpec, TargetSpec
-
+from   symxplorer.designer_tools.domains    import Project_Setup
 
 from   symxplorer.optimization.base         import Spice_Constraint_Satisfaction, Spice_Single_Objective, Spice_Bode_Optimizer, Base_Optimizer
-from   symxplorer.optimization.base         import MAX_PENALTY, MAX_REWARD
 
 logger = logging.getLogger("SymXplorer.Nevergrad")
-
-s = sp.symbols("s")
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dtype  = torch.double
-
-torch.set_default_dtype(dtype)
-torch.set_default_device(device)
-logger.info(f'Using device: {device} and dtype: {dtype}')
+logger.debug(f'imported {__name__}')
 
 
 # ----------------------------
@@ -85,16 +70,15 @@ class NevergradMixin(Base_Optimizer):
         # Provide feedback to optimizer (The negative of the fitness score is used because the optimizer is set to minimize this value... this way the optimizer will maximize the fitness score.
         self.optimizer.tell(candidate, -1 * curr_score)
         return candidate.value, curr_score, metadata
-    
 
 # ------------------------------------------------
-# B [CONCRETE] Nevergrad-based Bode Fitter
+# B [USER-ENDPOINT] Nevergrad-based Bode Fitter
 # ------------------------------------------------
 class Nevergrad_Spice_Bode_Optimizer(NevergradMixin, Spice_Bode_Optimizer):
     pass
 
 # ------------------------------------------------
-# B [CONCRETE] Nevergrad-based Constraint Satisfaction
+# B [USER-ENDPOINT] Nevergrad-based Constraint Satisfaction
 # ------------------------------------------------
 class Nevergrad_Spice_Constraint_Satisfaction(NevergradMixin, Spice_Constraint_Satisfaction):
     def __init__(self,
@@ -102,9 +86,9 @@ class Nevergrad_Spice_Constraint_Satisfaction(NevergradMixin, Spice_Constraint_S
                  spicelib_wrapper : Spicelib_Wrapper):
         super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
         self.parametrization: ng.p.Dict | None = None
-    
+        logger.info(f"started the {__class__} optimizer class")
 # ------------------------------------------------
-# B [CONCRETE] Nevergrad-based Single Objective Optimizer
+# B [USER-ENDPOINT] Nevergrad-based Single Objective Optimizer
 # ------------------------------------------------
 class Nevergrad_Spice_Single_Objective(NevergradMixin, Spice_Single_Objective):
     def __init__(self,
@@ -112,3 +96,4 @@ class Nevergrad_Spice_Single_Objective(NevergradMixin, Spice_Single_Objective):
                  spicelib_wrapper : Spicelib_Wrapper):
         super().__init__(setup_obj = setup_obj, spicelib_wrapper = spicelib_wrapper)
         self.parametrization: ng.p.Dict | None = None
+        logger.info(f"started the {__class__} optimizer class")
