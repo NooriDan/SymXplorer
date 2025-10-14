@@ -5,6 +5,7 @@ from datetime import datetime
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict, Any, Iterator, Tuple
+from typing import List, Optional, Union, Dict, Any, Iterator, Tuple
 from pathlib import Path
 from enum import Enum
 
@@ -46,6 +47,25 @@ class Error_Types(str, Enum):
     RELATIVE_ABSOLUTE = "relative-absolute"
     RELATIVE_SQUARED  = "relative-squared"
     RELATIVE_EXPONENTIAL = "relative-exponential"
+    RELATIVE_SIGMOID = "relative-sigmoid"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
+<<<<<<< HEAD
+
+class Reward_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    RELATIVE_ABSOLUTE = "relative-absolute"
+    RELATIVE_SIGMOID = "relative-sigmoid"
+
+    def is_relative(self) -> bool:
+        return "relative" in self.value
+=======
+>>>>>>> origin/main
+
+class Reward_Types(str, Enum):
+    ABSOLUTE = "absolute"
+    RELATIVE_ABSOLUTE = "relative-absolute"
     RELATIVE_SIGMOID = "relative-sigmoid"
 
     def is_relative(self) -> bool:
