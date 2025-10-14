@@ -8,6 +8,7 @@ from    typing      import Dict, Tuple, Any, List
 from ax.api.client  import Client
 from ax.api.configs import RangeParameterConfig
 from ax.api.types   import TParameterization
+from ax.api.protocols.metric import IMetric
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
 from   symxplorer.designer_tools.domains    import Project_Setup
@@ -51,10 +52,13 @@ class Ax_Client_Mixin(Base_Optimizer):
         # (1) Ax - create the client
         client = Client(random_seed=self.optimizer_config.random_seed, storage_config=None)
         # (2) Ax - add the parameterization
-        client.configure_experiment(parameters=self.parametrization)
-        # (3) Ax - Configure the objective and tracking metrics
+        client.configure_experiment(parameters=self.parametrization, name="SymXplorer-Experiment")
+        # (3) Ax - Configure the objective
         client.configure_optimization(objective=SCORE_METRIC_NAME) # maxmimize the "score"
-        # client.configure_metrics(...)
+        # (4) Ax - Add tracking metrics
+        _tracking_metrics = self.get_tracking_metrics_from_config()
+        client.configure_metrics(metrics=_tracking_metrics)
+        # Set the optimizer object
         self.optimizer : Client = client
         return True
 
@@ -72,9 +76,26 @@ class Ax_Client_Mixin(Base_Optimizer):
             curr_score, metadata = self.evaluate(parameterization=denorm_params)
             # Provide feedback to optimizer: Complete the trial with the result
             raw_data = {SCORE_METRIC_NAME : curr_score}
+            raw_data = self.extract_tracking_metrics_from_metadata(metadata=metadata, save_in_dict=raw_data)
             self.optimizer.complete_trial(trial_index=trial_index, raw_data=raw_data)
 
         return parameters, curr_score, metadata
+
+    # Helper methods
+    def get_tracking_metrics_from_config(self) -> List[IMetric]:
+        list_of_metrics: List[IMetric] = []
+        for spec_name in self.optimizer_config.target_specs.list_target_names():
+            list_of_metrics.append(IMetric(spec_name))
+        return list_of_metrics
+    
+    def extract_tracking_metrics_from_metadata(self, metadata, save_in_dict: Dict[str, Any]) -> Dict[str, Any]:
+        logger.debug("Extracing the tracking metrics from the metadata.")
+        for metric_name, content in metadata.items():
+            if metric_name in self.optimizer_config.target_specs.list_target_names():
+                save_in_dict[metric_name] = content['curr_val']
+                logger.debug(f"\tadded {metric_name} = {content['curr_val']} to tracking metric dict - curr size {len(save_in_dict)}")
+        logger.debug("Completed extracting the tracking metrics.")
+        return save_in_dict
 
 # ------------------------------------------------
 # B [ABSTRACT] Optimizers with with Ax-client + custom-BoTorch Model 
