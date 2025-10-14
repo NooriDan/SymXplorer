@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 this is the repo containing the xschem design for 5 transistor OTA design. There was no symbolic exploration in this case, rather it was created as a sanity check fo rthe optimizer.
-=======
-this is the repo containing the xschem design for 5 transistor OTA design.
->>>>>>> origin/main
