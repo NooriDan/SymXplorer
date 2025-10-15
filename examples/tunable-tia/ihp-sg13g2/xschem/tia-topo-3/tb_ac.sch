@@ -343,21 +343,10 @@ C {devices/code.sym} 150 -300 0 0 {name=dut_params only_toplevel=false value="
 
 * PASSIVE ELEMENT PARAMETERS
 
-.param x_dut_cap_l=60.0u
-.param x_dut_cap_w=6.0u
-.param x_dut_cap_m=10
-
-
-.param x_dut_res_s_l=50.0u
-.param x_dut_res_s_w=5.0u
-.param x_dut_res_s_m=1
-
-.param x_dut_res_3_l=50.0u
-.param x_dut_res_3_w=5.0u
-.param x_dut_res_3_m=1
-
-.param x_dut_ind_size=1n
+.param x_dut_cap_size=1.0n
+.param x_dut_res_size=10.0k
+.param x_dut_ind_size=1.0n
 
 ****** END of DUT Params ****** 
 "}
-C {tunable-tia/ihp-sg13g2/xschem/tia-topo-1/tia-bpf-1-ideal-ind.sym} 592.5 -770 0 0 {name=x_dut }
+C {tunable-tia/ihp-sg13g2/xschem/tia-topo-3/tia-bpf-3-ideal-component.sym} 592.5 -770 0 0 {name=x_dut }

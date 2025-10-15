@@ -201,7 +201,7 @@ XR1 vss inp rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
 XR2 vss inn rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
 XR3 vop von rppd w={x_dut_res_3_w} l={x_dut_res_3_l} m={x_dut_res_3_m} b=0
 L2 vdd von {x_dut_ind_size} m=1
-L3 vdd vop m=1
+L3 vdd vop {x_dut_ind_size} m=1
 .ends
 
 .GLOBAL GND
