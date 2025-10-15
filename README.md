@@ -10,9 +10,10 @@ Welcome to the **SymXplorer** project! This is an opensource symbolic toolbox fo
 - **Size** (through [Ax](https://ax.dev/) for Bayesian Optimization tool and [Nevergrad](https://github.com/facebookresearch/nevergrad) for Evolutionary algorithms) and visualize a filter's response quickly.
 - **Visualize** the design space and the understand the performance boundries of your design in a certain PDK.
 - **Constraint satisfaction and single objective based optimization is available.**
-- Interfaces with opensource simulator **ngsppice** (via [spicelib](https://github.com/nunobrum/spicelib))and PDKs. Suggested to use in [IIC-OSIC docker container](https://github.com/iic-jku/IIC-OSIC-TOOLS).
+- Interfaces with opensource simulator **ngspice** or other SPICE-based simulators (via [spicelib](https://github.com/nunobrum/spicelib)) and PDKs. Suggested to use in [IIC-OSIC docker container](https://github.com/iic-jku/IIC-OSIC-TOOLS).
 - Generate automatic LaTeX report of your runs
-- Currently have pre-defined demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
+- Symbolic Exploration: Currently have pre-defined demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
+- Circuit sizing: Explore [5-transistor OTA](examples/5t-ota) or [Differential Common Gate TIA](examples/5t-ota) examples directory that use the open-source IHP PDK.
 # Examples
 
 # How to get started
