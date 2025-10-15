@@ -118,7 +118,7 @@ footprint=1206
 device=inductor}
 C {ind.sym} 760 -250 0 0 {name=L3
 m=1
-value="@ind_size"
+value=\{x_dut_ind_size\}
 footprint=1206
 device=inductor}
 C {devices/lab_pin.sym} 500 -610 0 0 {name=p13 sig_type=std_logic lab=vdd}

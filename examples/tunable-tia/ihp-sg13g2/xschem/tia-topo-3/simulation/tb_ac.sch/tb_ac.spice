@@ -1,4 +1,4 @@
-** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tb_ac.sch
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-3/tb_ac.sch
 **.subckt tb_ac
 V0 VSS GND 0
 V2 VDD GND {vdd}
@@ -9,7 +9,7 @@ Icm In GND {icm}
 Idn In GND dc 0 ac -0.5
 Icm1 Ip GND {icm}
 Idp Ip GND dc 0 ac 0.5
-x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
+x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-3-ideal-component
 **** begin user architecture code
 
 
@@ -94,7 +94,6 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
     echo ==================================
     echo END of Control
     echo ==================================
-    quit
 .endc
 ******  END OF CONTROL SECTION ******
 
@@ -160,20 +159,9 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 
 * PASSIVE ELEMENT PARAMETERS
 
-.param x_dut_cap_l=60.0u
-.param x_dut_cap_w=6.0u
-.param x_dut_cap_m=10
-
-
-.param x_dut_res_s_l=50.0u
-.param x_dut_res_s_w=5.0u
-.param x_dut_res_s_m=1
-
-.param x_dut_res_2_l=50.0u
-.param x_dut_res_2_w=5.0u
-.param x_dut_res_2_m=1
-
-.param x_dut_ind_size=1n
+.param x_dut_cap_size=1.0n
+.param x_dut_res_size=10.0k
+.param x_dut_ind_size=1.0n
 
 ****** END of DUT Params ******
 
@@ -181,10 +169,10 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 **** end user architecture code
 **.ends
 
-* expanding   symbol:  examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym # of pins=7
-** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym
-** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sch
-.subckt tia-bpf-2-ideal-ind vdd vop vss von vbias inn inp
+* expanding   symbol:  tunable-tia/ihp-sg13g2/xschem/tia-topo-3/tia-bpf-3-ideal-component.sym # of pins=7
+** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-3/tia-bpf-3-ideal-component.sym
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-3/tia-bpf-3-ideal-component.sch
+.subckt tia-bpf-3-ideal-component vdd vop vss von vbias inn inp
 *.iopin vdd
 *.iopin vss
 *.ipin inp
@@ -194,14 +182,12 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 *.ipin vbias
 XM1 vop vbias inn vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
 XM2 von vbias inp vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
-XC1 inp vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
-XC2 inn vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
-XR1 von vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
-XR2 vop vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
-XR3 inp von rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
 L2 inp vss {x_dut_ind_size} m=1
 L3 inn vss {x_dut_ind_size} m=1
-XR4 inn vop rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
+R1 vdd vop {x_dut_res_size} m=1
+R2 vdd von {x_dut_res_size} m=1
+C1 vdd vop {x_dut_cap_size} m=1
+C2 vdd von {x_dut_cap_size} m=1
 .ends
 
 .GLOBAL GND

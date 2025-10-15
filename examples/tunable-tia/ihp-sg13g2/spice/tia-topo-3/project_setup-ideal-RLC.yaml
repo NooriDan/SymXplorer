@@ -1,13 +1,13 @@
 # The universal circuit setup file
 project:
-  name: 5T-OTA
-  description: 5 Transistor OTA example sizing in the ihp-sg13g2 technology
-  simulator: /foss/tools/bin/ngspice
+  name: Tunable-TIA-3
+  description: Tunable TIA BPF example sizing in the ihp-sg13g2 technology (third topology)
+  simulator: ngspice
   save_sim: False
 
-  ws_root : /foss/designs/eda/SymXplorer/examples/5t-ota/ihp-sg13g2/
+  ws_root : /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/
   # The following paths are relative to the ws_root
-  netlist : spice/ota-5t_tb-loopgain.spice
+  netlist : spice/tia-topo-3/tb_ac.spice
   outdir  : sizing/spice_out
   
   tech_spec : 
@@ -26,6 +26,18 @@ project:
       max_pfet_l : 10u
       min_pfet_l : 0.18u
 
+      # capacitor (mim)
+      max_cap_size : 100.0n
+      min_cap_size : 1.0p
+
+      # resistor
+      max_res_size : 1000.0k
+      min_res_size : 1.0k
+
+      # inductor (ideal model in schematic, but the layout model exists)
+      max_ind_size : 10n
+      min_ind_size : 1n
+
   pvt: 
     temp: 25
     corner: tt
@@ -35,32 +47,44 @@ project:
     # ------------------------
     # nfet params
     # ------------------------
-    - name : x_dut_nfet_input_w
+    - name : x_dut_nfet_w
       min_val: min_nfet_w
       max_val: max_nfet_w
+      log_scale: False
+      default: 0.4u
     
-    - name : x_dut_nfet_input_l
-      min_val: min_nfet_l
-      max_val: max_nfet_l
-
-    - name : x_dut_nfet_mirror_w
-      min_val: min_nfet_w
-      max_val: max_nfet_w
-    
-    - name : x_dut_nfet_mirror_l
+    - name : x_dut_nfet_l
       min_val: min_nfet_l
       max_val: max_nfet_l
 
     # ------------------------
-    # pfet params
+    # Cap params
     # ------------------------
-    - name : x_dut_pfet_load_w
-      min_val: min_nfet_w
-      max_val: max_nfet_w
+    - name : x_dut_cap_size
+      min_val: min_cap_size
+      max_val: max_cap_size
+
+    # ------------------------
+    # Res params
+    # ------------------------
+    - name : x_dut_res_size
+      min_val: min_res_size
+      max_val: max_res_size
+
+    # ------------------------
+    # Ind params
+    # ------------------------
+    - name : x_dut_ind_size
+      min_val: min_ind_size
+      max_val: max_ind_size
+
     
-    - name : x_dut_pfet_load_l
-      min_val: min_nfet_l
-      max_val: max_nfet_l
+    # ------------------------
+    # Voltage Bias params
+    # ------------------------
+    - name : vbias
+      min_val: 0.0
+      max_val: 1.8
 
   testbench_params:
       name: tb_ac
@@ -68,11 +92,19 @@ project:
         - name : icm
           description : input common mode current
           val : 0.5e-6
+        
+        - name : vbias
+          description : bias voltage for the TIA, controling its gm
+          val : 0.25
+        
+        - name : cload
+          description : load capacitence
+          val : 100p
       
   optimizer_config:
-    name: TwoPointsDE # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
+    name: CMA # CMA, RandomSearch, OnePlusOne, TwoPointsDE, NGOpt, PSO, DE
     type: nevergrad
-    budget: 10
+    budget: 250
     random_seed: 48
 
     # The following overwrite the optimizer bounds.
@@ -93,26 +125,36 @@ project:
       include_mag_loss: True
     
     target_specs:
-      - name: ugf
-        description: Unitiy gain frequency # optional documentation field
-        target: 200e6     # 100 MHz
+      - name: fc
+        description: Center frequency # optional documentation field
+        target: 100e6     # 100 MHz
         range: 1e8      # The expected variation range. used in normalizing the metric values
         goal: exact       # options: exact, exceed, minimize
         tolerance: 10e6  # [Optional] allowed deviation in the spec, otherwise 5% margin is assumed.
         sim_type: ac      # options: dc, ac, tran, noise
-        weight:   100.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
         log_scale: False  # [Optional] Used to indicate the spec is on log scale
         error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True      # [Optional] Used to exclude from the loss function
 
-      - name: dcgain
-        description: gain in dB at DC
-        target: 35      # 40 dB
-        range: 100      # The expected variation range. used in normalizing the metric values
+      - name: q
+        description: quality factor # optional documentation field
+        target: 10    
+        goal: exact       # options: exact, exceed, minimize
+        range: 10        # The expected variation range. used in normalizing the metric values
+        tolerance: 2      # [Optional] allowed deviation in the spec
+        sim_type: ac      # options: dc, ac, tran, noise
+        weight:   10.0     # [Optional] non-negative weight factor for this target, else it is 1.0
+        enable: False     # [Optional] Used to exclude from the loss function
+
+      - name: gain_db
+        description: gain in dB at fc
+        target: 40      # 40 dB
+        range: 100     # The expected variation range. used in normalizing the metric values
         goal: exceed    # options: exact, exceed, minimize
         tolerance: 5    # [Optional] allowed deviation in the spec
         sim_type: ac    # options: dc, ac, tran, noise
-        weight:   100.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
         error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True    # [Optional] Used to exclude from the loss function
 
@@ -121,9 +163,9 @@ project:
         target: 70     # in degrees
         range: 45      # The expected variation range. used in normalizing the metric values
         goal: exact    # options: exact, exceed, minimize
-        tolerance: 30  # [Optional] allowed deviation in the spec
+        tolerance: 10  # [Optional] allowed deviation in the spec
         sim_type: ac   # options: dc, ac, tran, noise
-        weight:   100.0  # [Optional] non-negative weight factor for this target, else it is 1.0
+        weight:   10.0  # [Optional] non-negative weight factor for this target, else it is 1.0
         error_type: relative-sigmoid # [Optional] options: absolute, target_spec_val, squared, relative-squared, relative-absolute, relative-exponential
         enable: True    # [Optional] Used to exclude from the loss function
 
