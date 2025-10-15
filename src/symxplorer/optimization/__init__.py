@@ -12,7 +12,7 @@ __all__ = [
     # One endpoint for all optimizer types
     'SPICE_OPTIMIZER_CLASSES',
     'Optimizer_Type_Enum',
-    'SPICE_Circuit_Optimizer_Orchestrator',
+    'Circuit_Optimizer_Orchestrator_with_SPICE',
     # --------------------------------
 
     # ** For backward compatability **

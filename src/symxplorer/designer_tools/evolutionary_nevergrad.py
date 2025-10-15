@@ -185,7 +185,6 @@ class Nevergrad_Base_Optimizer(ABC):
         fig.add_trace(go.Scatter(
             x=x_values,
             y=score_values,
-            y=score_values,
             mode="markers+lines",
             name="Score",
             line=dict(color="blue", width=2),
@@ -203,9 +202,7 @@ class Nevergrad_Base_Optimizer(ABC):
 
         fig.update_layout(
             title="Score vs. Optimization Trial",
-            title="Score vs. Optimization Trial",
             xaxis_title="Optimization Step",
-            yaxis_title="Score",
             yaxis_title="Score",
             template="plotly_dark",
             showlegend=True
