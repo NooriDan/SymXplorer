@@ -1,15 +1,16 @@
 # SymXplorer: Symbolic and Optimization-Based Analog Design Automation
 
-Welcome to the **SymXplorer** project! This is an opensource symbolic tool**box for analyzing analog circuits based on [SymPy](https://www.sympy.org/en/index.html) in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. **We have added class-based optimization algorithms that use SPICE-in-the-loop simulations** to help designers size, understand and visualize their cicrcuit topology. A python-based toolbox means endless opportunities for future integeration with scientifict, machine learning, and optimization toolboxes such as [PyTorch](https://pytorch.org/), [Ax](https://ax.dev/), and [Nevergrad](https://facebookresearch.github.io/nevergrad/).
+Welcome to the **SymXplorer** project! This is an opensource symbolic toolbox for analyzing analog circuits based on [SymPy](https://www.sympy.org/en/index.html) in python. Everything from transistor level circuits to active analog filters with multiple feedback. We're actively developing new features. **We have added class-based optimization algorithms that use SPICE-in-the-loop simulations** to help designers size, understand and visualize their cicrcuit topology. A python-based toolbox means endless opportunities for future integeration with scientifict, machine learning, and optimization toolboxes such as [PyTorch](https://pytorch.org/), [Ax](https://ax.dev/), and [Nevergrad](https://facebookresearch.github.io/nevergrad/).
 
 ## Features
-- Customize nodal equation and impedance combination for new circuits under test (derive the symbolic nodal equations using [lcapy](https://lcapy.readthedocs.io/en/latest/))
+- Customize nodal equation and impedance combination for new circuits under test (optional: derive the symbolic nodal equations using [lcapy](https://lcapy.readthedocs.io/en/latest/))
 - **Analyze** the possible filters, oscillators, and more!
 - Model non-idealities of circuit components (e.g., FET transistors through their T matrix)
 - **Explore** possiblem higher-order (2+) transfer functions for filter design.
-- **Size** (through [Ax](https://ax.dev/) for Bayesian Optimization tool and [Nevergrad](https://github.com/facebookresearch/nevergrad) for Evolutionary algorithms) and visualize a filter's response quickly for design.
+- **Size** (through [Ax](https://ax.dev/) for Bayesian Optimization tool and [Nevergrad](https://github.com/facebookresearch/nevergrad) for Evolutionary algorithms) and visualize a filter's response quickly.
 - **Visualize** the design space and the understand the performance boundries of your design in a certain PDK.
 - **Constraint satisfaction and single objective based optimization is available.**
+- Interfaces with opensource simulator **ngsppice** (via [spicelib](https://github.com/nunobrum/spicelib))and PDKs. Suggested to use in [IIC-OSIC docker container](https://github.com/iic-jku/IIC-OSIC-TOOLS).
 - Generate automatic LaTeX report of your runs
 - Currently have pre-defined demo-circuits for Common-gate (CG) and Common-source (CS) differential input/output ([here](src/symcircuit/demo/differential.py)), multipl-feedback filter designs in current and voltage mode ([here](src/symcircuit/demo/multiple_feedback.py)), sallen-key topology ([here](src/symcircuit/demo/sallen_key.py)), and dual-amplifier ([here](src/symcircuit/demo/dual_amplifier.py)).
 # Examples
