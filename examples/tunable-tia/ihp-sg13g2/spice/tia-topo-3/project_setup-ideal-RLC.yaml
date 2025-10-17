@@ -5,10 +5,10 @@ project:
   simulator: ngspice
   save_sim: False
 
-  ws_root : /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/
+  ws_root : /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/spice/tia-topo-3/
   # The following paths are relative to the ws_root
-  netlist : spice/tia-topo-3/tb_ac.spice
-  outdir  : sizing/spice_out
+  netlist : tb_ac.spice
+  outdir  : output/sizing/spice_out
   
   tech_spec : 
     name : ihp-sg13g2
@@ -17,26 +17,26 @@ project:
       # n-fet
       max_nfet_w : 10u
       min_nfet_w : 0.18u
-      max_nfet_l : 10u
+      max_nfet_l : 2u
       min_nfet_l : 0.18u
 
       # p-fet
       max_pfet_w : 10u
       min_pfet_w : 0.18u
-      max_pfet_l : 10u
+      max_pfet_l : 2u
       min_pfet_l : 0.18u
 
       # capacitor (mim)
-      max_cap_size : 100.0n
-      min_cap_size : 1.0p
+      max_cap_size : 5.0p
+      min_cap_size : 10.0f
 
       # resistor
       max_res_size : 1000.0k
-      min_res_size : 1.0k
+      min_res_size : 0.1k
 
-      # inductor (ideal model in schematic, but the layout model exists)
-      max_ind_size : 10n
-      min_ind_size : 1n
+      # inductor 
+      max_ind_size : 1n
+      min_ind_size : 1p
 
   pvt: 
     temp: 25

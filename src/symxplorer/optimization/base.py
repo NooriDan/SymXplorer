@@ -231,7 +231,7 @@ class Base_Optimizer(ABC):
             logger.info("Opening interactive plot in browser...")
             fig.show()
 
-    def plot_design_space_exploration(self, param_x: str, param_y: str, save_path: Path | None = None, show: bool = False, denorm: bool = True) -> Tuple[torch.Tensor, torch.Tensor] | None:
+    def plot_design_space_exploration(self, param_x: str, param_y: str, save_path: Path | None = None, show: bool = False, denorm: bool = False) -> Tuple[torch.Tensor, torch.Tensor] | None:
         """Plot the exploration of the design space in terms of two parameters with Plotly."""
         logger = logging.getLogger("SymXplorer.plotter")
 

@@ -68,17 +68,10 @@ class Reward_Types(str, Enum):
     def is_relative(self) -> bool:
         return "relative" in self.value
 
-class Reward_Types(str, Enum):
-    ABSOLUTE = "absolute"
-    RELATIVE_ABSOLUTE = "relative-absolute"
-    RELATIVE_SIGMOID = "relative-sigmoid"
-
-    def is_relative(self) -> bool:
-        return "relative" in self.value
-
 # ------------------ Constants ------------------
 
 MULTIPLIERS = {
+        "f" : 1e-15,
         "p": 1e-12,
         "n": 1e-9,
         "u": 1e-6,

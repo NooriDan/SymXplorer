@@ -50,7 +50,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-3-ideal-component
     echo ----------------------------------
 
     * run ac simulation
-    ac dec 200 1e5 1e12
+    ac dec 200 1e1 1e12
 
     echo (1) post processing the AC sim
     * magnitude
@@ -143,7 +143,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-3-ideal-component
 ****** TB Parameters ******
 .param icm=0.5e-6
 .param vdd=1.2
-.param vbias=0.5
+.param vbias=1
 .param cload=100p
 ******  End of TB Params ******
 
@@ -159,9 +159,9 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-3-ideal-component
 
 * PASSIVE ELEMENT PARAMETERS
 
-.param x_dut_cap_size=1.0n
-.param x_dut_res_size=10.0k
-.param x_dut_ind_size=1.0n
+.param x_dut_cap_size=500f
+.param x_dut_res_size=1.0k
+.param x_dut_ind_size=10.0n
 
 ****** END of DUT Params ******
 
