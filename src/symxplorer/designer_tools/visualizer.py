@@ -53,7 +53,7 @@ class Symbolic_Visualizer:
         return True
     
     def set_params(self, param_str_to_value: Dict[str, float]) -> Dict[sp.Basic, float]:
-
+        """This function adss the given values to the substitution dictionary. it does not erase previous values. will need to call self.reset to clear past history"""
         for param_str, val in param_str_to_value.items():
             if self._str_to_param.get(param_str) is None:
                 raise KeyError(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
@@ -108,9 +108,9 @@ class Symbolic_Visualizer:
         """Substitutes the parameters in self.params_to_value into the symbolic TF in self.tf, 
         and returns magnitude_expr, phase_expr, H_numeric."""
 
-        if not self.is_defined_numerically():
-            print("!!Set the parameters of the TF through --self.set_params--!!!")
-            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. Provided {self.params_to_value} but need {self.tf.free_symbols}")
+        # if not self.is_defined_numerically():
+        #     print("!!Set the parameters of the TF through --self.set_params--!!!")
+        #     raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. Provided {self.params_to_value} but need {self.tf.free_symbols}")
 
         H_numeric = self.tf.subs(self.params_to_value)
 
@@ -190,16 +190,16 @@ class Symbolic_Visualizer:
         if self.tf_params is None:
             raise RuntimeError(f"The transfer function's filter parameters are not defined in self.tf_params")
         
-        if not self.is_defined_numerically():
-            print("!!Set the parameters of the TF through --self.set_params--!!!")
-            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. provided {self.params_to_value} but need {self.tf.free_symbols}")
-
-        if self.tf_params.get(param_name) is None:
+        expression = self.tf_params.get(param_name)
+        if expression is None:
             raise KeyError(f"Invalid filter parameter. Choose from {self.get_filter_param()}")
 
-        expression = self.tf_params.get(param_name)
         value = expression.subs(self.params_to_value)
 
+        if not self.is_defined_numerically():
+            print(f"Cannot numerically evaluate the TF since the design parameters are not resolved. provided {self.params_to_value} but need {self.tf.free_symbols}")
+            return value, np.nan
+            
         return value, round(float(value.evalf()), num_of_decimals)
 
 class Bode_Visualizer:
