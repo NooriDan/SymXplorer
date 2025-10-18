@@ -69,6 +69,7 @@ class Impedance_Block:
         Reads from allowedConnections_texts and converts each string representation
         of the impedance connections to its symbolic expression.
         """
+        self.allowedConnections = []
         for conn_text in allowedConnections_texts:
             parsed = self.parse_expression(conn_text)
             self.allowedConnections.append(parsed)

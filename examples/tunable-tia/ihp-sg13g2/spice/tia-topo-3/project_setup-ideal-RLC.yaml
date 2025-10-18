@@ -15,13 +15,13 @@ project:
     # PDK RULES
     constraints:
       # n-fet
-      max_nfet_w : 10u
+      max_nfet_w : 100u
       min_nfet_w : 0.18u
       max_nfet_l : 2u
       min_nfet_l : 0.18u
 
       # p-fet
-      max_pfet_w : 10u
+      max_pfet_w : 100u
       min_pfet_w : 0.18u
       max_pfet_l : 2u
       min_pfet_l : 0.18u
