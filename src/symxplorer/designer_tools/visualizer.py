@@ -56,7 +56,9 @@ class Symbolic_Visualizer:
         """This function adss the given values to the substitution dictionary. it does not erase previous values. will need to call self.reset to clear past history"""
         for param_str, val in param_str_to_value.items():
             if self._str_to_param.get(param_str) is None:
-                raise KeyError(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
+                print(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
+                continue
+                # raise KeyError(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
             self.params_to_value[self._str_to_param.get(param_str)] = val
 
         self.get_bode_expression() # To update the
@@ -103,7 +105,6 @@ class Symbolic_Visualizer:
         self._str_to_param:    Dict[str, sp.Basic] = {str(sym) : sym for sym in self.tf.free_symbols if sym != s}
         self.params_to_value:  Dict[sp.Basic, float] = {s: 2 * sp.pi * sp.I * f}
 
-
     def get_bode_expression(self) -> Tuple[sp.Basic, sp.Basic, sp.Basic]:
         """Substitutes the parameters in self.params_to_value into the symbolic TF in self.tf, 
         and returns magnitude_expr, phase_expr, H_numeric."""
@@ -122,7 +123,6 @@ class Symbolic_Visualizer:
 
         return self.magnitude_expr, self.phase_expr, H_numeric
 
-    
     def eval_freq(self, frequency: float) -> Tuple[float, float]:
 
         if self.magnitude_expr is None and self.phase_expr is  None:
@@ -183,10 +183,12 @@ class Symbolic_Visualizer:
         plt.show()
 
     def get_filter_param(self):
+        """Returns an alphabetically sorted list of performance metrics of the filter's transfer function"""
         return sorted([param_name for param_name in self.tf_params.keys() if self.tf_params.get(param_name) is not None])
 
     def eval_filter_parameter(self, param_name: str, num_of_decimals: int = 3) -> Tuple[sp.Expr, float]:
-
+        """Evaluates the given filter perfomance metric up to the given decimal point. Returns a tuple of symbolic expression and float. 
+        If the result cannot be evaluated numerically the float value is np.nan."""
         if self.tf_params is None:
             raise RuntimeError(f"The transfer function's filter parameters are not defined in self.tf_params")
         
@@ -201,6 +203,21 @@ class Symbolic_Visualizer:
             return value, np.nan
             
         return value, round(float(value.evalf()), num_of_decimals)
+    
+    def print_filter_parameters(self, num_of_decimals: int = 3) -> Dict[str, float]:
+        """Prints a summary of perfomance metrics (symbolic values are returned if there is not enough information to resolve this numerically)"""
+        out : Dict[str, float]= {}
+        print("printing parameters:")
+        print("-------------------------------------")
+        for filter_param in self.get_filter_param():
+            expr, val = self.eval_filter_parameter(param_name=filter_param, num_of_decimals=num_of_decimals)
+            if filter_param == "wo": # The hack to convert wo to f in Hz.
+                filter_param = "f"
+                val = val/(2*np.pi)
+            print(f"\t{filter_param}:\t{expr if np.isnan(val) else val :.3e}")
+            out[filter_param] = val
+        print("-------------------------------------")
+        return out
 
 class Bode_Visualizer:
     def __init__(self, frequencies: np.ndarray, complex_response: np.ndarray):
