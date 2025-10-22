@@ -1,4 +1,4 @@
-v {xschem version=3.4.6 file_version=1.2}
+v {xschem version=3.4.7 file_version=1.2}
 G {}
 K {}
 V {}
@@ -57,7 +57,7 @@ N 900 -600 900 -540 {lab=#net1}
 N 830 -540 900 -540 {lab=#net1}
 N 830 -570 830 -540 {lab=#net1}
 N 1300 -630 1300 -590 {lab=v_out}
-C {devices/code_shown.sym} 0 -100 0 0 {name=MODEL only_toplevel=true
+C {devices/code_shown.sym} 20 -120 0 0 {name=MODEL only_toplevel=true
 format="tcleval( @value )"
 value=".lib cornerMOSlv.lib mos_tt
 "}
@@ -118,3 +118,17 @@ C {devices/spice_probe.sym} 1180 -630 0 0 {name=p6 attrs=""}
 C {devices/spice_probe.sym} 1090 -470 0 0 {name=p7 attrs=""}
 C {devices/lab_wire.sym} 1090 -530 0 0 {name=p8 sig_type=std_logic lab=v_ena}
 C {devices/vsource.sym} 830 -600 0 0 {name=Vin value="dc 0 ac 1"}
+C {devices/code.sym} 970 -220 0 0 {name=PARAMETERS
+only_toplevel=true
+value="
+
+.param x_dut_nfet_input_w=0.5u
+.param x_dut_nfet_input_l=5.0u
+
+.param x_dut_nfet_mirror_w=2.0u
+.param x_dut_nfet_mirror_l=5.0u
+
+.param x_dut_pfet_load_w=1.5u
+.param x_dut_pfet_load_l=5.0u
+
+"}
