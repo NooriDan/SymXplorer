@@ -1,0 +1,192 @@
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tb_noise.sch
+**.subckt tb_noise
+.save v(in)
+V0 VSS GND 0
+V2 VDD GND {vdd}
+V1 Vbias GND {vbias}
+C4 Von GND {cload} m=1
+C5 Vop GND {cload} m=1
+Icm2 In GND {icm}
+Idn1 In GND dc 0 ac -0.5
+Icm3 Ip GND {icm}
+Idp1 Ip GND dc 0 ac 0.5
+x_dut1 VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
+.save v(ip)
+.save v(vop)
+.save v(von)
+**** begin user architecture code
+
+
+****** START OF CONTROL SECTION ******
+.temp 27
+.control
+    option sparse
+    set filetype=ascii
+    save all
+
+    * --- AC Analysis ---
+    * Optional for debug
+    ac dec 101 1k 1G
+    plot 20*log10(v(Vop) - v(Von))
+    echo AC Analysis Complete.
+
+    echo =============================================
+    echo Starting Noise Analysis...
+    echo     (Output: v(Vop, Von), Input: Idp1)
+    echo =============================================
+
+    * --- Noise Analysis ---
+    * [EDIT] will need to change the frequency limits as needed.
+    noise v(Vop, Von) Idp1 lin 1000 1MEG 1000MEG 1
+    echo Noise Analysis Complete.
+
+    * Set the plot type to noise1 since this is where the information about noise densities are stored
+    setplot noise1
+    plot inoise_spectrum
+
+    echo ---------------------------------------------
+    echo Calculating Total Integrated Noise Metrics...
+    echo ---------------------------------------------
+    * Set the plot type to noise2 since this is where the integerated values are stored.
+    setplot noise2
+
+    * --- Save Metrics as Variables ---
+    * Create new vectors in the 'noise2' plot (which is now active)
+    let total_input_noise_sqr = inoise_total
+    let total_output_noise_sqr = onoise_total
+    let total_input_noise_rms = sqrt(inoise_total)
+    let total_output_noise_rms = sqrt(onoise_total)
+
+    * --- Print Metrics to Log ---
+    * Use echo and print to show the final RMS values clearly
+    echo
+    echo Total Input-Referred Noise (RMS):
+    print total_input_noise_rms
+    echo
+    echo Total Output-Referred Noise (RMS):
+    print total_output_noise_rms
+    echo
+
+    * --- Write to File ---
+    echo Saving noise spectra and metrics to rawspice.raw (has to have this name)...
+    * Only save whats needed.
+    write rawspice.raw noise1.inoise_spectrum noise1.onoise_spectrum noise2.inoise_total noise2.onoise_total
+
+    echo Save Complete.
+    echo =============================================
+    echo Simulation Finished.
+    echo =============================================
+    * quit
+
+.endc
+
+******  END OF CONTROL SECTION ******
+
+
+
+********** Models ************
+.lib cornerMOSlv.lib mos_tt
+.lib cornerRES.lib res_typ
+.lib /foss/pdks/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib cap_typ
+********** END of Models ************
+
+
+
+
+****** Save Statements ******
+*.option savecurrents
+
+** nfet small signal parameters **
+*.save @n.x_dut.xm1.nsg13_lv_nmos[cdd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgb]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgdol]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgg]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgsol]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cjd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cjs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[css]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gds]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gm]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gmb]
+.save @n.x_dut.xm1.nsg13_lv_nmos[ids]
+.save @n.x_dut.xm1.nsg13_lv_nmos[l]
+.save @n.x_dut.xm1.nsg13_lv_nmos[sfl]
+.save @n.x_dut.xm1.nsg13_lv_nmos[sid]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vth]
+
+.save @n.x_dut.xm1.nsg13_lv_nmos[vgs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vds]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vdss]
+
+******  End of Save Statements ******
+
+
+
+
+****** TB Parameters ******
+.param icm=0.5e-6
+.param vdd=1.2
+.param vbias=1
+.param cload=100p
+******  End of TB Params ******
+
+
+
+
+****** All DUT parameters ******
+
+* MOSFET PARAMETERS
+.param x_dut_nfet_w=0.40u
+.param x_dut_nfet_l=0.26u
+.param x_dut_nfet_m=10
+
+* PASSIVE ELEMENT PARAMETERS
+
+.param x_dut_cap_l=60.0u
+.param x_dut_cap_w=6.0u
+.param x_dut_cap_m=10
+
+
+.param x_dut_res_s_l=50.0u
+.param x_dut_res_s_w=5.0u
+.param x_dut_res_s_m=1
+
+.param x_dut_res_2_l=50.0u
+.param x_dut_res_2_w=5.0u
+.param x_dut_res_2_m=1
+
+.param x_dut_ind_size=1n
+
+****** END of DUT Params ******
+
+
+**** end user architecture code
+**.ends
+
+* expanding   symbol:  tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym # of pins=7
+** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sch
+.subckt tia-bpf-2-ideal-ind vdd vop vss von vbias inn inp
+*.iopin vdd
+*.iopin vss
+*.ipin inp
+*.ipin inn
+*.opin von
+*.opin vop
+*.ipin vbias
+XM1 vop vbias inn vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
+XM2 von vbias inp vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
+XC1 inp vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
+XC2 inn vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
+XR1 von vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
+XR2 vop vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
+XR3 inp von rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
+L2 inp vss {x_dut_ind_size} m=1
+L3 inn vss {x_dut_ind_size} m=1
+XR4 inn vop rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
+.ends
+
+.GLOBAL GND
+.end
