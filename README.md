@@ -97,6 +97,8 @@ This example provides a complete design flow for a 5-transistor OTA using the IH
     -   `5t_ota_sizing_with_multi_spec_constraint_sat_nevergrad.ipynb`
 -   **Layout**: `klayout` directory for the physical layout.
 
+For more details, see the [5t-ota README](./examples/5t-ota/readme.md).
+
 ### 2. CMFM Filter (`/examples/CMFM-filter`)
 
 This example showcases the symbolic exploration and sizing of a current-mode, multiple-feedback (CMFM) biquadratic filter.
@@ -108,6 +110,8 @@ This example showcases the symbolic exploration and sizing of a current-mode, mu
     -   `sym-sizing-bode-ax`: Sizing with symbolic expressions and Ax.
     -   `sym-sizing-bode-nevergrad`: Sizing with symbolic expressions and Nevergrad.
 
+For more details, see the [CMFM-filter README](./examples/CMFM-filter/readme.md).
+
 ### 3. Tunable TIA (`/examples/tunable-tia`)
 
 This example explores the design of a tunable transimpedance amplifier (TIA).
@@ -116,6 +120,8 @@ This example explores the design of a tunable transimpedance amplifier (TIA).
     -   `CG_TIA_Sym_Sizing.ipynb`
 -   **Automated Sizing**: A notebook demonstrating automated sizing of the TIA using an optimizer.
     -   `CG_TIA_Sym_Sizing_w_Optimizer.ipynb`
+
+For more details, see the [tunable-tia README](./examples/tunable-tia/readme.md).
 
 ## License
 
