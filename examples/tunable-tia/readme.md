@@ -1,10 +1,12 @@
 # Tunable Transimpedance Amplifier (TIA) Example
 
-This example explores the symbolic analysis and automated sizing of a tunable Transimpedance Amplifier (TIA), a critical component in optical communication receivers.
+This example explores the symbolic analysis and automated sizing of a tunable Transimpedance Amplifier (TIA), a critical component in biomedical insturmentation. 
 
 ## Circuit Overview
 
-A TIA converts a weak input current signal (typically from a photodiode) into a usable output voltage. This example focuses on a Common-Gate (CG) TIA topology, which is popular for its wide bandwidth. The "tunable" aspect refers to the ability to adjust the amplifier's characteristics, such as its gain or bandwidth, by changing bias conditions.
+A Transimpedance Amplifier (TIA) is a crucial component in many sensor interfaces, designed to convert a small input current into a usable output voltage. In the context of **biomedical instrumentation**, TIAs are often used to amplify faint currents from biosensors that detect neural signals, DNA, or other biological markers.
+
+This specific example focuses on a tunable Common-Gate (CG) TIA that is configured to act as a **bandpass filter**. This is critical for biomedical applications where the signal of interest exists within a specific frequency band (e.g., the action potentials of neurons). The bandpass characteristic allows the amplifier to selectively amplify these target signals while rejecting out-of-band noise and interference. The "tunable" nature of the TIA allows its center frequency and bandwidth to be adjusted, making it adaptable for different types of biomedical sensors and signals.
 
 ## Directory Structure
 
