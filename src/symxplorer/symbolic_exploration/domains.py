@@ -69,6 +69,7 @@ class Impedance_Block:
         Reads from allowedConnections_texts and converts each string representation
         of the impedance connections to its symbolic expression.
         """
+        self.allowedConnections = []
         for conn_text in allowedConnections_texts:
             parsed = self.parse_expression(conn_text)
             self.allowedConnections.append(parsed)
@@ -227,7 +228,7 @@ class Filter_Classification:
             f"{self.zCombo}, {self.transferFunc}"
         )
     
-    def has_impedance_combo(self, other) -> bool:
+    def has_impedance_combo(self, other : 'Filter_Classification') -> bool:
         if len(other.zCombo) != len(self.zCombo):
             raise IndexError(f"Unmatched impedance key size: {len(other.zCombo)} vs {len(self.zCombo)} ")
         for i, element in enumerate(self.zCombo):
@@ -240,22 +241,22 @@ class ExperimentResult:
 
     def __init__(self, 
                 experiment_name:      str,
-                output_directory:     Optional[str] = "Runs/EXPERIMENT_NAME",
+                output_directory:     str = "Runs/EXPERIMENT_NAME",
                 circuit_solver:       'Circuit_Solver' = None,
-                base_tfs_dict:        Optional[Dict[str, sympy.Basic]]  = {},                   # Safely handle mutable defaults
-                classifications_dict: Optional[Dict[str, List[Filter_Classification]]] = {}):  # Safely handle mutable defaults
+                base_tfs_dict:        Dict[str, sympy.Basic]  = {},                   # Safely handle mutable defaults
+                classifications_dict: Dict[str, List[Filter_Classification]] = {}):  # Safely handle mutable defaults
                 
         self.experiment_name:      str = experiment_name
-        self.output_directory:     Optional[str]   = output_directory
+        self.output_directory:     str = output_directory
         self.circuit_solver:       'Circuit_Solver'  = circuit_solver
-        self.base_tfs_dict:        Optional[Dict[str, sympy.Basic]] = base_tfs_dict         
-        self.classifications_dict: Optional[Dict[str, List[Filter_Classification]]] = classifications_dict
+        self.base_tfs_dict:        Dict[str, sympy.Basic] = base_tfs_dict         
+        self.classifications_dict: Dict[str, List[Filter_Classification]] = classifications_dict
 
         if output_directory == "Runs/EXPERIMENT_NAME":
             self.output_directory = f"Runs/{self.experiment_name}"
         os.makedirs(self.output_directory, exist_ok=True)
         
-        self.paths_to_pkl_file: str = self.find_results_file(start_dir=self.output_directory)
+        self.paths_to_pkl_file: List[str] = self.find_results_file(start_dir=self.output_directory)
 
     def add_all(self, impedance_key, baseHs, classifications):
         
@@ -274,18 +275,23 @@ class ExperimentResult:
         
         return self.classifications_dict[impedance_key], self.base_tfs_dict[impedance_key]
     
-    def get_impedance_combo(self, impedance_combo) -> Filter_Classification:
+    def get_impedance_combo(self, impedance_combo) -> Filter_Classification | None:
         for key, value in self.classifications_dict.items():
             for classification in value:
                 if classification.has_impedance_combo(impedance_combo):
                     return classification 
         return None
 
-    def get_filter_types(self, fTypes: List[str]) -> List[Filter_Classification]:
+    def get_filter_types(self, fTypes: List[str] | str, zCombos: List[str] | str | None = None) -> List[Filter_Classification]:
         if isinstance(fTypes, str):
             fTypes = [fTypes]
+        if isinstance(zCombos, str):
+            zCombos = [zCombos]
+
         output = []
         for key, val in self.classifications_dict.items():
+            if (not zCombos is None) and (not key in zCombos):
+                continue # Skip the impedance connections that dont match the filter (if a filtering condition was specified)  
             output += [obj for obj in val if obj.fType in fTypes]
 
         return output
@@ -391,9 +397,9 @@ class ExperimentResult:
             print(f"Error loading ExperimentResult: {e}")
             return None
 
-    def find_results_file(self, start_dir: str = "./", filename: str = "results.pkl"):
+    def find_results_file(self, start_dir: str = "./", filename: str = "results.pkl") -> List[str]:
         # List to store all the directories that contain the file
-        directories = []
+        directories : List[str] = []
         
         for root, dirs, files in os.walk(start_dir):
             if filename in files:
@@ -405,7 +411,7 @@ class ExperimentResult:
         if where_to_look == "":
             where_to_look = self.output_directory
 
-        self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look)
+        self.paths_to_pkl_file = self.find_results_file(start_dir=where_to_look)
 
         if len(self.paths_to_pkl_file) == 1:
             print(f"Found a unique results.pkl file at {self.paths_to_pkl_file[0]}")
@@ -430,7 +436,7 @@ class ExperimentResult:
             where_to_look = self.output_directory
 
         filename = "results_circuit_solution.pkl"
-        self.paths_to_pkl_file: str = self.find_results_file(start_dir=where_to_look, filename=filename)
+        self.paths_to_pkl_file = self.find_results_file(start_dir=where_to_look, filename=filename)
 
         if len(self.paths_to_pkl_file) == 1:
             print(f"\n--- Found a unique pkl file at {self.paths_to_pkl_file[0]}/{filename}")

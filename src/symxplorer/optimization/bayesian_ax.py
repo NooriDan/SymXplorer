@@ -91,9 +91,10 @@ class Ax_Client_Mixin(Base_Optimizer):
     def extract_tracking_metrics_from_metadata(self, metadata, save_in_dict: Dict[str, Any]) -> Dict[str, Any]:
         logger.debug("Extracing the tracking metrics from the metadata.")
         for metric_name, content in metadata.items():
-            if metric_name in self.optimizer_config.target_specs.list_target_names():
+            if metric_name in self.optimizer_config.target_specs.list_target_names() and np.isfinite(content['curr_val']): # The AX client complains even if a tracking metric is set to NaN
                 save_in_dict[metric_name] = content['curr_val']
                 logger.debug(f"\tadded {metric_name} = {content['curr_val']} to tracking metric dict - curr size {len(save_in_dict)}")
+            else: logger.debug(f"skipping {metric_name}")
         logger.debug("Completed extracting the tracking metrics.")
         return save_in_dict
 

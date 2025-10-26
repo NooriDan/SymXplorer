@@ -26,15 +26,13 @@ L 4 660 -380 960 -380 {}
 L 4 660 -387.5 660 -381.25 {}
 L 4 660 -381.25 660 -380 {}
 B 2 1170 -970 1970 -570 {flags=graph
-y1=-26.331949
+y1=43.563893
 ypos1=0
 ypos2=2
 unity=1
 unitx=1
 logx=1
 logy=0
-color=4
-node=vout_mag
 rainbow=0
 rawfile=$netlist_dir/rawspice.raw
 digital=0
@@ -42,21 +40,23 @@ sim_type=ac
 autoload=1
 subdivx=10
 divy=10
-y2=34.668051
+y2=104.5639
 subdivy=1
 mode=Line
-x1=5
-x2=12}
+x1=7.4124526
+x2=14.412455
+color=4
+node=vout_mag_db}
 B 2 1170 -570 1970 -170 {flags=graph
-y1=-161.19866
-y2=199.78683
+y1=105.68387
+y2=336.71458
 ypos1=0
 ypos2=2
 divy=5
 subdivy=1
 unity=1
-x1=5
-x2=12
+x1=7.4124526
+x2=14.412455
 divx=5
 subdivx=10
 xlabmag=1.0
@@ -82,7 +82,7 @@ f_center (Hz):
 flo [to_eng [xschem raw value FLO 0]]
 fhi [to_eng [xschem raw value FHI 0]]
 --------------
-Bandwidth (dB): 
+Bandwidth (Hz): 
 [to_eng [xschem raw value BW 0]]
 --------------
 Q-factor: 
@@ -187,7 +187,7 @@ value="
     echo ----------------------------------
 
     * run ac simulation
-    ac dec 200 1e5 1e12
+    ac dec 200 1e1 1e12
 
     echo (1) post processing the AC sim
     * magnitude
@@ -325,11 +325,11 @@ C {devices/code.sym} 387.5 -300 0 0 {name=save_ngspice only_toplevel=false value
 
 ******  End of Save Statements ****** 
 "}
-C {devices/code.sym} 260 -300 0 0 {name=tb_params only_toplevel=false value="
+C {devices/code.sym} 270 -300 0 0 {name=tb_params only_toplevel=false value="
 ****** TB Parameters ****** 
 .param icm=0.5e-6
 .param vdd=1.2
-.param vbias=0.5
+.param vbias=1
 .param cload=100p
 ******  End of TB Params ****** 
 "}
@@ -343,9 +343,9 @@ C {devices/code.sym} 150 -300 0 0 {name=dut_params only_toplevel=false value="
 
 * PASSIVE ELEMENT PARAMETERS
 
-.param x_dut_cap_size=1.0n
-.param x_dut_res_size=10.0k
-.param x_dut_ind_size=1.0n
+.param x_dut_cap_size=500f
+.param x_dut_res_size=100.0k
+.param x_dut_ind_size=200.0n
 
 ****** END of DUT Params ****** 
 "}

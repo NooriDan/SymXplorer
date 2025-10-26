@@ -18,7 +18,7 @@ from    sympy       import Expr
 
 # Symxplorer Specific Imports
 from   symxplorer.spice_engine.spicelib     import Spicelib_Wrapper
-from   symxplorer.designer_tools.domains    import Project_Setup, ListTargetSpec, TargetSpec
+from   symxplorer.designer_tools.domains    import Project_Setup, ListTargetSpec, TargetSpec, Error_Types
 from   symxplorer.designer_tools.domains    import OptimizationGoalType, OptimizationPoint, OptimizationLogEntry, OptimizationLog
 from   symxplorer.designer_tools.utils      import compute_error, compute_reward, convert_linear_to_log, log_denormalize, linear_denormalize
 from   symxplorer.designer_tools.utils      import plot_complex_response, get_bode_fitness_loss, Transfer_Func_Helper, Frequency_Weight, UNIT_DICT
@@ -174,7 +174,7 @@ class Base_Optimizer(ABC):
             logger.info("Optimized x - de-normalized:", self.denormalize_params(best_solution))
         logger.info(f"best score: {float(score)}")
 
-        return self.denormalize_params(best_solution), score, metadata
+        return best_solution, score, metadata
     
     def plot_score(self, save_path: Path | None = None, show: bool = False):
         """Plot the score as a function of optimization steps with Plotly."""
@@ -231,7 +231,7 @@ class Base_Optimizer(ABC):
             logger.info("Opening interactive plot in browser...")
             fig.show()
 
-    def plot_design_space_exploration(self, param_x: str, param_y: str, save_path: Path | None = None, show: bool = False, denorm: bool = True) -> Tuple[torch.Tensor, torch.Tensor] | None:
+    def plot_design_space_exploration(self, param_x: str, param_y: str, save_path: Path | None = None, show: bool = False, denorm: bool = False) -> Tuple[torch.Tensor, torch.Tensor] | None:
         """Plot the exploration of the design space in terms of two parameters with Plotly."""
         logger = logging.getLogger("SymXplorer.plotter")
 
@@ -774,7 +774,7 @@ class Spice_Constraint_Satisfaction(Spice_Base_Optimizer):
                 if self.verbose:
                     logger.debug(f"Target spec name '{spec.name}' not found in performance array keys: {list(performance_array.keys())}")
                     logger.debug(f"assigning large penalty to the {spec.name} spec")
-                spec_fitness = -1 * np.float64(MAX_PENALTY) # assign a large score if the spec is not found
+                spec_fitness = np.float64(spec.weight) if spec.error_type==Error_Types.RELATIVE_SIGMOID else  -1 * np.float64(MAX_PENALTY) # assign a large score if the spec is not found
             # b - Log the spec score
             fit_summary[spec.name] = {
                 "curr_val": performance_array.get(spec.name, np.nan) ,

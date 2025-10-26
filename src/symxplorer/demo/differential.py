@@ -13,15 +13,16 @@ Date: [Dec 2024]
 
 """
 
-from sympy import symbols, Eq
+from sympy import symbols, Eq, Basic
 from dataclasses import dataclass
+from typing import List
 # Cusom Imports
 from symxplorer.symbolic_exploration.domains   import Circuit, Impedance_Block, TransmissionMatrix
 
 
 # Example 1 -- Common Gate Differential Circuit
 # ===================================================================
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Common_Gate:
     # (1) Define possible impedances (assign names)
     # ---------------------------------------
@@ -188,9 +189,11 @@ class Common_Gate:
     # Create a circuit instance to store the experiment parameters (in this case for our case study -- a common gate differential amplifier)
     circuit = Circuit(impedances=zz, nodal_equations=nodalEquations, solve_for=solveFor, impedancesToDisconnect=impedancesToDisconnect)
 
-    def update_circuit(self) -> Circuit:
-        self.circuit = Circuit(impedances=self.zz, nodal_equations=self.nodalEquations, solve_for=self.solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
-        return self.circuit
+    def update_circuit(self, zz: List[Impedance_Block], solveFor: List[Basic] | None = None) -> Circuit:
+        solveFor = self.solveFor if solveFor is None else solveFor
+        # impedancesToDisconnect = zz
+        return Circuit(impedances=zz, nodal_equations=self.nodalEquations, solve_for=solveFor, impedancesToDisconnect=self.impedancesToDisconnect)
+
 # ===================================================================
 # End of Example 1 -- Common Gate Differential Circuit
 

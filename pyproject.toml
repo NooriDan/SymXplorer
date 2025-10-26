@@ -27,3 +27,9 @@ run-symbolix = "symxplorer.symbolic_solver.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/symxplorer"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/docs",
+  "/examples",
+]

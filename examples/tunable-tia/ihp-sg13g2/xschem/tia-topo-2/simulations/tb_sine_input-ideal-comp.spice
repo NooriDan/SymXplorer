@@ -1,0 +1,184 @@
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tb_sine_input-ideal-comp.sch
+**.subckt tb_sine_input-ideal-comp
+V0 VSS GND 0
+V2 VDD GND {vdd}
+V1 Vbias GND {vbias}
+C1 Von GND {cload} m=1
+C2 Vop GND {cload} m=1
+Icm net2 GND {icm}
+x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-comp
+Vmeas_icm net1 net2 0
+.save i(vmeas_icm)
+Vmeas_in In net4 0
+.save i(vmeas_in)
+F1 net5 GND Vmeas_icm 1
+Idm net3 GND SIN(0, 10n, 10G)
+Vmeas_idm net1 net3 0
+.save i(vmeas_idm)
+F2 net6 GND Vmeas_idm -1
+Vmeas_idm_cccs net4 net6 0
+.save i(vmeas_idm_cccs)
+Vmeas_icm_cccs net4 net5 0
+.save i(vmeas_icm_cccs)
+Vmeas_ip Ip net1 0
+.save i(vmeas_ip)
+.save v(vop)
+.save v(von)
+.save v(vop)
+**** begin user architecture code
+
+
+****** START OF CONTROL SECTION ******
+
+
+.control
+
+    echo ==================================
+    echo start of Control
+    echo ==================================
+
+    save all
+
+    echo
+    echo (A) start of OP
+    echo ----------------------------------
+
+    * operating point
+    op
+
+    * print all
+
+    write op.raw
+
+    echo ----------------------------------
+    echo END of OP
+    echo ----------------------------------
+
+    set appendwrite
+
+    echo
+    echo (B) start of TRAN Sim
+    echo ----------------------------------
+
+    echo starting the tranient sim...
+    tran 0.01ns 100ns
+
+    plot v(vop, von)
+    plot Vmeas5#branch
+
+    echo ----------------------------------
+    echo END of TRAN sim
+    echo  ----------------------------------
+
+    echo SAVING SIMULATION RESULTS IN THE RAW FILE
+    save all
+    write
+
+    echo ==================================
+    echo END of Control
+    echo ==================================
+.endc
+******  END OF CONTROL SECTION ******
+
+
+
+********** Models ************
+.lib cornerMOSlv.lib mos_tt
+.lib cornerRES.lib res_typ
+.lib /foss/pdks/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib cap_typ
+********** END of Models ************
+
+
+
+
+****** Save Statements ******
+*.option savecurrents
+
+** nfet small signal parameters **
+.save @n.x_dut.xm1.nsg13_lv_nmos[cdd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgb]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgdol]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgg]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cgsol]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cjd]
+.save @n.x_dut.xm1.nsg13_lv_nmos[cjs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[css]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gds]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gm]
+.save @n.x_dut.xm1.nsg13_lv_nmos[gmb]
+.save @n.x_dut.xm1.nsg13_lv_nmos[ids]
+.save @n.x_dut.xm1.nsg13_lv_nmos[l]
+.save @n.x_dut.xm1.nsg13_lv_nmos[sfl]
+.save @n.x_dut.xm1.nsg13_lv_nmos[sid]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vth]
+
+.save @n.x_dut.xm1.nsg13_lv_nmos[vgs]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vds]
+.save @n.x_dut.xm1.nsg13_lv_nmos[vdss]
+
+******  End of Save Statements ******
+
+
+
+
+****** TB Parameters ******
+.param icm=0
+.param vdd=1.2
+.param vbias=0.5
+.param cload=20p
+******  End of TB Params ******
+
+
+
+
+****** All DUT parameters ******
+
+* MOSFET PARAMETERS
+.param x_dut_nfet_w=5.0u
+.param x_dut_nfet_l=0.5u
+.param x_dut_nfet_m=10
+
+* PASSIVE ELEMENT PARAMETERS
+
+.param x_dut_cap_size=50p
+.param x_dut_res_load_size=1k
+.param x_dut_res_2_size=100.0k
+.param x_dut_ind_size=1.0n
+
+****** END of DUT Params ******
+
+
+**** end user architecture code
+**.ends
+
+* expanding   symbol:  tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-comp.sym # of pins=7
+** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-comp.sym
+** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-comp.sch
+.subckt tia-bpf-2-ideal-comp vdd vop vss von vbias inn inp
+*.iopin vdd
+*.iopin vss
+*.ipin inp
+*.ipin inn
+*.opin von
+*.opin vop
+*.ipin vbias
+XM1 vop vbias inn vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
+XM2 von vbias inp vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
+L2 inp net2 {x_dut_ind_size} m=1
+L3 inn net1 {x_dut_ind_size} m=1
+C1 inp net2 {x_dut_cap_size} m=1
+C2 inn net1 {x_dut_cap_size} m=1
+R1 vdd von {x_dut_res_load_size} m=1
+R2 vdd vop {x_dut_res_load_size} m=1
+R3 vop inn {x_dut_res_2_size} m=1
+R4 von inp {x_dut_res_2_size} m=1
+Vmeas net2 vss 0
+.save i(vmeas)
+Vmeas1 net1 vss 0
+.save i(vmeas1)
+.ends
+
+.GLOBAL GND
+.end

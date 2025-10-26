@@ -1,12 +1,18 @@
 import logging
 import sympy as sp
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 from   matplotlib.ticker import LogLocator
+
+import plotly.express as px
+import plotly.graph_objects as go
+
 from   tqdm import tqdm
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from copy   import deepcopy
+from dataclasses import dataclass
 
 # Custom Imports
 from symxplorer.symbolic_exploration.domains import Filter_Classification
@@ -53,10 +59,12 @@ class Symbolic_Visualizer:
         return True
     
     def set_params(self, param_str_to_value: Dict[str, float]) -> Dict[sp.Basic, float]:
-
+        """This function adds the given values to the substitution dictionary. it does not erase previous values. will need to call self.reset to clear past history"""
         for param_str, val in param_str_to_value.items():
             if self._str_to_param.get(param_str) is None:
-                raise KeyError(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
+                print(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
+                continue
+                # raise KeyError(f"{param_str} does not exist in the list of free symbols. Choose from {self._str_to_param.keys()}")
             self.params_to_value[self._str_to_param.get(param_str)] = val
 
         self.get_bode_expression() # To update the
@@ -103,14 +111,13 @@ class Symbolic_Visualizer:
         self._str_to_param:    Dict[str, sp.Basic] = {str(sym) : sym for sym in self.tf.free_symbols if sym != s}
         self.params_to_value:  Dict[sp.Basic, float] = {s: 2 * sp.pi * sp.I * f}
 
-
     def get_bode_expression(self) -> Tuple[sp.Basic, sp.Basic, sp.Basic]:
         """Substitutes the parameters in self.params_to_value into the symbolic TF in self.tf, 
         and returns magnitude_expr, phase_expr, H_numeric."""
 
-        if not self.is_defined_numerically():
-            print("!!Set the parameters of the TF through --self.set_params--!!!")
-            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. Provided {self.params_to_value} but need {self.tf.free_symbols}")
+        # if not self.is_defined_numerically():
+        #     print("!!Set the parameters of the TF through --self.set_params--!!!")
+        #     raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. Provided {self.params_to_value} but need {self.tf.free_symbols}")
 
         H_numeric = self.tf.subs(self.params_to_value)
 
@@ -122,7 +129,6 @@ class Symbolic_Visualizer:
 
         return self.magnitude_expr, self.phase_expr, H_numeric
 
-    
     def eval_freq(self, frequency: float) -> Tuple[float, float]:
 
         if self.magnitude_expr is None and self.phase_expr is  None:
@@ -183,24 +189,41 @@ class Symbolic_Visualizer:
         plt.show()
 
     def get_filter_param(self):
+        """Returns an alphabetically sorted list of performance metrics of the filter's transfer function"""
         return sorted([param_name for param_name in self.tf_params.keys() if self.tf_params.get(param_name) is not None])
 
     def eval_filter_parameter(self, param_name: str, num_of_decimals: int = 3) -> Tuple[sp.Expr, float]:
-
+        """Evaluates the given filter perfomance metric up to the given decimal point. Returns a tuple of symbolic expression and float. 
+        If the result cannot be evaluated numerically the float value is np.nan."""
         if self.tf_params is None:
             raise RuntimeError(f"The transfer function's filter parameters are not defined in self.tf_params")
         
-        if not self.is_defined_numerically():
-            print("!!Set the parameters of the TF through --self.set_params--!!!")
-            raise RuntimeError(f"Cannot evaluate the TF since the design parameters are not resolved. provided {self.params_to_value} but need {self.tf.free_symbols}")
-
-        if self.tf_params.get(param_name) is None:
+        expression = self.tf_params.get(param_name)
+        if expression is None:
             raise KeyError(f"Invalid filter parameter. Choose from {self.get_filter_param()}")
 
-        expression = self.tf_params.get(param_name)
         value = expression.subs(self.params_to_value)
 
+        if not self.is_defined_numerically():
+            print(f"Cannot numerically evaluate the TF since the design parameters are not resolved. provided {self.params_to_value} but need {self.tf.free_symbols}")
+            return value, np.nan
+            
         return value, round(float(value.evalf()), num_of_decimals)
+    
+    def print_filter_parameters(self, num_of_decimals: int = 3) -> Dict[str, float]:
+        """Prints a summary of perfomance metrics (symbolic values are returned if there is not enough information to resolve this numerically)"""
+        out : Dict[str, float]= {}
+        print("printing parameters:")
+        print("-------------------------------------")
+        for filter_param in self.get_filter_param():
+            expr, val = self.eval_filter_parameter(param_name=filter_param, num_of_decimals=num_of_decimals)
+            if filter_param == "wo": # The hack to convert wo to f in Hz.
+                filter_param = "f"
+                val = val/(2*np.pi)
+            print(f"\t{filter_param}:\t{expr if np.isnan(val) else val :.3e}")
+            out[filter_param] = val
+        print("-------------------------------------")
+        return out
 
 class Bode_Visualizer:
     def __init__(self, frequencies: np.ndarray, complex_response: np.ndarray):
@@ -238,3 +261,117 @@ class Bode_Visualizer:
         
         plt.tight_layout()
         plt.show()
+
+ 
+# -----------------------
+# Core Data Structures
+# -----------------------
+
+@dataclass
+class ExplorationPoint:
+    design_var_dict: Dict[str, float]
+    performance_metric_dict: Dict[str, float]
+
+
+@dataclass
+class DesignSpaceExploration:
+    points: List[ExplorationPoint]
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert exploration points into a DataFrame with x_ prefix for design vars."""
+        records = []
+        for p in self.points:
+            design_prefixed = {f"x_{k}": v for k, v in p.design_var_dict.items()}
+            record = {**design_prefixed, **p.performance_metric_dict}
+            records.append(record)
+        return pd.DataFrame(records)
+
+
+# -----------------------
+# Analysis Suite (Plotly)
+# -----------------------
+
+class AnalysisSuite:
+    def __init__(self, exploration: DesignSpaceExploration):
+        self.df = exploration.to_dataframe()
+        self.design_vars = [c for c in self.df.columns if c.startswith("x_")]
+        self.metrics = [c for c in self.df.columns if not c.startswith("x_")]
+
+    # ------------
+    # Sensitivity (correlation)
+    # ------------
+    def plot_sensitivity(self, metric_name: str):
+        corr = self.df[self.design_vars + [metric_name]].corr()[metric_name].drop(metric_name)
+        corr_sorted = corr.sort_values(ascending=False)
+        fig = px.bar(
+            x=corr_sorted.values,
+            y=corr_sorted.index,
+            orientation='h',
+            labels={'x': 'Correlation', 'y': 'Design Variable'},
+            title=f"Sensitivity of {metric_name}",
+        )
+        fig.update_layout(yaxis=dict(categoryorder='total ascending'))
+        fig.show()
+
+    # ------------
+    # Slice plot (1D sweep)
+    # ------------
+    def plot_slice(self, param: str, metric_name: str):
+        fig = px.scatter(
+            self.df,
+            x=param,
+            y=metric_name,
+            trendline="lowess",
+            title=f"{metric_name} vs {param}",
+        )
+        fig.show()
+
+    # ------------
+    # Contour plot (2D)
+    # ------------
+    def plot_contour(self, x_param: str, y_param: str, metric_name: str):
+        df = self.df[[x_param, y_param, metric_name]].dropna()
+        fig = go.Figure(
+            data=go.Contour(
+                x=df[x_param],
+                y=df[y_param],
+                z=df[metric_name],
+                colorscale="Viridis",
+                contours=dict(showlabels=True)
+            )
+        )
+        fig.update_layout(
+            title=f"{metric_name} Contour over {x_param} and {y_param}",
+            xaxis_title=x_param,
+            yaxis_title=y_param,
+        )
+        fig.show()
+
+    # ------------
+    # Progression plot (metric vs trial index)
+    # ------------
+    def plot_progression(self, metric_name: str):
+        df = self.df.reset_index().rename(columns={"index": "iteration"})
+        fig = px.line(
+            df,
+            x="iteration",
+            y=metric_name,
+            markers=True,
+            title=f"Progression of {metric_name}",
+        )
+        fig.show()
+
+    # ------------
+    # Parallel coordinates plot (multi-metric + design vars)
+    # ------------
+    def plot_parallel(self, metrics: Optional[List[str]] = None):
+        metrics = metrics or self.metrics
+        fig = px.parallel_coordinates(
+            self.df,
+            dimensions=self.design_vars + metrics,
+            color=metrics[0],
+            color_continuous_scale=px.colors.sequential.Viridis,
+            title="Parallel Coordinates (Design Variables + Metrics)"
+        )
+        fig.show()
+

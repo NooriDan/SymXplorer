@@ -360,4 +360,4 @@ C {devices/code.sym} 150 -300 0 0 {name=dut_params only_toplevel=false value="
 
 ****** END of DUT Params ****** 
 "}
-C {examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym} 592.5 -770 0 0 {name=x_dut }
+C {tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym} 592.5 -770 0 0 {name=x_dut }
