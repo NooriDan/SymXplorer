@@ -63,7 +63,12 @@ By leveraging these capabilities, an LLM agent could intelligently create the op
 
 ## Installation
 
-Clone the repository and install the necessary dependencies. It is recommended to use a virtual environment.
+You can use the package from PyPI:
+```bash
+pip install symxplorer
+```
+
+Or if you are interested in modifying code you can lone the repository and install the necessary dependencies. It is recommended to use a virtual environment.
 
 ```bash
 git clone https://github.com/Nooridan/SymXplorer.git
@@ -72,6 +77,7 @@ pip install -e .
 ```
 
 This will install the `SymXplorer` package in editable mode and all the required dependencies listed in `pyproject.toml`.
+
 
 ## Getting Started
 
