@@ -34,6 +34,8 @@ From transistor-level circuits to active filters with multiple feedback loops, S
 -   **Advanced Capabilities**:
     -   **Transfer Function Modeling**: The `designer_tools/tf_models.py` module provides templates for defining ideal filter responses (e.g., 1st/2nd order low-pass, band-pass) from poles, zeros, and gain. These can be cascaded to create higher-order filters (e.g., Butterworth, Chebyshev) and used as targets for optimization.
     -   **Automated Reporting**: Generate automatic LaTeX reports summarizing the results of your analysis and optimization runs.
+    -   Includes functionality for device modeling using TensorFlow (`tf_models`), allowing for more accurate and flexible component models.
+    -   Generate automatic LaTeX reports summarizing the results of your analysis and optimization runs.
 
 ## Architecture and Vision
 
