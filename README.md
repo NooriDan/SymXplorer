@@ -17,7 +17,7 @@ From transistor-level circuits to active filters with multiple feedback loops, S
 
 -   **Optimization-Based Sizing**:
     -   Utilize SPICE-in-the-loop optimization to size transistors and passive components based on performance specifications.
-    -   High-level `Orchestrator` to manage complex optimization tasks.
+    -   A high-level `Orchestrator` (`optimization/orchestrator.py`) simplifies running complex sizing tasks by managing the interaction between the chosen optimizer, the SPICE engine, and the design configuration.
     -   Supports multiple optimization strategies:
         -   **Bayesian Optimization** via [Ax](https://ax.dev/).
         -   **Evolutionary Algorithms** via [Nevergrad](https://facebookresearch.github.io/nevergrad/).
@@ -25,13 +25,15 @@ From transistor-level circuits to active filters with multiple feedback loops, S
 
 -   **Design Space Exploration & Visualization**:
     -   Explore higher-order transfer functions for filter design.
-    -   A built-in `Visualizer` to plot design spaces, performance boundaries, and trade-offs within a given PDK.
+    -   A built-in `Visualizer` (`designer_tools/visualizer.py`) plots crucial data for understanding design trade-offs, including optimization loss curves and interactive parallel coordinate plots of the design space.
 
 -   **SPICE Integration**:
     -   Interfaces with ngspice and other SPICE-based simulators through the `spicelib` library.
     -   Run simulations to validate symbolic expressions and evaluate circuit performance during optimization.
 
 -   **Advanced Capabilities**:
+    -   **Transfer Function Modeling**: The `designer_tools/tf_models.py` module provides templates for defining ideal filter responses (e.g., 1st/2nd order low-pass, band-pass) from poles, zeros, and gain. These can be cascaded to create higher-order filters (e.g., Butterworth, Chebyshev) and used as targets for optimization.
+    -   **Automated Reporting**: Generate automatic LaTeX reports summarizing the results of your analysis and optimization runs.
     -   Includes functionality for device modeling using TensorFlow (`tf_models`), allowing for more accurate and flexible component models.
     -   Generate automatic LaTeX reports summarizing the results of your analysis and optimization runs.
 
@@ -63,7 +65,12 @@ By leveraging these capabilities, an LLM agent could intelligently create the op
 
 ## Installation
 
-Clone the repository and install the necessary dependencies. It is recommended to use a virtual environment.
+You can use the package from PyPI:
+```bash
+pip install symxplorer
+```
+
+Or if you are interested in modifying code you can lone the repository and install the necessary dependencies. It is recommended to use a virtual environment.
 
 ```bash
 git clone https://github.com/Nooridan/SymXplorer.git
@@ -72,6 +79,7 @@ pip install -e .
 ```
 
 This will install the `SymXplorer` package in editable mode and all the required dependencies listed in `pyproject.toml`.
+
 
 ## Getting Started
 
