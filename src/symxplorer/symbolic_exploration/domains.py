@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing      import Dict, List, Tuple, Optional, Callable, TYPE_CHECKING
 import sympy
 from sympy import symbols, Matrix, latex
+from enum import Enum
 
 import pandas as pd
 import _pickle as pickle # cPickle
@@ -12,6 +13,13 @@ if TYPE_CHECKING:
     # Imports for type checking only
     from .solver import Circuit_Solver
 
+# ------- Enums 
+class TransmissionMatrixType(str, Enum):
+    SIMPLE           = "simple"
+    SYMBOLIC         = "symbolic"
+    SOME_PARASITIC   = "some_parasitic"
+    FULL_PARASITIC   = "full_parasitic"
+# -------  
 class Impedance_Block:
     def __init__(self, name: str):
         self.name = str(name)
@@ -131,28 +139,28 @@ class Impedance_Block:
         return expression
 
 class TransmissionMatrix:
-    def __init__(self, defaultType: str="Symbolic", element_name: str="a"):
-        self.defaultType = defaultType
+    def __init__(self, defaultType: TransmissionMatrixType=TransmissionMatrixType.SIMPLE, element_name: str="a"):
+        self.defaultType : TransmissionMatrixType = defaultType
 
         # Variables global to the class
         gm, ro, Cgd, Cgs    = symbols(f'g_m r_o C_gd C_gs', real=True)
         t11, t12, t21, t22  = symbols(f'{element_name}_11 {element_name}_12 {element_name}_21 {element_name}_22')
         s = symbols("s")
 
-        self.transmission_matrix_dict: Dict[str, Matrix] ={
-        "simple"          : Matrix([[0, -1/gm],[0, 0]]),
-        "symbolic"        : Matrix([[t11, t12],[t21, t22]]),
-        "some_parasitic"  : Matrix([[-1/(gm*ro), -1/gm],[0, 0]]),
-        "full_parasitic"  : Matrix([[(1/ro + s*Cgd)/(s*Cgd - gm), 1/(s*Cgd - gm)],[(Cgd*Cgs*ro*s + Cgd*gm*ro + Cgs + Cgd)*s/(s*Cgd - gm), (Cgs+Cgd)*s/(s*Cgd - gm)]])
+        self.transmission_matrix_dict: Dict[TransmissionMatrixType, Matrix] ={
+            TransmissionMatrixType.SIMPLE          : Matrix([[0, -1/gm],[0, 0]]),
+            TransmissionMatrixType.SYMBOLIC        : Matrix([[t11, t12],[t21, t22]]),
+            TransmissionMatrixType.SOME_PARASITIC  : Matrix([[-1/(gm*ro), -1/gm],[0, 0]]),
+            TransmissionMatrixType.FULL_PARASITIC  : Matrix([[(1/ro + s*Cgd)/(s*Cgd - gm), 1/(s*Cgd - gm)],[(Cgd*Cgs*ro*s + Cgd*gm*ro + Cgs + Cgd)*s/(s*Cgd - gm), (Cgs+Cgd)*s/(s*Cgd - gm)]])
         }
 
-    def getTranmissionMatrix(self, transmission_matrix_type = "symbolic") -> Matrix:
+    def getTranmissionMatrix(self, transmission_matrix_type: TransmissionMatrixType = TransmissionMatrixType.SYMBOLIC) -> Matrix:
             if self.transmission_matrix_dict.get(transmission_matrix_type) is None:
                 print(f"Invalide Transmission Matrix Selected ({transmission_matrix_type})")
                 raise KeyError
             return self.transmission_matrix_dict.get(transmission_matrix_type)
     
-    def get_element(self, row: int, col: int, transmission_matrix_type = "symbolic") -> sympy.Basic:
+    def get_element(self, row: int, col: int, transmission_matrix_type : TransmissionMatrixType = TransmissionMatrixType.SYMBOLIC) -> sympy.Basic:
 
         transmission_matrix = self.getTranmissionMatrix(transmission_matrix_type)
             

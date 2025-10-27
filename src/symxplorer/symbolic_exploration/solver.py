@@ -13,7 +13,7 @@ from   sympy     import symbols, Poly, numer, denom, solve, simplify
 from   tqdm      import tqdm
 
 # Custom Imports
-from   .domains import Circuit, Impedance_Block, TransmissionMatrix, ExperimentResult
+from   .domains import Circuit, Impedance_Block, TransmissionMatrix, TransmissionMatrixType, ExperimentResult
 from   .filter  import Filter_Classifier
 from   .utils   import FileSave
 
@@ -25,7 +25,7 @@ class Circuit_Solver:
                 circuit:    Circuit,
                 _output:    List[sympy.Basic], 
                 _input:     List[sympy.Basic],
-                transmissionMatrixType: str,
+                transmissionMatrixType: TransmissionMatrixType,
                 transmissionMatrix: TransmissionMatrix = TransmissionMatrix() # Default T matrix (all symbolic)
                 ):
         # Extract information from the Circuit object
@@ -38,7 +38,7 @@ class Circuit_Solver:
         # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
         self.input:      List[sympy.Basic]  = _input
-        self.T_type:     str                = transmissionMatrixType
+        self.T_type:     TransmissionMatrixType = transmissionMatrixType
         self.T_analysis: TransmissionMatrix = transmissionMatrix  
 
         # variables to be computed for
@@ -132,10 +132,10 @@ class Circuit_Solver:
             print(f"*** --- Solving for T type: {self.T_type} --- ***")
             print("Getting the elements from the T matrix...")
             sub_dict = {
-                self.T_analysis.get_element(0, 0, "symbolic"): self.T_analysis.get_element(0, 0, self.T_type),
-                self.T_analysis.get_element(0, 1, "symbolic"): self.T_analysis.get_element(0, 1, self.T_type),
-                self.T_analysis.get_element(1, 0, "symbolic"): self.T_analysis.get_element(1, 0, self.T_type),
-                self.T_analysis.get_element(1, 1, "symbolic"): self.T_analysis.get_element(1, 1, self.T_type)
+                self.T_analysis.get_element(0, 0, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(0, 0, self.T_type),
+                self.T_analysis.get_element(0, 1, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(0, 1, self.T_type),
+                self.T_analysis.get_element(1, 0, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(1, 0, self.T_type),
+                self.T_analysis.get_element(1, 1, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(1, 1, self.T_type)
             }
 
             if self.baseHsDict is None:
