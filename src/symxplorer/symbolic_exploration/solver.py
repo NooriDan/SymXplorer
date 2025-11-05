@@ -267,7 +267,8 @@ class Impedance_Analyzer:
         try:
             impedanceBatch = list(self.getZcombos()[comboKey])
         except KeyError:
-            raise ValueError(f"Invalid comboKey '{comboKey}' provided.\nchoose from {self.getZcombos().keys()}")
+            print(f"WARNING - skipping {comboKey}")
+            raise KeyError(f"Invalid comboKey '{comboKey}' provided.\nchoose from {self.getZcombos().keys()}")
 
         # Prepare the base transfer function
         baseHs = self.circuit_solver.baseHsDict.get(comboKey)
@@ -458,34 +459,41 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
             for j, key in enumerate(dictionary.keys(), 1):
                 print(f"==> Running the {experimentName} Experiment for {key} (progress: {j}/{dictionarySize} combo size: {i}/{comboSize})\n")
                 analysis = Impedance_Analyzer(experimentName, solver)
+                
+                try:
+                    analysis.computeTFs(comboKey=key)
+                
+                    analysis.classifier.classifyBiQuadFilters()
+                    analysis.classifier.summarizeFilterType()
+
+                    analysis.reportSummary(experimentName, key)
+                    analysis.compilePDF()
+
+                    experiment_results_history.add_all(impedance_key=key, 
+                                                        baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                        classifications=analysis.classifier.classifications)
+                    experiment_results_history.save()
+                except Exception:
+                    print(f"something went wrong with key {key}")
+    else: 
+        for i, key in enumerate(impedanceKeys, 1):
+            print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
+            analysis = Impedance_Analyzer(experimentName, solver)
+            try:
                 analysis.computeTFs(comboKey=key)
                 
                 analysis.classifier.classifyBiQuadFilters()
                 analysis.classifier.summarizeFilterType()
 
                 analysis.reportSummary(experimentName, key)
-                analysis.compilePDF()
+                analysis.compilePDF() 
 
                 experiment_results_history.add_all(impedance_key=key, 
-                                                      baseHs=analysis.circuit_solver.baseHsDict[key], 
-                                                      classifications=analysis.classifier.classifications)
+                                                    baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                    classifications=analysis.classifier.classifications)
                 experiment_results_history.save()
-    else: 
-        for i, key in enumerate(impedanceKeys, 1):
-            print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
-            analysis = Impedance_Analyzer(experimentName, solver)
-            analysis.computeTFs(comboKey=key)
-            
-            analysis.classifier.classifyBiQuadFilters()
-            analysis.classifier.summarizeFilterType()
-
-            analysis.reportSummary(experimentName, key)
-            analysis.compilePDF()
-
-            experiment_results_history.add_all(impedance_key=key, 
-                                                  baseHs=analysis.circuit_solver.baseHsDict[key], 
-                                                  classifications=analysis.classifier.classifications)
-            experiment_results_history.save()
+            except Exception:
+                    print(f"something went wrong with key {key}")
     print("<----> END OF EXPERIMENT <---->")
     if(count_of_new_keys):
         print(f"Impedance Keys analyzed (count: {count_of_new_keys}): ")
