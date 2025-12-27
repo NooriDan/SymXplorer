@@ -415,7 +415,7 @@ def get_windows_specs():
 
 def print_specs():
     specs = get_system_specs()
-    print(f"Run Datetime: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+    print(f"Run Datetime: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\n====> Computer Specifications: <====")
     for key, value in specs.items():
         print(f"{key}: {value}")
