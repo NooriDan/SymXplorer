@@ -1,5 +1,7 @@
 #### xschemrc configuration file
-source /headless/.xschem/xschemrc
+# source /headless/.xschem/xschemrc
+source /home/noorizad/.xschem/xschemrc
+
 
 #### values may be overridden by user's ~/.xschem/xschemrc configuration file
 #### or by project-local ./xschemrc

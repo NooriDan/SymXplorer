@@ -13,7 +13,7 @@ from   sympy     import symbols, Poly, numer, denom, solve, simplify
 from   tqdm      import tqdm
 
 # Custom Imports
-from   .domains import Circuit, Impedance_Block, TransmissionMatrix, ExperimentResult
+from   .domains import Circuit, Impedance_Block, TransmissionMatrix, TransmissionMatrixType, ExperimentResult
 from   .filter  import Filter_Classifier
 from   .utils   import FileSave
 
@@ -25,7 +25,7 @@ class Circuit_Solver:
                 circuit:    Circuit,
                 _output:    List[sympy.Basic], 
                 _input:     List[sympy.Basic],
-                transmissionMatrixType: str,
+                transmissionMatrixType: TransmissionMatrixType,
                 transmissionMatrix: TransmissionMatrix = TransmissionMatrix() # Default T matrix (all symbolic)
                 ):
         # Extract information from the Circuit object
@@ -38,7 +38,7 @@ class Circuit_Solver:
         # Solver specific variables
         self.output:     List[sympy.Basic]  = _output
         self.input:      List[sympy.Basic]  = _input
-        self.T_type:     str                = transmissionMatrixType
+        self.T_type:     TransmissionMatrixType = transmissionMatrixType
         self.T_analysis: TransmissionMatrix = transmissionMatrix  
 
         # variables to be computed for
@@ -132,10 +132,10 @@ class Circuit_Solver:
             print(f"*** --- Solving for T type: {self.T_type} --- ***")
             print("Getting the elements from the T matrix...")
             sub_dict = {
-                self.T_analysis.get_element(0, 0, "symbolic"): self.T_analysis.get_element(0, 0, self.T_type),
-                self.T_analysis.get_element(0, 1, "symbolic"): self.T_analysis.get_element(0, 1, self.T_type),
-                self.T_analysis.get_element(1, 0, "symbolic"): self.T_analysis.get_element(1, 0, self.T_type),
-                self.T_analysis.get_element(1, 1, "symbolic"): self.T_analysis.get_element(1, 1, self.T_type)
+                self.T_analysis.get_element(0, 0, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(0, 0, self.T_type),
+                self.T_analysis.get_element(0, 1, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(0, 1, self.T_type),
+                self.T_analysis.get_element(1, 0, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(1, 0, self.T_type),
+                self.T_analysis.get_element(1, 1, TransmissionMatrixType.SYMBOLIC): self.T_analysis.get_element(1, 1, self.T_type)
             }
 
             if self.baseHsDict is None:
@@ -267,7 +267,8 @@ class Impedance_Analyzer:
         try:
             impedanceBatch = list(self.getZcombos()[comboKey])
         except KeyError:
-            raise ValueError(f"Invalid comboKey '{comboKey}' provided.\nchoose from {self.getZcombos().keys()}")
+            print(f"WARNING - skipping {comboKey}")
+            raise KeyError(f"Invalid comboKey '{comboKey}' provided.\nchoose from {self.getZcombos().keys()}")
 
         # Prepare the base transfer function
         baseHs = self.circuit_solver.baseHsDict.get(comboKey)
@@ -458,34 +459,41 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
             for j, key in enumerate(dictionary.keys(), 1):
                 print(f"==> Running the {experimentName} Experiment for {key} (progress: {j}/{dictionarySize} combo size: {i}/{comboSize})\n")
                 analysis = Impedance_Analyzer(experimentName, solver)
+                
+                try:
+                    analysis.computeTFs(comboKey=key)
+                
+                    analysis.classifier.classifyBiQuadFilters()
+                    analysis.classifier.summarizeFilterType()
+
+                    analysis.reportSummary(experimentName, key)
+                    analysis.compilePDF()
+
+                    experiment_results_history.add_all(impedance_key=key, 
+                                                        baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                        classifications=analysis.classifier.classifications)
+                    experiment_results_history.save()
+                except Exception:
+                    print(f"something went wrong with key {key}")
+    else: 
+        for i, key in enumerate(impedanceKeys, 1):
+            print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
+            analysis = Impedance_Analyzer(experimentName, solver)
+            try:
                 analysis.computeTFs(comboKey=key)
                 
                 analysis.classifier.classifyBiQuadFilters()
                 analysis.classifier.summarizeFilterType()
 
                 analysis.reportSummary(experimentName, key)
-                analysis.compilePDF()
+                analysis.compilePDF() 
 
                 experiment_results_history.add_all(impedance_key=key, 
-                                                      baseHs=analysis.circuit_solver.baseHsDict[key], 
-                                                      classifications=analysis.classifier.classifications)
+                                                    baseHs=analysis.circuit_solver.baseHsDict[key], 
+                                                    classifications=analysis.classifier.classifications)
                 experiment_results_history.save()
-    else: 
-        for i, key in enumerate(impedanceKeys, 1):
-            print(f"--> Running the {experimentName} Experiment for {key} ({i}/{len(impedanceKeys)})\n")
-            analysis = Impedance_Analyzer(experimentName, solver)
-            analysis.computeTFs(comboKey=key)
-            
-            analysis.classifier.classifyBiQuadFilters()
-            analysis.classifier.summarizeFilterType()
-
-            analysis.reportSummary(experimentName, key)
-            analysis.compilePDF()
-
-            experiment_results_history.add_all(impedance_key=key, 
-                                                  baseHs=analysis.circuit_solver.baseHsDict[key], 
-                                                  classifications=analysis.classifier.classifications)
-            experiment_results_history.save()
+            except Exception:
+                    print(f"something went wrong with key {key}")
     print("<----> END OF EXPERIMENT <---->")
     if(count_of_new_keys):
         print(f"Impedance Keys analyzed (count: {count_of_new_keys}): ")

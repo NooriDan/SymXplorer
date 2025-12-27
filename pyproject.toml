@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "SymXplorer"
-version = "1.2.0"
+version = "1.2.1"
 description = "A symbolic circuit explorer and design tool with SPICE simulators binding"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -19,11 +19,10 @@ dependencies = [
     'pandas >= 2.2.3 ',
     'ax-platform >= 0.4.3',
     'matplotlib >= 3.9.3',
-    'lcapy >= 1.24' # Optional: to automate extracting the nodal equations
 ]
 
 [project.scripts]
-run-symbolix = "symxplorer.symbolic_solver.main:main"
+run-symbolix = "symxplorer.symbolic_exploration.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/symxplorer"]

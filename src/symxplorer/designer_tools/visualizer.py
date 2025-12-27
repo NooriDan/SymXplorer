@@ -375,3 +375,122 @@ class AnalysisSuite:
         )
         fig.show()
 
+    # ------------
+    # Trade-off plot (2D metrics)
+    # ------------
+    def plot_tradeoff(self, metric1: str, metric2: str):
+        """
+        Creates an interactive 2D scatter plot to visualize the trade-off between two performance metrics.
+        Hovering over a point reveals the design variables and other metrics for that exploration point.
+        """
+        if metric1 not in self.metrics or metric2 not in self.metrics:
+            raise ValueError(f"Invalid metric names. Choose from: {self.metrics}")
+
+        # All metrics and design variables will be available on hover
+        hover_data = self.design_vars + [m for m in self.metrics if m not in [metric1, metric2]]
+
+        fig = px.scatter(
+            self.df,
+            x=metric1,
+            y=metric2,
+            hover_data=hover_data,
+            title=f"Trade-off between {metric1} and {metric2}",
+        )
+        fig.update_traces(
+            mode='markers',
+            marker=dict(
+                size=10,
+                opacity=0.7,
+                line=dict(width=1, color='DarkSlateGrey')
+            )
+        )
+        fig.update_layout(
+            xaxis_title=metric1,
+            yaxis_title=metric2,
+            title_x=0.5
+        )
+        fig.show()
+
+    # ------------
+    # 3D Scatter plot (2 design vars vs. 1 metric)
+    # ------------
+    def plot_3d_scatter(self, design_var1: str, design_var2: str, metric_name: str):
+        """
+        Creates an interactive 3D scatter plot of two design variables against a specified metric.
+        Hovering over a point reveals other metrics and design variables.
+        """
+        if design_var1 not in self.design_vars or design_var2 not in self.design_vars:
+            raise ValueError(f"Invalid design variable names. Choose from: {self.design_vars}")
+        if metric_name not in self.metrics:
+            raise ValueError(f"Invalid metric name. Choose from: {self.metrics}")
+
+        hover_data = self.design_vars + self.metrics
+
+        fig = px.scatter_3d(
+            self.df,
+            x=design_var1,
+            y=design_var2,
+            z=metric_name,
+            color=metric_name,
+            color_continuous_scale=px.colors.sequential.Viridis,
+            hover_data=hover_data,
+            title=f"{metric_name} vs. {design_var1} and {design_var2}",
+        )
+        fig.update_layout(
+            scene=dict(
+                xaxis_title=design_var1,
+                yaxis_title=design_var2,
+                zaxis_title=metric_name,
+            ),
+            title_x=0.5,
+        )
+        fig.show()
+
+    # ------------
+    # Distribution plot (histogram)
+    # ------------
+    def plot_distribution(self, metric_name: str):
+        """
+        Creates an interactive histogram to visualize the distribution of a single performance metric.
+        """
+        if metric_name not in self.metrics:
+            raise ValueError(f"Invalid metric name. Choose from: {self.metrics}")
+
+        fig = px.histogram(
+            self.df,
+            x=metric_name,
+            marginal="box",  # or "rug", "violin"
+            title=f"Distribution of {metric_name}",
+        )
+        fig.update_layout(
+            xaxis_title=metric_name,
+            yaxis_title="Frequency",
+            title_x=0.5
+        )
+        fig.show()
+
+    # ------------
+    # Box plot (metric vs. design var)
+    # ------------
+    def plot_box(self, design_var: str, metric_name: str):
+        """
+        Creates an interactive box plot of a metric grouped by a design variable.
+        """
+        if design_var not in self.design_vars:
+            raise ValueError(f"Invalid design variable name. Choose from: {self.design_vars}")
+        if metric_name not in self.metrics:
+            raise ValueError(f"Invalid metric name. Choose from: {self.metrics}")
+
+        fig = px.box(
+            self.df,
+            x=design_var,
+            y=metric_name,
+            title=f"Distribution of {metric_name} across {design_var}",
+        )
+        fig.update_layout(
+            xaxis_title=design_var,
+            yaxis_title=metric_name,
+            title_x=0.5
+        )
+        fig.show()
+

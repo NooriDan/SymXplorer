@@ -1,4 +1,4 @@
-** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tb_ac.sch
+** sch_path: /home/noorizad/code/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tb_ac.sch
 **.subckt tb_ac
 V0 VSS GND 0
 V2 VDD GND {vdd}
@@ -102,7 +102,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 ********** Models ************
 .lib cornerMOSlv.lib mos_tt
 .lib cornerRES.lib res_typ
-.lib /foss/pdks/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib cap_typ
+.lib /home/noorizad/local/PDKs/IHP-Open-PDK/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib cap_typ
 ********** END of Models ************
 
 
@@ -180,9 +180,10 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 **** end user architecture code
 **.ends
 
-* expanding   symbol:  tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym # of pins=7
-** sym_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym
-** sch_path: /foss/designs/eda/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sch
+* expanding   symbol:  /home/noorizad/code/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym #
+*+ of pins=7
+** sym_path: /home/noorizad/code/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sym
+** sch_path: /home/noorizad/code/SymXplorer/examples/tunable-tia/ihp-sg13g2/xschem/tia-topo-2/tia-bpf-2-ideal-ind.sch
 .subckt tia-bpf-2-ideal-ind vdd vop vss von vbias inn inp
 *.iopin vdd
 *.iopin vss
@@ -195,12 +196,12 @@ XM1 vop vbias inn vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_d
 XM2 von vbias inp vss sg13_lv_nmos w={x_dut_nfet_w} l={x_dut_nfet_l} ng=1 m={x_dut_nfet_m} rfmode=1
 XC1 inp vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
 XC2 inn vss cap_cmim w={x_dut_cap_w} l={x_dut_cap_l} m={x_dut_cap_m}
-XR1 von vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
-XR2 vop vdd rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
-XR3 inp von rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
+XR1 von vdd sub! rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
+XR2 vop vdd sub! rppd w={x_dut_res_s_w} l={x_dut_res_s_l} m={x_dut_res_s_m} b=0
+XR3 inp von sub! rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
 L2 inp vss {x_dut_ind_size} m=1
 L3 inn vss {x_dut_ind_size} m=1
-XR4 inn vop rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
+XR4 inn vop sub! rppd w={x_dut_res_2_w} l={x_dut_res_2_l} m={x_dut_res_2_m} b=0
 .ends
 
 .GLOBAL GND
