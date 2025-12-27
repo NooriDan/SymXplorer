@@ -26,11 +26,6 @@ From transistor-level circuits to active filters with multiple feedback loops, S
 -   **Design Space Exploration & Visualization**:
     -   Explore higher-order transfer functions for filter design.
     -   A built-in `Visualizer` (`designer_tools/visualizer.py`) plots crucial data for understanding design trade-offs, including optimization loss curves and interactive parallel coordinate plots of the design space.
-    -   The `AnalysisSuite` in `designer_tools/visualizer.py` has been enhanced with several new interactive plotting methods to provide deeper insights into the design space:
-        -   **`plot_tradeoff`**: Creates a 2D scatter plot to visualize the trade-off between two performance metrics.
-        -   **`plot_3d_scatter`**: Generates a 3D scatter plot to explore the relationship between two design variables and a performance metric.
-        -   **`plot_distribution`**: Produces a histogram to show the distribution of a single metric.
-        -   **`plot_box`**: Displays a box plot to show how a metric's distribution varies with a design variable.
 
 -   **SPICE Integration**:
     -   Interfaces with ngspice and other SPICE-based simulators through the `spicelib` library.
