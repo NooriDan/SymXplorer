@@ -102,7 +102,7 @@ x_dut VDD Vop VSS Von Vbias In Ip tia-bpf-2-ideal-ind
 ********** Models ************
 .lib cornerMOSlv.lib mos_tt
 .lib cornerRES.lib res_typ
-.lib /foss/pdks/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib cap_typ
+.lib $PDK_ROOT/$PDK/libs.tech/ngspice/models/cornerCAP.lib cap_typ
 ********** END of Models ************
 
 
