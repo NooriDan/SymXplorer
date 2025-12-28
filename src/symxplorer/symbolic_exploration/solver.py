@@ -485,15 +485,16 @@ def run_experiment(experimentName: str,     # Arbitrary name (affectes where the
                 analysis.classifier.classifyBiQuadFilters()
                 analysis.classifier.summarizeFilterType()
 
-                analysis.reportSummary(experimentName, key)
-                analysis.compilePDF() 
-
                 experiment_results_history.add_all(impedance_key=key, 
                                                     baseHs=analysis.circuit_solver.baseHsDict[key], 
                                                     classifications=analysis.classifier.classifications)
                 experiment_results_history.save()
-            except Exception:
+
+                analysis.reportSummary(experimentName, key)
+                analysis.compilePDF() 
+            except Exception as e:
                     print(f"something went wrong with key {key}")
+                    print(f"Error: {e}")
     print("<----> END OF EXPERIMENT <---->")
     if(count_of_new_keys):
         print(f"Impedance Keys analyzed (count: {count_of_new_keys}): ")

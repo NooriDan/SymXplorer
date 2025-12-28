@@ -378,7 +378,7 @@ class AnalysisSuite:
     # ------------
     # Trade-off plot (2D metrics)
     # ------------
-    def plot_tradeoff(self, metric1: str, metric2: str):
+    def plot_tradeoff(self, metric1: str, metric2: str, log_scale_1: bool = False, log_scale_2: bool = True):
         """
         Creates an interactive 2D scatter plot to visualize the trade-off between two performance metrics.
         Hovering over a point reveals the design variables and other metrics for that exploration point.
@@ -395,6 +395,8 @@ class AnalysisSuite:
             y=metric2,
             hover_data=hover_data,
             title=f"Trade-off between {metric1} and {metric2}",
+            log_x=log_scale_1,
+            log_y=log_scale_2
         )
         fig.update_traces(
             mode='markers',

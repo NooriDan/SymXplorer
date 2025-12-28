@@ -243,6 +243,7 @@ class Symbolic_Sizing_Assist:
         num_points_per_var: int = 5,
         fixed_vars: Dict[str, float] | None = None,
         show_progress: bool = True,
+        use_log_spacing: bool = False
     ) -> DesignSpaceExploration:
         """
         Perform a systematic (grid) exploration of the design space.
@@ -261,10 +262,16 @@ class Symbolic_Sizing_Assist:
         fixed_vars = fixed_vars or {}
 
         # 1️⃣ Generate sweep grid
-        grid_values = {
-            var: np.linspace(vmin, vmax, num_points_per_var)
-            for var, (vmin, vmax) in design_var_limits.items()
-        }
+        if not use_log_spacing:
+            grid_values = {
+                var: np.linspace(vmin, vmax, num_points_per_var)
+                for var, (vmin, vmax) in design_var_limits.items()
+            }
+        else:
+            grid_values = {
+                var: np.logspace(np.log10(vmin), np.log10(vmax), num_points_per_var)
+                for var, (vmin, vmax) in design_var_limits.items()
+            }
 
         design_var_cross_product = [
             dict(zip(grid_values.keys(), values))
