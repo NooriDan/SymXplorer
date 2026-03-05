@@ -130,6 +130,35 @@ This example explores the design of a tunable transimpedance amplifier (TIA).
     -   `CG_TIA_Sym_Sizing_w_Optimizer.ipynb`
 
 For more details, see the [tunable-tia README](./examples/tunable-tia/readme.md).
+## Citation
+
+If you use **SymXplorer** in your research, please cite:
+
+### Journal Paper
+```bibtex
+@Article{electronics15030515,
+  AUTHOR = {Noori Zadeh, Danial and Elamien, Mohamed B.},
+  TITLE = {SymXplorer: Symbolic Analog Topology Exploration of a Tunable Common-Gate Bandpass TIA for Radio-over-Fiber Applications},
+  JOURNAL = {Electronics},
+  VOLUME = {15},
+  YEAR = {2026},
+  NUMBER = {3},
+  ARTICLE-NUMBER = {515},
+  DOI = {10.3390/electronics15030515}
+}
+```
+
+### Conference Paper
+```bibtex
+@INPROCEEDINGS{11244398,
+  author={Zadeh, Danial Noori and Elamien, Mohamed B.},
+  booktitle={2025 IEEE 68th International Midwest Symposium on Circuits and Systems (MWSCAS)},
+  title={SymXplorer: A Designer's Toolbox for Automated Analog Circuit Topology Exploration},
+  year={2025},
+  pages={651-655},
+  doi={10.1109/MWSCAS53549.2025.11244398}
+}
+```
 
 ## License
 
