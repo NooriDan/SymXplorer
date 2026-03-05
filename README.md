@@ -3,6 +3,18 @@
 [![PyPI version](https://badge.fury.io/py/SymXplorer.svg)](https://badge.fury.io/py/SymXplorer)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+> **Note:** The **SPICE-in-the-loop circuit sizing optimization framework** that was previously part of **SymXplorer** has been **extracted into a dedicated project** and is now actively maintained under  
+> **SpiceXplorer**: https://github.com/MacAnalog/SpiceXplorer
+>
+> `SpiceXplorer` focuses specifically on **optimization-driven analog circuit sizing**, including:
+> - SPICE-in-the-loop optimization workflows
+> - Integration with optimizers such as **Ax** and **Nevergrad**
+> - Scalable orchestration of design parameters, measurements, and constraints
+>
+> This separation allows **SymXplorer** to remain focused on **symbolic circuit analysis and topology exploration**, while **SpiceXplorer** provides a specialized framework for **automated circuit sizing and design-space optimization**.
+>
+> Existing examples in this repository may reference earlier versions of the optimization workflow. For new projects, please use **SpiceXplorer**.
+
 **SymXplorer** is an open-source Python toolbox for the symbolic analysis and optimization-driven design of analog circuits. It leverages the power of `SymPy` for symbolic calculations and integrates with SPICE simulators and advanced optimization libraries to automate the circuit design process.
 
 From transistor-level circuits to active filters with multiple feedback loops, SymXplorer provides tools to analyze, size, and explore the design space of analog topologies.
